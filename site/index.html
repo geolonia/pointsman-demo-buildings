@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointsman buildings demo</title>
+<meta name="description" content="Buildings of a city as data: year built, structure and hazards. Pointsman sorts requests about them, with a reason for each.">
+<meta name="theme-color" content="#141414">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
+<link rel="stylesheet" href="style.css">
+<!-- Before the first paint: sets the theme. A file, not inline, for the CSP (site/_headers). -->
+<script src="theme.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="https://pointsman.net/demos/"><img class="mark light" src="favicon.svg" alt="" width="22" height="22"><img class="mark dark" src="mark-on-dark.svg" alt="" width="22" height="22"><span>Pointsman</span><span class="tag" data-i18n="demo">buildings demo</span></a>
+  <nav>
+    <button class="chip" id="dev-toggle" type="button" aria-pressed="false" aria-controls="dev"><span data-i18n="devTitle">For developers</span></button>
+    <button class="chip" id="lang" type="button" lang="ja">日本語</button>
+    <button class="chip" id="theme" type="button" aria-label="Switch theme">◐</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <main>
+    <section class="intro">
+      <h1 data-i18n="title">Every building, the same checks</h1>
+      <p data-i18n="lead">These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Soon you can send a request about one of them, step by step, and watch Pointsman sort it: what to check first, and why.</p>
+      <p class="note" data-i18n="care">Pointsman sorts and explains. It never decides that a building is safe: that is always a person's decision.</p>
+    </section>
+
+    <section class="map-wrap" aria-label="Map">
+      <div id="map"></div>
+      <div class="legend" id="legend" aria-label="Legend">
+        <strong data-i18n="legendTitle">Year built</strong>
+        <span><i class="sw era-old"></i><span data-i18n="eraBefore">1981 or earlier</span></span>
+        <span><i class="sw era-mid"></i><span data-i18n="eraMiddle">1982 to 2000</span></span>
+        <span><i class="sw era-new"></i><span data-i18n="eraAfter">2001 or later</span></span>
+        <span><i class="sw era-unknown"></i><span data-i18n="eraUnknown">Not known</span></span>
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </section>
+
+    <section class="card" id="building" aria-live="polite">
+      <p class="muted" data-i18n="pick">Pick a building on the map.</p>
+    </section>
+
+    <section class="card next">
+      <span class="kicker" data-i18n="nextKicker">Coming next</span>
+      <strong data-i18n="nextTitle">Send a request, step by step</strong>
+      <p data-i18n="nextText">Pick the building, say what happened, add photos, check and send. Pointsman then gives a priority and a team, with the reason, and the request waits for a person if anything is unclear.</p>
+    </section>
+  </main>
+
+  <aside class="dev" id="dev" hidden aria-labelledby="dev-title">
+    <h2 id="dev-title" data-i18n="devTitle">For developers</h2>
+    <p data-i18n="devLead">What the page asks the data platform (NGSI-LD), and what it gets back.</p>
+    <h3 data-i18n="devList">All buildings in the area</h3>
+    <pre id="dev-list"></pre>
+    <h3 data-i18n="devEntity">The selected building</h3>
+    <pre id="dev-entity" class="muted"></pre>
+    <p class="links">
+      <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
+      <a href="https://github.com/geolonia/pointsman" data-i18n="lPointsman">Pointsman</a>
+    </p>
+  </aside>
+</div>
+
+<footer>
+  <p><span id="credit"></span> · <a href="https://www.mlit.go.jp/plateau/site-policy/">PLATEAU</a> · <a href="https://maps.gsi.go.jp/development/ichiran.html" data-i18n="gsi">GSI map tiles</a> · <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a></p>
+</footer>
+
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pmtiles@4.4.1/dist/pmtiles.js" integrity="sha384-iS2/cbFYol4NsEeda4mW6N/8wPMOT6pv2eY+GNYSJRqVC4nbJECP1+mg6D2T8wT/" crossorigin="anonymous"></script>
+<script src="app.js"></script>
+</body>
+</html>
