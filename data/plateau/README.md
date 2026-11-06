@@ -16,7 +16,8 @@ with the attributes the demo uses.
   say that the data was edited. The demo shows this credit on the page and in
   every entity (`source`).
 - Edits: footprints only (no 3D; the outer ring, so an inner courtyard is
-  filled), coordinates rounded to 7 decimals,
+  filled), points less than 10 cm off a straight wall dropped (GeonicDB
+  refuses some curved outlines otherwise), coordinates rounded to 7 decimals,
   PLATEAU's "unknown" values turned into `null`, and per building only the
   worst river flood and the landslide zones.
 

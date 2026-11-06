@@ -11,7 +11,7 @@
 //
 // Settings (environment): BROKER_API_KEY (needed for --apply), BROKER_URL and
 // BROKER_TENANT (default: as in wrangler.jsonc), FILE (default
-// data/plateau/satozuka.geojson).
+// data/plateau/satozuka.geojson), BATCH (entities per request, default 100).
 
 import { readFileSync } from 'node:fs';
 import { toEntity } from '../src/buildings.ts';
@@ -20,7 +20,7 @@ const FILE = process.env.FILE ?? 'data/plateau/satozuka.geojson';
 const BROKER_URL = (process.env.BROKER_URL ?? 'https://geolonia-demo.geonicdb.jp').replace(/\/+$/, '');
 const TENANT = process.env.BROKER_TENANT ?? 'pointsman_buildings';
 const CORE_CONTEXT = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld';
-const BATCH = 100;
+const BATCH = Number(process.env.BATCH ?? 100);
 const apply = process.argv.includes('--apply');
 
 const { features } = JSON.parse(readFileSync(FILE, 'utf8'));
@@ -70,6 +70,12 @@ for (let i = 0; i < entities.length; i += BATCH) {
     const body = await res.json();
     const errors = body.errors ?? [];
     throw new Error(`batch at ${i}: ${errors.length} failed, first: ${JSON.stringify(errors[0] ?? body).slice(0, 300)}`);
+  }
+  if (res.status === 400) {
+    // The whole batch is refused for one bad entity: name it (the broker's
+    // detail is about our own data, not secrets).
+    const detail = (await res.json().catch(() => ({}))).detail ?? '';
+    throw new Error(`batch at ${i}: broker refused it (400): ${String(detail).slice(0, 200)}. Load fewer at a time (BATCH) to find the building.`);
   }
   if (res.status !== 201 && res.status !== 204) throw new Error(`batch at ${i}: broker answered ${res.status}`);
   written += batch.length;
