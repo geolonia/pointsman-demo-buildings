@@ -48,11 +48,17 @@ async function buildings(env: Env, request: Request, ctx: ExecutionContext): Pro
   return res;
 }
 
-async function building(env: Env, id: string): Promise<Response> {
+async function building(env: Env, id: string, request: Request, ctx: ExecutionContext): Promise<Response> {
   if (!BUILDING_ID.test(id)) return json({ error: 'not a building id' }, 400);
+  // Keyed by the checked id, so odd spellings of the URL share one entry.
+  const key = new Request(new URL(`/api/buildings/${encodeURIComponent(id)}`, request.url).toString());
+  const cached = await caches.default.match(key);
+  if (cached) return cached;
   const { query, entity } = await new Broker(env).getBuilding(id);
   if (!entity) return json({ error: 'not found' }, 404);
-  return json({ entity, query, feature: toFeature(entity) }, 200, { 'cache-control': `public, max-age=${ONE_CACHE_S}` });
+  const res = json({ entity, query, feature: toFeature(entity) }, 200, { 'cache-control': `public, max-age=${ONE_CACHE_S}` });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
 }
 
 export default {
@@ -73,7 +79,7 @@ export default {
         } catch {
           return json({ error: 'not a building id' }, 400);
         }
-        return await building(env, id);
+        return await building(env, id, request, ctx);
       }
       return json({ error: 'not found' }, 404);
     } catch (err) {

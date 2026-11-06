@@ -21,6 +21,7 @@ const BROKER_URL = (process.env.BROKER_URL ?? 'https://geolonia-demo.geonicdb.jp
 const TENANT = process.env.BROKER_TENANT ?? 'pointsman_buildings';
 const CORE_CONTEXT = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld';
 const BATCH = Number(process.env.BATCH ?? 100);
+if (!Number.isInteger(BATCH) || BATCH < 1 || BATCH > 1000) throw new Error('BATCH must be a whole number from 1 to 1000');
 const apply = process.argv.includes('--apply');
 
 const { features } = JSON.parse(readFileSync(FILE, 'utf8'));

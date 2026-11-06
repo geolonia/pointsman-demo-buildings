@@ -181,8 +181,14 @@
   function makeMap(area) {
     if (!window.maplibregl) return null;
     if (window.pmtiles) maplibregl.addProtocol('pmtiles', new pmtiles.Protocol().tile);
-    var m = new maplibregl.Map({ container: 'map', style: style(), bounds: [[area[0], area[1]], [area[2], area[3]]], fitBoundsOptions: { padding: 20 },
-      attributionControl: { compact: true, customAttribution: 'PLATEAU（国土交通省）' }, cooperativeGestures: true });
+    var m;
+    // No WebGL, or a broken style: the page goes on without a map (the status line says so).
+    try {
+      m = new maplibregl.Map({ container: 'map', style: style(), bounds: [[area[0], area[1]], [area[2], area[3]]], fitBoundsOptions: { padding: 20 },
+        attributionControl: { compact: true, customAttribution: 'PLATEAU（国土交通省）' }, cooperativeGestures: true });
+    } catch (e) {
+      return null;
+    }
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     // Fit again once the map has its final size (the first fit can come before the layout).
     m.on('load', function () {

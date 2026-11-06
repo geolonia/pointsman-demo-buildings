@@ -8,7 +8,9 @@
   "compatibility_flags": ["global_fetch_strictly_public"],
   "observability": { "enabled": true },
   "routes": [{ "pattern": "buildings.demo.pointsman.net", "custom_domain": true }],
-  "workers_dev": true,
+  // Only the custom domain: the Cache API does nothing on workers.dev, so
+  // every request there would reach the broker.
+  "workers_dev": false,
   "vars": {
     "BROKER_URL": "https://geolonia-demo.geonicdb.jp",
     "BROKER_TENANT": "pointsman_buildings"

@@ -17,7 +17,8 @@ with the attributes the demo uses.
   every entity (`source`).
 - Edits: footprints only (no 3D; the outer ring, so an inner courtyard is
   filled), points less than 10 cm off a straight wall dropped (GeonicDB
-  refuses some curved outlines otherwise), coordinates rounded to 7 decimals,
+  refuses some curved outlines otherwise; for the 14 buildings listed in
+  `TOLERANCE_M` in `scripts/plateau/to_geojson.py`, 50 cm or 1 m), coordinates rounded to 7 decimals,
   PLATEAU's "unknown" values turned into `null`, and per building only the
   worst river flood and the landslide zones.
 

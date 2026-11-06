@@ -153,6 +153,16 @@ describe('GET /api/buildings/{id}', () => {
     expect(calls).toHaveLength(0);
   });
 
+  it('keeps a building for a minute', async () => {
+    const path = `/api/buildings/${encodeURIComponent(stored[0]!.id)}`;
+    await caches.default.delete(new Request(`https://buildings.test${path}`));
+    await get(path);
+    await new Promise((r) => setTimeout(r, 0)); // the cache write (waitUntil)
+    const again = await get(path);
+    expect(again.status).toBe(200);
+    expect(calls).toHaveLength(1);
+  });
+
   it('answers 404 for a building the broker does not have', async () => {
     expect((await get(`/api/buildings/${encodeURIComponent('urn:ngsi-ld:Building:plateau:01100-bldg-999')}`)).status).toBe(404);
   });
