@@ -18,7 +18,7 @@
       building: 'Building', year: 'Year built', structure: 'Structure', usage: 'Use', storeys: 'Storeys above ground', height: 'Height',
       flood: 'River flood (worst case)', landslide: 'Landslide zone', unknown: 'not known', none: 'none', id: 'PLATEAU id',
       unknownNote: 'Some values are not in the city model. In a request, Pointsman asks for them instead of guessing.',
-      floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
+      floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', partial: 'Not all buildings could be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
     },
     ja: {
       demo: '建物デモ', devTitle: '開発者向け', title: 'すべての建物を、同じ基準で',
@@ -33,7 +33,7 @@
       building: '建物', year: '建築年', structure: '構造', usage: '用途', storeys: '地上階数', height: '高さ',
       flood: '洪水（想定最大規模）', landslide: '土砂災害警戒区域', unknown: '不明', none: 'なし', id: 'PLATEAU ID',
       unknownNote: '3D都市モデルにない値があります。依頼では、Pointsman は推測せずにそれを尋ねます。',
-      floodValue: '{depth} m（{rank}）', noMap: '地図を読み込めませんでした。', devFailed: 'データ基盤から応答がありませんでした。', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
+      floodValue: '{depth} m（{rank}）', noMap: '地図を読み込めませんでした。', partial: 'すべての建物は読み込めませんでした。', devFailed: 'データ基盤から応答がありませんでした。', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
     },
   };
   // Names of PLATEAU's codes (as in src/buildings.ts).
@@ -83,7 +83,7 @@
     var s = document.getElementById('status');
     if (data === null) s.textContent = t('loading');
     else if (data === false) s.textContent = t('failed');
-    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (map ? '' : ' ' + t('noMap'));
+    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (data.complete === false ? ' ' + t('partial') : '') + (map ? '' : ' ' + t('noMap'));
   }
 
   function value(v) { return v === null || v === undefined ? el('span', { class: 'unknown' }, [t('unknown')]) : String(v); }

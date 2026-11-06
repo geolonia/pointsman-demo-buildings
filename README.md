@@ -68,7 +68,7 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 | Endpoint | |
 |---|---|
 | `GET /api/config` | The demo area (bounding box) and the data credit |
-| `GET /api/buildings` | The area's buildings as GeoJSON, read from the broker (geo-query, paged); `query` is the NGSI-LD request. Cached 10 minutes, but only when the list is complete (as many as the broker counted) and not empty |
+| `GET /api/buildings` | The area's buildings as GeoJSON, read from the broker (geo-query, paged); `query` is the NGSI-LD request. Cached 10 minutes, but only when the list is not empty and complete: as many as the broker counted (`NGSILD-Results-Count`), or, when the broker gives no count, the last page had fewer than 1,000 |
 | `GET /api/buildings/{id}` | One `Building` entity as stored, the request, and the same as a GeoJSON feature. Cached 1 minute |
 
 ## Setup
