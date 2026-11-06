@@ -1,0 +1,25 @@
+// The demo Worker. No resource ids here (a public repository). Secrets: see
+// README.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pointsman-demo-buildings",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "observability": { "enabled": true },
+  "routes": [{ "pattern": "buildings.demo.pointsman.net", "custom_domain": true }],
+  // Only the custom domain: the Cache API does nothing on workers.dev, so
+  // every request there would reach the broker.
+  "workers_dev": false,
+  "vars": {
+    "BROKER_URL": "https://geolonia-demo.geonicdb.jp",
+    "BROKER_TENANT": "pointsman_buildings"
+  },
+  // The page (site/). The Worker answers only the API; everything else is a
+  // static file.
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  }
+}

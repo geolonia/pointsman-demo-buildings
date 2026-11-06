@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  namespace: geolonia
+  name: pointsman-demo-buildings
+  description: Demo of Pointsman with an NGSI-LD context broker (GeonicDB) for requests about buildings.
+  annotations:
+    github.com/project-slug: geolonia/pointsman-demo-buildings
+  tags: ['demo', 'cloudflare-workers', 'fiware', 'ngsi-ld', 'plateau']
+spec:
+  type: 'website'
+  lifecycle: 'experimental'
+  owner: group:geolonia/geonicdb
+  system: system:geolonia/standards
+  dependsOn:
+    - component:geolonia/pointsman

@@ -1,0 +1,24 @@
+{
+  "name": "pointsman-demo-buildings",
+  "private": true,
+  "description": "Demo of Pointsman with an NGSI-LD context broker: requests about buildings sorted by priority, with a reason for each.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "wrangler types && tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test && wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "load:buildings": "node scripts/load-buildings.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.2",
+    "typescript": "^7.0.2",
+    "vitest": "~4.1.11",
+    "wrangler": "^4.151.0"
+  },
+  "packageManager": "pnpm@12.9.1"
+}
