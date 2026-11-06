@@ -83,7 +83,7 @@
     var s = document.getElementById('status');
     if (data === null) s.textContent = t('loading');
     else if (data === false) s.textContent = t('failed');
-    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (data.complete === false ? ' ' + t('partial') : '') + (map ? '' : ' ' + t('noMap'));
+    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (data.complete === false || data.skipped > 0 ? ' ' + t('partial') : '') + (map ? '' : ' ' + t('noMap'));
   }
 
   function value(v) { return v === null || v === undefined ? el('span', { class: 'unknown' }, [t('unknown')]) : String(v); }
