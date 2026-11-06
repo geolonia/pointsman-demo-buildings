@@ -28,6 +28,8 @@ createServer((req, res) => {
     return send(200, entities.slice(offset, offset + limit));
   }
   const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/(.+)$/);
-  const one = m ? byId.get(decodeURIComponent(m[1])) : undefined;
+  let id;
+  try { id = m ? decodeURIComponent(m[1]) : undefined; } catch { return send(400, { title: 'bad id' }); }
+  const one = id ? byId.get(id) : undefined;
   return one ? send(200, one) : send(404, { title: 'not found' });
 }).listen(PORT, () => console.log(`mock broker: http://localhost:${PORT} (${entities.length} buildings)`));

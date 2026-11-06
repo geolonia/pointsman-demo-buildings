@@ -84,6 +84,10 @@ node scripts/load-buildings.mjs                    # shows what it would write
 BROKER_API_KEY=… node scripts/load-buildings.mjs --apply
 ```
 
+Upsert replaces each building and never deletes: a building that left the
+data stays until it is deleted by hand. The page may show the old list for
+up to ten minutes after a load.
+
 ## Development
 
 Node 24 and pnpm.

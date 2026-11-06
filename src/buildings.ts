@@ -28,16 +28,16 @@ export const USAGE: Record<string, { ja: string; en: string }> = {
   '454': { ja: 'その他', en: 'Other' },
 };
 
-export const STRUCTURE: Record<string, { ja: string; en: string; wood: boolean | null }> = {
-  '601': { ja: '木造・土蔵造', en: 'Wood', wood: true },
-  '602': { ja: '鉄骨鉄筋コンクリート造', en: 'Steel-reinforced concrete', wood: false },
-  '603': { ja: '鉄筋コンクリート造', en: 'Reinforced concrete', wood: false },
-  '604': { ja: '鉄骨造', en: 'Steel', wood: false },
-  '605': { ja: '軽量鉄骨造', en: 'Light steel', wood: false },
-  '606': { ja: 'レンガ造・コンクリートブロック造・石造', en: 'Brick, block or stone', wood: false },
-  '610': { ja: '非木造', en: 'Not wood', wood: false },
-  '612': { ja: '簡易耐火', en: 'Simple fire-resistant', wood: null },
-  '613': { ja: '耐火', en: 'Fire-resistant', wood: null },
+export const STRUCTURE: Record<string, { ja: string; en: string }> = {
+  '601': { ja: '木造・土蔵造', en: 'Wood' },
+  '602': { ja: '鉄骨鉄筋コンクリート造', en: 'Steel-reinforced concrete' },
+  '603': { ja: '鉄筋コンクリート造', en: 'Reinforced concrete' },
+  '604': { ja: '鉄骨造', en: 'Steel' },
+  '605': { ja: '軽量鉄骨造', en: 'Light steel' },
+  '606': { ja: 'レンガ造・コンクリートブロック造・石造', en: 'Brick, block or stone' },
+  '610': { ja: '非木造', en: 'Not wood' },
+  '612': { ja: '簡易耐火', en: 'Simple fire-resistant' },
+  '613': { ja: '耐火', en: 'Fire-resistant' },
 };
 
 /** River flood depth ranks (RiverFloodingRiskAttribute_rank). */
@@ -112,7 +112,7 @@ export function toEntity(f: PlateauFeature): Entity {
       rank: p.flood.rank,
       depth: p.flood.depth,
       ...(p.flood.river && RIVER[p.flood.river] && { river: RIVER[p.flood.river] }),
-      scale: p.flood.scale === '2' ? 'L2' : 'L1',
+      ...((p.flood.scale === '1' || p.flood.scale === '2') && { scale: p.flood.scale === '2' ? 'L2' : 'L1' }),
     });
   }
   if (p.landslide.length) e.landslideRisk = P(p.landslide.map((c) => LANDSLIDE[c] ?? c));
@@ -127,11 +127,10 @@ export interface BuildingProperties {
   /** Building code era for the map colour, by year built (see eraOf). */
   era: 'before-1981' | '1981-2000' | 'from-2000' | 'unknown';
   structure: string | null;
-  wood: boolean | null;
   usage: string | null;
   storeys: number | null;
   height: number | null;
-  flood: { rank: number; depth: number; river?: string; scale: string } | null;
+  flood: { rank: number; depth: number; river?: string; scale?: string } | null;
   landslide: string[];
 }
 
@@ -162,7 +161,11 @@ export function toFeature(e: Entity): { type: 'Feature'; id: string; geometry: u
   if (geometry?.type !== 'Polygon') return null;
   const year = num(value(e, 'yearOfConstruction'));
   const structure = str(value(e, 'buildingStructureType'));
-  const flood = value(e, 'riverFloodRisk') as BuildingProperties['flood'] | undefined;
+  const raw = value(e, 'riverFloodRisk') as Record<string, unknown> | undefined;
+  // Checked: the page formats these numbers.
+  const flood = raw && typeof raw === 'object' && num(raw.rank) !== null && num(raw.depth) !== null
+    ? { rank: raw.rank as number, depth: raw.depth as number, ...(typeof raw.river === 'string' && { river: raw.river }), ...(typeof raw.scale === 'string' && { scale: raw.scale }) }
+    : null;
   const landslide = value(e, 'landslideRisk');
   return {
     type: 'Feature',
@@ -174,11 +177,10 @@ export function toFeature(e: Entity): { type: 'Feature'; id: string; geometry: u
       yearOfConstruction: year,
       era: eraOf(year),
       structure,
-      wood: structure ? (STRUCTURE[structure]?.wood ?? null) : null,
       usage: str(value(e, 'usage')),
       storeys: num(value(e, 'storeysAboveGround')),
       height: num(value(e, 'measuredHeight')),
-      flood: flood && typeof flood === 'object' ? flood : null,
+      flood,
       landslide: Array.isArray(landslide) ? landslide.filter((s): s is string => typeof s === 'string') : [],
     },
   };

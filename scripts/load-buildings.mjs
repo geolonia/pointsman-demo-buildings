@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Loads the PLATEAU buildings (data/plateau/*.geojson) into the broker as
 // Building entities (src/buildings.ts), with NGSI-LD batch upsert. Run it
-// again after the data changes: existing buildings are replaced.
+// again after the data changes. Upsert replaces each building as a whole
+// (attributes another app added to it are lost) and never deletes: a
+// building that left the data stays in the broker until deleted by hand.
+// The page keeps its list for up to ten minutes after a load.
 //
 //   node scripts/load-buildings.mjs                  shows what it would write
 //   BROKER_API_KEY=… node scripts/load-buildings.mjs --apply
@@ -44,18 +47,24 @@ if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostna
 let written = 0;
 for (let i = 0; i < entities.length; i += BATCH) {
   const batch = entities.slice(i, i + BATCH);
-  const res = await fetch(`${BROKER_URL}/ngsi-ld/v1/entityOperations/upsert`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'NGSILD-Tenant': TENANT,
-      'content-type': 'application/json',
-      link: `<${CORE_CONTEXT}>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"`,
-      // GeonicDB's firewall refuses requests without a User-Agent.
-      'user-agent': 'pointsman-demo-buildings (+https://github.com/geolonia/pointsman-demo-buildings)',
-    },
-    body: JSON.stringify(batch),
-  });
+  let res;
+  try {
+    res = await fetch(`${BROKER_URL}/ngsi-ld/v1/entityOperations/upsert`, {
+      signal: AbortSignal.timeout(60_000),
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'NGSILD-Tenant': TENANT,
+        'content-type': 'application/json',
+        link: `<${CORE_CONTEXT}>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"`,
+        // GeonicDB's firewall refuses requests without a User-Agent.
+        'user-agent': 'pointsman-demo-buildings (+https://github.com/geolonia/pointsman-demo-buildings)',
+      },
+      body: JSON.stringify(batch),
+    });
+  } catch (err) {
+    throw new Error(`batch at ${i}: ${err.message} (buildings before it are written; run again to finish)`);
+  }
   // 201: all created, 204: all updated, 207: some failed (the body lists them).
   if (res.status === 207) {
     const body = await res.json();

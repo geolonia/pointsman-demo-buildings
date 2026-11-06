@@ -55,12 +55,19 @@ describe('an entity as a feature for the page', () => {
   it('round-trips, with the era and whether it is wood', () => {
     const f = toFeature(toEntity(feature()))!;
     expect(f.id).toBe(entityId('01100-bldg-596589'));
-    expect(f.properties).toMatchObject({ yearOfConstruction: 1981, era: 'before-1981', structure: '601', wood: true, usage: '411', storeys: 2, height: 8.3, flood: null, landslide: [] });
+    expect(f.properties).toMatchObject({ yearOfConstruction: 1981, era: 'before-1981', structure: '601', usage: '411', storeys: 2, height: 8.3, flood: null, landslide: [] });
   });
 
   it('shows unknown values as null', () => {
     const f = toFeature(toEntity(feature({ yearOfConstruction: null, buildingStructureType: null, usage: null, storeysAboveGround: null })))!;
-    expect(f.properties).toMatchObject({ yearOfConstruction: null, era: 'unknown', structure: null, wood: null, usage: null, storeys: null });
+    expect(f.properties).toMatchObject({ yearOfConstruction: null, era: 'unknown', structure: null, usage: null, storeys: null });
+  });
+
+  it('drops a flood value the page could not format, and an unknown scale', () => {
+    const e = toEntity(feature({ flood: { rank: 1, depth: 0.4, river: null, scale: null } }));
+    expect(e.riverFloodRisk).toEqual({ type: 'Property', value: { rank: 1, depth: 0.4 } });
+    const broken = { ...e, riverFloodRisk: { type: 'Property', value: { rank: 'x', depth: 1 } } };
+    expect(toFeature(broken)!.properties.flood).toBeNull();
   });
 
   it('skips an entity without a footprint', () => {

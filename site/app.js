@@ -18,8 +18,7 @@
       building: 'Building', year: 'Year built', structure: 'Structure', usage: 'Use', storeys: 'Storeys above ground', height: 'Height',
       flood: 'River flood (worst case)', landslide: 'Landslide zone', unknown: 'not known', none: 'none', id: 'PLATEAU id',
       unknownNote: 'Some values are not in the city model. In a request, Pointsman asks for them instead of guessing.',
-      floodValue: '{depth} m ({rank})', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
-      wood: ' (wood)',
+      floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
     },
     ja: {
       demo: '建物デモ', devTitle: '開発者向け', title: 'すべての建物を、同じ基準で',
@@ -34,8 +33,7 @@
       building: '建物', year: '建築年', structure: '構造', usage: '用途', storeys: '地上階数', height: '高さ',
       flood: '洪水（想定最大規模）', landslide: '土砂災害警戒区域', unknown: '不明', none: 'なし', id: 'PLATEAU ID',
       unknownNote: '3D都市モデルにない値があります。依頼では、Pointsman は推測せずにそれを尋ねます。',
-      floodValue: '{depth} m（{rank}）', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
-      wood: '（木造）',
+      floodValue: '{depth} m（{rank}）', noMap: '地図を読み込めませんでした。', devFailed: 'データ基盤から応答がありませんでした。', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
     },
   };
   // Names of PLATEAU's codes (as in src/buildings.ts).
@@ -48,7 +46,6 @@
     '604': ['鉄骨造', 'Steel'], '605': ['軽量鉄骨造', 'Light steel'], '606': ['レンガ造・コンクリートブロック造・石造', 'Brick, block or stone'],
     '610': ['非木造', 'Not wood'], '612': ['簡易耐火', 'Simple fire-resistant'], '613': ['耐火', 'Fire-resistant'] };
   var FLOOD_RANK = { 1: ['0.5m未満', 'below 0.5 m'], 2: ['0.5m以上3m未満', '0.5 to 3 m'], 3: ['3m以上5m未満', '3 to 5 m'], 4: ['5m以上10m未満', '5 to 10 m'], 5: ['10m以上20m未満', '10 to 20 m'], 6: ['20m以上', '20 m or more'] };
-  var ERA_CLASS = { 'before-1981': 'era-old', '1981-2000': 'era-mid', 'from-2000': 'era-new', unknown: 'era-unknown' };
   var ERA_COLOUR = { 'before-1981': '#C8463A', '1981-2000': '#C98A1B', 'from-2000': '#2E9E6B', unknown: '#8f8a82' };
 
   // The visitor's choice, else the browser's language.
@@ -86,7 +83,7 @@
     var s = document.getElementById('status');
     if (data === null) s.textContent = t('loading');
     else if (data === false) s.textContent = t('failed');
-    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length });
+    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (map ? '' : ' ' + t('noMap'));
   }
 
   function value(v) { return v === null || v === undefined ? el('span', { class: 'unknown' }, [t('unknown')]) : String(v); }
@@ -117,25 +114,25 @@
       p.yearOfConstruction === 1981 ? el('p', { class: 'note' }, [t('eraNote1981')]) : null,
       missing ? el('p', { class: 'muted' }, [t('unknownNote')]) : null,
     ].filter(Boolean));
-    dev.textContent = selected.entity ? 'GET /ngsi-ld/v1' + selected.query + '\n\n' + JSON.stringify(selected.entity, null, 2) : '…';
+    dev.textContent = selected.entity ? 'GET /ngsi-ld/v1' + selected.query + '\n\n' + JSON.stringify(selected.entity, null, 2) : selected.failed ? t('devFailed') : '…';
   }
 
   function select(id) {
     var f = data && data.features.find(function (x) { return x.id === id; });
     if (!f) return;
-    selected = { feature: f, entity: null, query: '' };
+    selected = { feature: f, entity: null, query: '', failed: false };
     if (map) map.setFilter('selected', ['==', ['get', 'id'], id]);
     showBuilding();
-    fetch('/api/buildings/' + encodeURIComponent(id)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      if (!j || !selected || selected.feature.id !== id) return;
-      selected.entity = j.entity;
-      selected.query = j.query;
+    fetch('/api/buildings/' + encodeURIComponent(id)).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j) {
+      if (!selected || selected.feature.id !== id) return;
+      if (!j) selected.failed = true;
+      else { selected.entity = j.entity; selected.query = j.query; }
       showBuilding();
-    }).catch(function () {});
+    });
   }
 
   // The base map: GSI's optimised vector tiles in quiet colours of the theme,
-  // so the buildings stand out (as in the roads demo).
+  // so the buildings stand out.
   var PALETTE = {
     light: { bg: '#F2EEE6', water: '#D9E1E6', road: '#FFFFFF', label: '#7A756D', halo: '#F2EEE6', outline: '#171717' },
     dark: { bg: '#171717', water: '#1E2830', road: '#2A2A2A', label: '#9A958C', halo: '#171717', outline: '#F5F2EC' },
@@ -223,10 +220,11 @@
   });
   try { setDev(localStorage.getItem('dev') === '1'); } catch (e) {}
 
+  // The area, also when /api/config does not answer (as in src/index.ts).
+  var AREA = [141.4370, 42.9745, 141.4630, 42.9840];
   applyLang();
-  fetch('/api/config').then(function (r) { return r.json(); }).then(function (config) {
-    document.getElementById('credit').textContent = config.source;
-    map = makeMap(config.area);
+  fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (config) {
+    map = makeMap(config && Array.isArray(config.area) ? config.area : AREA);
     return fetch('/api/buildings');
   }).then(function (r) {
     if (!r.ok) throw new Error(String(r.status));

@@ -28,11 +28,14 @@ type Call = { url: string; headers: Headers };
 let calls: Call[] = [];
 let stored: Entity[] = [];
 let status = 200;
+/** NGSILD-Results-Count the fake broker sends with count=true; null: none. */
+let count: number | null = null;
 
 beforeEach(async () => {
   calls = [];
   stored = [building(1), building(2, null)];
   status = 200;
+  count = null;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init);
     calls.push({ url: req.url, headers: req.headers });
@@ -41,7 +44,8 @@ beforeEach(async () => {
     if (url.pathname === '/ngsi-ld/v1/entities') {
       const offset = Number(url.searchParams.get('offset') ?? 0);
       const limit = Number(url.searchParams.get('limit') ?? 20);
-      return Response.json(stored.slice(offset, offset + limit));
+      const headers: Record<string, string> = url.searchParams.get('count') === 'true' && count !== null ? { 'NGSILD-Results-Count': String(count) } : {};
+      return Response.json(stored.slice(offset, offset + limit), { headers });
     }
     const one = stored.find((e) => url.pathname === `/ngsi-ld/v1/entities/${encodeURIComponent(e.id)}`);
     return one ? Response.json(one) : new Response(null, { status: 404 });
@@ -51,6 +55,13 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('GET /api/config', () => {
+  it('answers also when the broker is not set up, so the page has its map', async () => {
+    const res = await demo.fetch(new Request('https://buildings.test/api/config'), { ...env, BROKER_API_KEY: '' }, ctx);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { area: number[] }).area).toEqual(AREA);
+    expect(calls).toHaveLength(0);
+  });
+
   it('gives the area and the data credit', async () => {
     const res = await get('/api/config');
     expect(res.status).toBe(200);
@@ -85,6 +96,33 @@ describe('GET /api/buildings', () => {
     const res = await get('/api/buildings');
     expect(res.headers.get('cache-control')).toBe('public, max-age=600');
     expect(calls).toHaveLength(2);
+  });
+
+  it('keeps nothing when the broker counted more than it gave, or nothing at all', async () => {
+    count = 5; // two stored: a capped or changing answer
+    const partial = await get('/api/buildings');
+    expect(((await partial.json()) as { complete: boolean }).complete).toBe(false);
+    expect(partial.headers.get('cache-control')).toBe('no-store');
+    stored = [];
+    count = 0;
+    const empty = await get('/api/buildings');
+    expect(empty.headers.get('cache-control')).toBe('no-store');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await caches.default.match(new Request('https://buildings.test/api/buildings'))).toBeUndefined();
+  });
+
+  it('is complete when it read as many as the broker counted', async () => {
+    count = 2;
+    const res = await get('/api/buildings');
+    expect(((await res.json()) as { complete: boolean }).complete).toBe(true);
+    expect(res.headers.get('cache-control')).toBe('public, max-age=600');
+    expect(new URL(calls[0]!.url).searchParams.get('count')).toBe('true');
+  });
+
+  it('fails without a key, before asking the broker', async () => {
+    const res = await demo.fetch(new Request('https://buildings.test/api/buildings'), { ...env, BROKER_API_KEY: '' }, ctx);
+    expect(res.status).toBe(502);
+    expect(calls).toHaveLength(0);
   });
 
   it('says the data platform did not answer, without its body', async () => {

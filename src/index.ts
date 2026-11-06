@@ -14,6 +14,8 @@ import { checkEnv, type Env } from './env';
 /** The demo area: Kiyota-ku, Sapporo, around Satozuka (PLATEAU meshes 64413375 and 64413376). */
 export const AREA: Bbox = [141.4370, 42.9745, 141.4630, 42.9840];
 const CACHE_S = 600;
+/** One building: a short cache, so repeated clicks do not reach the broker. */
+const ONE_CACHE_S = 60;
 const BUILDING_ID = /^urn:ngsi-ld:Building:plateau:\d{5}-bldg-\d+$/;
 
 /** Headers on every answer of the Worker (the page's files get theirs from site/_headers). */
@@ -33,13 +35,16 @@ async function buildings(env: Env, request: Request, ctx: ExecutionContext): Pro
   if (cached) return cached;
   const { query, buildings, complete } = await new Broker(env).listBuildings(AREA);
   const features = buildings.map(toFeature).filter((f) => f !== null);
+  // Only a complete, non-empty answer is kept, here and in browsers: a partial
+  // or empty one (the broker capped, or a load is running) would hide
+  // buildings for ten minutes.
+  const keep = complete && features.length > 0;
   const res = json(
-    { type: 'FeatureCollection', features, query, complete, source: PLATEAU_SOURCE },
+    { type: 'FeatureCollection', features, query, complete, skipped: buildings.length - features.length, source: PLATEAU_SOURCE },
     200,
-    { 'cache-control': `public, max-age=${CACHE_S}` },
+    keep ? { 'cache-control': `public, max-age=${CACHE_S}` } : {},
   );
-  // Only a complete answer is kept: a partial one would hide buildings for ten minutes.
-  if (complete) ctx.waitUntil(caches.default.put(key, res.clone()));
+  if (keep) ctx.waitUntil(caches.default.put(key, res.clone()));
   return res;
 }
 
@@ -47,7 +52,7 @@ async function building(env: Env, id: string): Promise<Response> {
   if (!BUILDING_ID.test(id)) return json({ error: 'not a building id' }, 400);
   const { query, entity } = await new Broker(env).getBuilding(id);
   if (!entity) return json({ error: 'not found' }, 404);
-  return json({ entity, query, feature: toFeature(entity) });
+  return json({ entity, query, feature: toFeature(entity) }, 200, { 'cache-control': `public, max-age=${ONE_CACHE_S}` });
 }
 
 export default {
@@ -55,9 +60,10 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     if (request.method !== 'GET') return json({ error: 'method not allowed' }, 405, { allow: 'GET' });
+    // Static: answered also when the broker is not set up, so the page still has its map.
+    if (url.pathname === '/api/config') return json({ area: AREA, source: PLATEAU_SOURCE }, 200, { 'cache-control': `public, max-age=${CACHE_S}` });
     try {
       checkEnv(env);
-      if (url.pathname === '/api/config') return json({ area: AREA, source: PLATEAU_SOURCE });
       if (url.pathname === '/api/buildings') return await buildings(env, request, ctx);
       const m = url.pathname.match(/^\/api\/buildings\/([^/]+)$/);
       if (m) {
