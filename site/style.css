@@ -103,3 +103,29 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
   #map { height: 55vh; }
 }
 @media (max-width: 420px) { nav { gap: 6px; } .chip { font-size: 13px; padding: 0 10px; } }
+
+.btn { font: 500 15px var(--sans); color: var(--bg); background: var(--fg); border: 1px solid var(--fg); border-radius: 999px; padding: 0 18px; min-height: 44px; cursor: pointer; }
+.btn.ghost { color: var(--fg); background: transparent; border-color: var(--line); }
+.btn:hover { opacity: 0.9; }
+.card .btn { margin-top: 12px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.actions .btn { margin-top: 0; }
+
+.steps { list-style: none; display: flex; gap: 6px; flex-wrap: wrap; padding: 0; margin: 0 0 14px; counter-reset: step; font-size: 13px; }
+.steps li { counter-increment: step; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel-2); font: 500 12px var(--mono); }
+.steps li.current { color: var(--fg); border-color: var(--fg); }
+.steps li.current::before { background: var(--fg); color: var(--bg); }
+.steps li.done::before { background: var(--green); color: #fff; }
+
+.field { display: grid; gap: 6px; margin: 0 0 14px; border: 0; padding: 0; }
+.field label, .field legend { font-weight: 500; }
+.field input[type="number"] { font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; max-width: 12rem; }
+.field .choice { font-weight: 400; display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; min-height: 36px; }
+.tag { font: 12px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+
+.verdict { font-size: 1.25rem; font-weight: 700; margin: 0 0 8px; padding: 10px 14px; border-radius: 8px; border-left: 5px solid var(--grey); background: var(--panel-2); }
+.verdict.v-high { border-left-color: var(--red); }
+.verdict.v-medium { border-left-color: var(--amber); }
+.verdict.v-low { border-left-color: var(--green); }
+.verdict.v-more-evidence { border-left-color: var(--grey); }

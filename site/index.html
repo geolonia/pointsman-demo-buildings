@@ -49,11 +49,17 @@
       <p class="muted" data-i18n="pick">Pick a building on the map.</p>
     </section>
 
-    <section class="card next">
-      <span class="kicker" data-i18n="nextKicker">Coming next</span>
-      <strong data-i18n="nextTitle">Send a request, step by step</strong>
-      <p data-i18n="nextText">Pick the building, say what happened, add photos, check and send. Pointsman then gives a priority and a team, with the reason, and the request waits for a person if anything is unclear.</p>
+    <section class="card flow" id="flow" hidden aria-labelledby="flow-title">
+      <ol class="steps" aria-label="Steps">
+        <li data-step="1"><span data-i18n="s1">Building</span></li>
+        <li data-step="2"><span data-i18n="s2">Details</span></li>
+        <li data-step="3"><span data-i18n="s3">Check and send</span></li>
+        <li data-step="4"><span data-i18n="s4">Result</span></li>
+      </ol>
+      <h2 id="flow-title"></h2>
+      <div id="flow-body"></div>
     </section>
+
   </main>
 
   <aside class="dev" id="dev" hidden aria-labelledby="dev-title">
@@ -63,6 +69,10 @@
     <pre id="dev-list"></pre>
     <h3 data-i18n="devEntity">The selected building</h3>
     <pre id="dev-entity" class="muted"></pre>
+    <h3 data-i18n="devRequest">The check request</h3>
+    <pre id="dev-request" class="muted"></pre>
+    <h3 data-i18n="devDecision">Pointsman's decision (Decision entity)</h3>
+    <pre id="dev-decision" class="muted"></pre>
     <p class="links">
       <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
       <a href="https://github.com/geolonia/pointsman" data-i18n="lPointsman">Pointsman</a>
