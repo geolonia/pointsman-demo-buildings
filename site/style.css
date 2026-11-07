@@ -72,7 +72,8 @@ main { padding: 24px; display: grid; gap: 16px; align-content: start; min-width:
 
 .map-wrap { position: relative; }
 #map { height: 60vh; min-height: 360px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.legend { position: absolute; left: 10px; bottom: 10px; display: grid; gap: 4px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+/* A MapLibre control (bottom-left): MapLibre places it inside the map, beside the other controls. */
+.legend { display: grid; gap: 4px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .legend > span { display: flex; align-items: center; gap: 8px; }
 .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
 .sw.era-old { background: var(--red); }

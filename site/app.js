@@ -413,6 +413,19 @@
     m.on('mouseleave', 'buildings', function () { m.getCanvas().style.cursor = ''; });
   }
 
+  /**
+   * The legend as a MapLibre control: the element from the page (its texts
+   * follow the language, its colours the theme), moved into the map's
+   * bottom-left corner. Without a map it stays hidden.
+   */
+  function legendControl() {
+    var node = document.getElementById('legend');
+    return {
+      onAdd: function () { node.classList.add('maplibregl-ctrl'); node.hidden = false; return node; },
+      onRemove: function () { node.hidden = true; node.remove(); },
+    };
+  }
+
   function makeMap(area) {
     if (!window.maplibregl) return null;
     if (window.pmtiles) maplibregl.addProtocol('pmtiles', new pmtiles.Protocol().tile);
@@ -425,6 +438,7 @@
       return null;
     }
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    m.addControl(legendControl(), 'bottom-left');
     // Fit again once the map has its final size (the first fit can come before the layout).
     m.on('load', function () {
       m.resize();
