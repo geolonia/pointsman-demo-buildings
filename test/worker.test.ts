@@ -140,6 +140,15 @@ describe('GET /api/buildings', () => {
     expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
   });
 
+  it('is not complete when a short first page repeats a building, with or without a count', async () => {
+    stored = [building(1), building(1)];
+    count = 2;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+    count = null;
+    await caches.default.delete(new Request('https://buildings.test/api/buildings'));
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+  });
+
   it('reads at most 10,000 buildings when the broker counts more', async () => {
     stored = Array.from({ length: 1000 }, (_, i) => building(i + 1));
     count = 12000;

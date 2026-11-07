@@ -117,7 +117,9 @@ export class Broker {
     const first = await read(0, true);
     const buildings = [...first.batch];
     const total = first.total;
-    if (first.batch.length < page) return { query, buildings, complete: total === null || buildings.length === total };
+    // Pages of an unordered query can overlap: complete only when every building came once.
+    const once = () => new Set(buildings.map((b) => b.id)).size === buildings.length;
+    if (first.batch.length < page) return { query, buildings, complete: (total === null || buildings.length === total) && once() };
     if (total !== null) {
       // Known size: the other pages a few at a time (not a burst the broker
       // may refuse), at most `max` buildings in all.
@@ -127,15 +129,13 @@ export class Broker {
         const pages = await Promise.all(offsets.slice(i, i + PARALLEL_PAGES).map((o) => read(o)));
         for (const { batch } of pages) buildings.push(...batch);
       }
-      // Pages of an unordered query can overlap: complete only when every
-      // counted building came once.
-      return { query, buildings, complete: buildings.length === total && new Set(buildings.map((b) => b.id)).size === total };
+      return { query, buildings, complete: buildings.length === total && once() };
     }
     // No count: page by page until a short page.
     for (let offset = page; offset < max; offset += page) {
       const { batch } = await read(offset);
       buildings.push(...batch);
-      if (batch.length < page) return { query, buildings, complete: true };
+      if (batch.length < page) return { query, buildings, complete: once() };
     }
     return { query, buildings, complete: false };
   }
