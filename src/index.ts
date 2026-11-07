@@ -13,8 +13,9 @@
 import { type BridgeConfig, type BridgeMessage, decisionEntityId, handleQueueBatch, handleRequest, type Route, taskEntityId } from '../engine/packages/fiware/src/bridge';
 import { PLATEAU_SOURCE, toFeature } from './buildings';
 import { type Bbox, Broker, BrokerError } from './broker';
-import { bridgeReady, checkEnv, concernsReady, type Env, trimUrl } from './env';
+import { bridgeReady, checkEnv, concernsReady, type Env, photosReady, trimUrl } from './env';
 import { fetchWithAgent } from './http';
+import { deletePhotos, inlinePhotos, storePhotos } from './photos';
 import { CONCERN_INPUTS, isRequestId, parseAnswers, parseConcern, REQUEST_INPUTS, REQUEST_TYPE, RequestError, toRequestEntity } from './requests';
 
 /** The demo area: Kiyota-ku, Sapporo, around Satozuka (PLATEAU meshes 64413375 and 64413376). */
@@ -25,8 +26,8 @@ const ONE_CACHE_S = 60;
 const BUILDING_ID = /^urn:ngsi-ld:Building:plateau:\d{5}-bldg-\d+$/;
 /** Demo requests live this long; the hourly cleanup deletes them with their Decision and Task entities. */
 const KEEP_MS = 24 * 3600_000;
-/** A request with a description of up to 1,000 characters (3 bytes each in Japanese) fits. */
-const MAX_BODY = 8192;
+/** A request with a description and up to 3 photos (at most 700,000 characters each) fits. */
+const MAX_BODY = 2_200_000;
 /** A request without a result after this long is sent to the bridge again (hourly, at most MAX_RETRIES a run). */
 const RETRY_AFTER_MS = 2 * 60_000;
 /**
@@ -78,7 +79,8 @@ export function bridgeConfig(env: Env): BridgeConfig {
     notifySecret: env.NOTIFY_SECRET ?? '',
     pointsman: { url: trimUrl(env.POINTSMAN_URL), token: env.POINTSMAN_TOKEN ?? '' },
     broker: { url: trimUrl(env.BROKER_URL), apiKey: env.BROKER_API_KEY, tenant: env.BROKER_TENANT },
-    fetch: fetchWithAgent,
+    // Scene B's photos are in R2: the call to Pointsman gets them in place of their keys.
+    fetch: photosReady(env) ? inlinePhotos(fetchWithAgent, env, CONCERN_ROUTE.profile) : fetchWithAgent,
   };
 }
 
@@ -176,6 +178,7 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     const answers = parseAnswers(body.answers);
     const concern = parseConcern(body.concern);
     if (concern && !concernsReady(env)) return json({ error: 'descriptions are not read yet' }, 503);
+    if (concern?.photos && !photosReady(env)) return json({ error: 'photos are not read yet' }, 503);
     const broker = new Broker(env);
     // All demo requests of the last day (older ones are deleted): refused
     // when there are as many as the daily limit, and when the count is unknown.
@@ -187,8 +190,16 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     if (current === null || current >= dailyLimit(env)) return json({ error: 'the demo has had enough requests for today, try again tomorrow' }, 429);
     const { entity: building } = await broker.getBuilding(body.building);
     if (!building) return json({ error: 'building not found' }, 404);
-    const entity = toRequestEntity(building, answers, crypto.randomUUID(), lang, concern);
-    await broker.create(entity);
+    const uuid = crypto.randomUUID();
+    // Photos to R2 first; the entity carries their keys (GeonicDB drops large change events).
+    const keys = concern?.photos ? await storePhotos(env.PHOTOS_BUCKET!, uuid, concern.photos) : undefined;
+    const entity = toRequestEntity(building, answers, uuid, lang, concern && (keys ? { ...concern, photos: keys } : concern));
+    try {
+      await broker.create(entity);
+    } catch (err) {
+      if (keys) await deletePhotos(env.PHOTOS_BUCKET!, uuid).catch(() => {});
+      throw err;
+    }
     return json({ id: entity.id }, 201);
   } catch (err) {
     if (err instanceof RequestError) return json({ error: err.message }, 400);
@@ -244,6 +255,7 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
           if (typeof result?.decisionId?.value === 'string') await broker.delete(decisionEntityId(result.decisionId.value));
           if (typeof result?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, route.attribute, result.inputHash.value));
         }
+        if (env.PHOTOS_BUCKET) await deletePhotos(env.PHOTOS_BUCKET, e.id.slice(-36));
         await broker.delete(e.id);
         out.deleted += 1;
       } else if (now - created > RETRY_AFTER_MS && now - created < RETRY_UNTIL_MS && attempts < MAX_RETRIES && bridgeReady(env)
@@ -283,7 +295,7 @@ export default {
     if (request.method !== 'GET' && !posting) return json({ error: 'method not allowed' }, 405, { allow: 'GET' });
     // Static: answered also when the broker is not set up, so the page still has its map.
     if (url.pathname === '/api/config') {
-      return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env), concerns: concernsReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
+      return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env), concerns: concernsReady(env), photos: photosReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
     }
     try {
       checkEnv(env);
