@@ -17,6 +17,7 @@ export interface Env {
   ASSETS: Fetcher;
   /** Requests per visitor and minute. */
   REQUEST_LIMIT?: RateLimit;
+  ALL_REQUESTS_LIMIT?: RateLimit;
 }
 
 const isServiceUrl = (value: string) => {

@@ -140,11 +140,18 @@ afterEach(() => vi.restoreAllMocks());
 
 const worker = (path: string, init: RequestInit = {}, e: Env = env) => demo.fetch(new Request(`${PAGE}${path}`, init), e, ctx);
 // Without the rate limiter (5 a minute per visitor): many tests post; one tests the limit itself.
-const { REQUEST_LIMIT: _limit, ...unlimited } = env;
+const { REQUEST_LIMIT: _limit, ALL_REQUESTS_LIMIT: _all, ...unlimited } = env;
 const post = (body: unknown, headers: Record<string, string> = {}, e: Env = unlimited as Env) =>
   worker('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json', origin: PAGE, ...headers }, body: JSON.stringify(body) }, e);
 
 describe('POST /api/requests', () => {
+  it('refuses when all visitors together have sent too many in the last minute', async () => {
+    const full = { ...unlimited, ALL_REQUESTS_LIMIT: { limit: async ({ key }: { key: string }) => ({ success: key !== 'all' }) } } as unknown as Env;
+    const res = await post({ building: building().id }, {}, full);
+    expect(res.status).toBe(429);
+    expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+
   it('creates a BuildingCheckRequest in the broker from the building and the answers', async () => {
     const res = await post({ building: building().id, answers: { yearOfConstruction: 1975 }, lang: 'ja' });
     expect(res.status).toBe(201);

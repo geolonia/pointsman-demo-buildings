@@ -27,7 +27,12 @@
     "run_worker_first": ["/api/*", "/notify"]
   },
   // Requests per visitor (IP) and minute.
-  "ratelimits": [{ "name": "REQUEST_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }],
+  "ratelimits": [
+    // Per visitor, and for all visitors together (one key): the second keeps
+    // a burst small, so the daily limit cannot be passed by much.
+    { "name": "REQUEST_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "ALL_REQUESTS_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
+  ],
   // Hourly: delete requests older than a day, with their Decision and Task entities.
   "triggers": { "crons": ["23 * * * *"] }
 }
