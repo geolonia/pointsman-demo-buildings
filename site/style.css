@@ -140,3 +140,7 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .verdict.v-more-evidence { border-left-color: var(--grey); }
 .field-error { margin: 4px 0 0; font-size: 14px; color: #C8463A; }
 .field input[aria-invalid="true"] { border-color: #C8463A; }
+
+.field textarea { font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; max-width: 40rem; box-sizing: border-box; resize: vertical; }
+.verdict.v-now { border-left-color: var(--red); border-left-width: 8px; }
+.verdict.v-person { border-left-color: var(--amber); }

@@ -36,7 +36,16 @@
       why: 'Why', r0: 'The year built or the structure is not known.', r1: 'Wooden, and built under the building code before June 1981 (or in 1981).', r2: 'Built under the building code before June 1981 (or in 1981).',
       r3: 'Wooden and built before the 2000 code, on soft ground or where strong shaking is more likely.', r4: 'In a river flood zone of 3 m or deeper.', r5: 'Wooden and built before the 2000 code, but the ground or the chance of strong shaking here could not be read.',
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later; staff can also check it.', rd: 'None of the rules for an earlier check applied.',
-      devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)',
+      devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
+      worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers.',
+      afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
+      tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
+      checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
+      ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
+      cn_now: 'Staff are asked to act today. If anyone is in danger, call 119 or leave the building now.', cn_high: 'Staff check this soon and confirm the priority.', cn_medium: 'A check is worth planning.', cn_low: 'Nothing in the description points to an early check.', cn_person: 'The AI was not sure, so a person reads the description before anything else.', 'cn_more-evidence': 'Say what you see, where on the building and since when, and send it again.',
+      c0: 'The description does not seem to be about a building.', c1: 'The words point to danger to people now, or to a part that has collapsed.', c2: 'The words point to serious damage, or to parts that lean, sink or may fall.', c3: 'Cracks in load-bearing parts, in a building whose check is already high.', c4: 'Cracks in load-bearing parts, or water or fire damage.', c5: 'The AI is not sure what the damage is, or sees some sign of danger.', c6: 'The description does not say clearly what is damaged.', c7: 'Only surface damage, but the building\u2019s check is high anyway.', cd: 'Only small surface damage is described.',
+      d_partial_collapse: 'a part has collapsed', d_tilt_or_sinking: 'leaning or sinking', d_falling_parts: 'parts may fall', d_structural_cracks: 'cracks in load-bearing parts', d_foundation_or_ground: 'foundation or ground', d_water_or_fire: 'water or fire', d_cosmetic: 'surface damage only', d_nothing_clear: 'nothing clear',
+      sev0: 'none', sev1: 'minor', sev2: 'moderate', sev3: 'severe', sev4: 'collapse',
       floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', partial: 'Not all buildings could be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
     },
     ja: {
@@ -69,7 +78,16 @@
       why: '理由', r0: '建築年か構造がわかりません。', r1: '木造で、1981年6月より前の基準（または1981年）で建てられています。', r2: '1981年6月より前の基準（または1981年）で建てられています。',
       r3: '2000年の基準より前の木造で、揺れやすい地盤か、強い揺れの起きやすい場所にあります。', r4: '想定最大規模で3 m以上浸水する区域にあります。', r5: '2000年の基準より前の木造ですが、この場所の地盤か強い揺れの起きやすさを読み取れませんでした。',
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。職員が確認することもできます。', rd: '早めの確認につながる条件には当てはまりませんでした。',
-      devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）',
+      devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
+      worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。',
+      afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
+      tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
+      checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
+      ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
+      cn_now: '職員に今日中の対応を求めます。危険な人がいるときは、119 番に電話するか、すぐに建物から離れてください。', cn_high: '職員が早めに確認し、優先度を確定します。', cn_medium: '確認を計画する価値があります。', cn_low: '説明からは、早めの確認が必要な理由は見つかりませんでした。', cn_person: 'AI が判断しきれなかったため、まず人が説明を読みます。', 'cn_more-evidence': '何が見えるか、建物のどこか、いつからかを書いて、もう一度送ってください。',
+      c0: '説明が建物についてのものではないようです。', c1: '今、人に危険がある、または一部が崩れたことを示す言葉があります。', c2: '深刻な被害、または傾き・沈み・落下のおそれを示す言葉があります。', c3: '構造部分のひびで、建物の確認の優先度もすでに高です。', c4: '構造部分のひび、または水や火による被害です。', c5: 'AI が被害の種類を判断しきれないか、危険のきざしを読み取りました。', c6: '何が壊れているかが説明からはっきりしません。', c7: '表面の被害だけですが、建物の確認の優先度がもともと高です。', cd: '表面の小さな被害だけが説明されています。',
+      d_partial_collapse: '一部の崩壊', d_tilt_or_sinking: '傾き・沈下', d_falling_parts: '落下のおそれ', d_structural_cracks: '構造部分のひび', d_foundation_or_ground: '基礎・地盤', d_water_or_fire: '水・火', d_cosmetic: '表面だけ', d_nothing_clear: 'はっきりしない',
+      sev0: 'なし', sev1: '軽い', sev2: '中程度', sev3: '深刻', sev4: '崩壊',
       floodValue: '{depth} m（{rank}）', noMap: '地図を読み込めませんでした。', partial: 'すべての建物は読み込めませんでした。', devFailed: 'データ基盤から応答がありませんでした。', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
     },
   };
@@ -100,11 +118,16 @@
   var map = null;
   /** Whether the Worker accepts check requests (/api/config `checks`). */
   var checksOpen = false;
+  /** Scene B: the person's own words, read by AI (/api/config concerns). */
+  var concernsOpen = false;
+  var MAX_WORDS = 1000;
   /** The request flow: step 1 to 4, the answers, the sent request and its result. */
   var flow = null;
 
   function t(key, vars) {
     var s = (T[lang] && T[lang][key]) || T.en[key] || key;
+    // A value the page has no words for (a changed profile): the value itself, without the key's prefix.
+    if (s === key && /^(ca_|cn_|d_|sev)/.test(key)) s = key.replace(/^(ca_|cn_|d_|sev)/, '');
     Object.keys(vars || {}).forEach(function (k) { s = s.replace('{' + k + '}', vars[k]); });
     return s;
   }
@@ -188,7 +211,7 @@
   function startFlow() {
     if (!selected) return;
     var p = selected.feature.properties;
-    flow = { step: 2, building: selected.feature, answers: {}, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
+    flow = { step: 2, building: selected.feature, answers: {}, concern: { description: '' }, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
     showFlow();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -211,6 +234,24 @@
     input.addEventListener('input', check);
     input.addEventListener('change', check);
     return el('div', { class: 'field' }, [el('label', { for: 'q-' + key }, [label]), input, el('span', { class: 'muted' }, [' ' + t('dontKnow') + ': ' + t('emptyIsUnknown')]), error]);
+  }
+
+  /** Scene B: what worries the person, in their own words, and whether it started after a disaster. */
+  function concernFields() {
+    var area = el('textarea', { id: 'q-worry', rows: '5', maxlength: String(MAX_WORDS), 'aria-describedby': 'q-worry-hint q-worry-count' });
+    area.value = flow.concern.description;
+    var count = el('p', { class: 'muted', id: 'q-worry-count' }, [t('chars', { n: area.value.length, max: MAX_WORDS })]);
+    area.addEventListener('input', function () { flow.concern.description = area.value; count.textContent = t('chars', { n: area.value.length, max: MAX_WORDS }); });
+    var words = el('div', { class: 'field' }, [el('label', { for: 'q-worry' }, [t('worryQ')]), el('p', { class: 'muted', id: 'q-worry-hint' }, [t('worryHint')]), area, count]);
+    var after = el('fieldset', { class: 'field' }, [el('legend', {}, [t('afterQ')])]);
+    [['yes', t('yes')], ['no', t('no')], ['unsure', t('unsure')]].forEach(function (o) {
+      var id = 'q-after-' + o[0];
+      var input = el('input', { type: 'radio', name: 'after', id: id, value: o[0] });
+      if (flow.concern.afterDisaster === o[0]) input.checked = true;
+      input.addEventListener('change', function () { flow.concern.afterDisaster = o[0]; });
+      after.append(el('label', { for: id, class: 'choice' }, [input, ' ' + o[1]]));
+    });
+    return [words, after];
   }
 
   function woodField() {
@@ -236,7 +277,9 @@
       row(t('year'), flow.known.year, String(p.yearOfConstruction), flow.answers.yearOfConstruction),
       row(t('structure'), flow.known.structure, name(STRUCTURE, p.structure), flow.answers.wood === undefined ? undefined : flow.answers.wood ? t('wood') : t('notWood')),
       row(t('storeys'), flow.known.storeys, String(p.storeys), flow.answers.storeysAboveGround),
-    ];
+    ].concat(concernsOpen && flow.concern.description.trim() ? [
+      [t('yourWords'), [flow.concern.description.trim(), ' ', origin(false)]],
+    ].concat(flow.concern.afterDisaster ? [[t('afterQ'), [t(flow.concern.afterDisaster === 'unsure' ? 'unsure' : flow.concern.afterDisaster), ' ', origin(false)]]] : []) : []);
   }
 
   function showFlow() {
@@ -252,11 +295,13 @@
     var body = document.getElementById('flow-body');
     if (flow.step === 2) {
       title.textContent = t('t2');
-      var fields = [];
+      // Scene B first: the story is the person's worry; the building's data fills in.
+      var fields = concernsOpen ? concernFields() : [];
       if (!flow.known.year) fields.push(numberField('yearOfConstruction', t('yearQ'), 1868, THIS_YEAR));
       if (!flow.known.structure) fields.push(woodField());
       if (!flow.known.storeys) fields.push(numberField('storeysAboveGround', t('storeysQ'), 1, 99));
-      body.replaceChildren.apply(body, (fields.length ? fields : [el('p', {}, [t('allKnown')])]).concat([
+      if (!concernsOpen && fields.length === 0) fields.push(el('p', {}, [t('allKnown')]));
+      body.replaceChildren.apply(body, fields.concat([
         el('div', { class: 'actions' }, [button(t('next'), function () { var bad = body.querySelector('[aria-invalid="true"]'); if (bad) { bad.focus(); return; } stepTo(3); }, 'btn')]),
       ]));
     } else if (flow.step === 3) {
@@ -265,7 +310,7 @@
       summaryRows().forEach(function (r) { dl.append(el('dt', {}, [r[0]]), el('dd', {}, r[1])); });
       body.replaceChildren(dl, el('p', { class: 'note' }, [t('sendNote')]), el('div', { class: 'actions' }, [button(t('back'), function () { stepTo(2); }), button(t('send'), send, 'btn')]));
     } else {
-      title.textContent = t('t4');
+      title.textContent = t(flow.withConcern ? 'tc' : 't4');
       body.replaceChildren.apply(body, resultView());
     }
   }
@@ -284,7 +329,11 @@
     f.step = 4;
     f.state = 'sending';
     showFlow();
-    fetch('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ building: f.building.id, answers: f.answers, lang: lang }) })
+    var words = concernsOpen ? f.concern.description.trim() : '';
+    f.withConcern = words !== '';
+    var payload = { building: f.building.id, answers: f.answers, lang: lang };
+    if (f.withConcern) payload.concern = f.concern.afterDisaster ? { description: words, afterDisaster: f.concern.afterDisaster } : { description: words };
+    fetch('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
       .then(function (r) {
         return r.json().catch(function () { return null; }).then(function (j) {
           if (!r.ok || !j || typeof j.id !== 'string') throw { key: sendError(r.ok ? 0 : r.status) };
@@ -316,8 +365,16 @@
       .then(function (res) {
         if (flow !== f || f.requestId !== id) return;
         var j = res.j;
-        if (j) { f.request = j.entity; f.decision = j.decision; f.query = j.query; showDev(); }
-        if (j && j.entity && j.entity.check && typeof j.entity.check.value === 'string') { f.state = 'done'; showFlow(); return; }
+        if (j) { f.request = j.entity; f.decision = j.decision; f.concernDecision = j.concernDecision; f.query = j.query; showDev(); }
+        // With a description, the result is the concern (it comes after the check).
+        var result = j && j.entity && (f.withConcern ? j.entity.concern : j.entity.check);
+        if (result && typeof result.value === 'string') { f.state = 'done'; showFlow(); return; }
+        // The check is there but the concern will not come (scene B was switched
+        // off) or is late (2 minutes): show the check, and say so.
+        var checked = j && j.entity && j.entity.check && typeof j.entity.check.value === 'string';
+        if (f.withConcern && checked && (j.concerns === false || Date.now() - f.sentAt > 2 * 60000)) {
+          f.withConcern = false; f.notRead = true; f.state = 'done'; showFlow(); return;
+        }
         if (res.status === 404 || res.status === 400) { f.state = 'failed'; f.error = 'e_lost'; showFlow(); return; }
         var waited = Date.now() - f.sentAt;
         if (waited > GIVE_UP_MS) { f.state = 'gaveUp'; showFlow(); return; }
@@ -339,18 +396,56 @@
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
     if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')])];
+    if (flow.withConcern) return concernView(again);
     var check = flow.request.check;
     var action = check.value;
     // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
     var rule = check.policyRule && /^[0-5]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
-    return [
+    return (flow.notRead ? [el('p', { class: 'note' }, [t('notRead')])] : []).concat([
       el('p', { class: 'verdict v-' + action }, [t('a_' + action)]),
       // Rule 5 asks again for the hazard data, not for papers.
       el('p', {}, [t(rule === 'r5' ? 'n_hazard' : 'n_' + action)]),
       el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
       el('p', { class: 'note' }, [t('care')]),
       again,
-    ];
+    ]);
+  }
+
+  /** The answers of a Decision entity as stored (full IRIs, a JSON property): by question name. */
+  function answersOf(decision) {
+    if (!decision) return {};
+    var key = Object.keys(decision).find(function (k) { return /answers$/.test(k); });
+    var a = key && decision[key];
+    var v = a && (a.json !== undefined ? a.json : a.value !== undefined ? a.value : a['@value']);
+    if (Array.isArray(v)) { var o = {}; v.forEach(function (x) { if (x && x.name) o[x.name] = x; }); return o; }
+    return v && typeof v === 'object' ? v : {};
+  }
+
+  /** Scene B: the urgency of the concern, why, what the AI read, and the building's check as context. */
+  function concernView(again) {
+    var c = flow.request.concern;
+    var action = c.value;
+    var rule = c.policyRule && /^[0-7]$/.test(String(c.policyRule.value)) ? 'c' + c.policyRule.value : 'cd';
+    var a = answersOf(flow.concernDecision);
+    var pct = function (x) { return typeof x === 'number' ? Math.round(x * 100) + ' %' : '?'; };
+    var read = [];
+    // `probability` is the probability of `value` (the bridge's Decision entity).
+    if (a.damage && typeof a.damage.value === 'string') read.push([t('aiDamage'), t('d_' + a.damage.value) + ' (' + pct(a.damage.probability) + ')']);
+    if (a.danger_now && typeof a.danger_now.value === 'boolean') read.push([t('aiDanger'), (a.danger_now.value ? t('yes') : t('no')) + ' (' + pct(a.danger_now.probability) + ')']);
+    if (a.severity && typeof a.severity.value === 'number') read.push([t('aiSeverity'), t('sev' + a.severity.value)]);
+    var dl = el('dl');
+    read.forEach(function (r) { dl.append(el('dt', {}, [r[0]]), el('dd', {}, [r[1]])); });
+    var check = flow.request.check;
+    return [
+      el('p', { class: 'verdict v-' + action }, [t('ca_' + action)]),
+      el('p', {}, [t('cn_' + action)]),
+      el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
+    ].concat(read.length ? [el('h3', {}, [t('aiRead')]), dl] : [], check && typeof check.value === 'string' ? [
+      el('p', { class: 'muted' }, [t('checkContext') + ': ' + t('a_' + check.value)]),
+    ] : [], [
+      el('p', { class: 'note' }, [t('care')]),
+      again,
+    ]);
   }
 
   function showDev() {
@@ -358,6 +453,8 @@
     var dec = document.getElementById('dev-decision');
     req.textContent = flow && flow.request ? 'GET /ngsi-ld/v1' + flow.query + '\n\n' + JSON.stringify(flow.request, null, 2) : '';
     dec.textContent = flow && flow.decision ? JSON.stringify(flow.decision, null, 2) : '';
+    var con = document.getElementById('dev-concern');
+    con.textContent = flow && flow.concernDecision ? JSON.stringify(flow.concernDecision, null, 2) : '';
   }
 
   function select(id) {
@@ -496,6 +593,7 @@
   applyLang();
   fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (config) {
     checksOpen = !!(config && config.checks);
+    concernsOpen = !!(config && config.concerns);
     showBuilding();
     map = makeMap(config && Array.isArray(config.area) ? config.area : AREA);
     return fetch('/api/buildings');
