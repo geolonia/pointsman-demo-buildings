@@ -26,6 +26,9 @@ const BUILDING_ID = /^urn:ngsi-ld:Building:plateau:\d{5}-bldg-\d+$/;
 /** Demo requests live this long; the hourly cleanup deletes them with their Decision and Task entities. */
 const KEEP_MS = 24 * 3600_000;
 const MAX_BODY = 4096;
+/** A request without a result after this long is sent to the bridge again (hourly, at most MAX_RETRIES a run). */
+const RETRY_AFTER_MS = 2 * 60_000;
+const MAX_RETRIES = 20;
 
 /** The check: Pointsman's profile in the private deployment config, rules only (no model). */
 export const ROUTE: Route = {
@@ -91,21 +94,43 @@ async function building(env: Env, id: string, request: Request, ctx: ExecutionCo
   return res;
 }
 
-/** Same origin as the page, or one listed in ALLOWED_ORIGINS. */
-function originAllowed(request: Request, env: Env): boolean {
-  const origin = request.headers.get('origin');
-  if (!origin) return false;
-  if (origin === new URL(request.url).origin) return true;
-  return (env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean).includes(origin);
+/**
+ * Only the page itself may send requests (a browser sends its origin). This
+ * stops other sites from sending requests in a visitor's name; scripts can
+ * set any origin, so the rate and daily limits do the rest.
+ */
+const sameOrigin = (request: Request) => request.headers.get('origin') === new URL(request.url).origin;
+
+/** The body as text, at most `max` bytes: refused by its length, or while it is read. */
+async function boundedText(request: Request, max: number): Promise<string | null> {
+  const declared = Number(request.headers.get('content-length') ?? NaN);
+  if (Number.isFinite(declared) && declared > max) return null;
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel();
+      return null;
+    }
+    parts.push(value);
+  }
+  const all = new Uint8Array(size);
+  parts.reduce((at, p) => (all.set(p, at), at + p.byteLength), 0);
+  return new TextDecoder().decode(all);
 }
 
 async function createRequest(env: Env, request: Request): Promise<Response> {
   if (!bridgeReady(env)) return json({ error: 'checks are not available yet' }, 503);
-  if (!originAllowed(request, env)) return json({ error: 'origin not allowed' }, 403);
+  if (!sameOrigin(request)) return json({ error: 'origin not allowed' }, 403);
   const visitor = request.headers.get('cf-connecting-ip') ?? 'unknown';
   if (env.REQUEST_LIMIT && !(await env.REQUEST_LIMIT.limit({ key: visitor })).success) return json({ error: 'too many requests, try again in a minute' }, 429);
-  const text = await request.text();
-  if (text.length > MAX_BODY) return json({ error: 'request too large' }, 413);
+  const text = await boundedText(request, MAX_BODY);
+  if (text === null) return json({ error: 'request too large' }, 413);
   let body: { building?: unknown; answers?: unknown; lang?: unknown };
   try {
     body = JSON.parse(text) as typeof body;
@@ -118,6 +143,10 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
   try {
     const answers = parseAnswers(body.answers);
     const broker = new Broker(env);
+    // All demo requests of the last day (older ones are deleted): refused
+    // when there are as many as the daily limit, and when the count is unknown.
+    const current = await broker.countType(REQUEST_TYPE);
+    if (current === null || current >= dailyLimit(env)) return json({ error: 'the demo has had enough requests for today, try again tomorrow' }, 429);
     const { entity: building } = await broker.getBuilding(body.building);
     if (!building) return json({ error: 'building not found' }, 404);
     const entity = toRequestEntity(building, answers, crypto.randomUUID(), lang);
@@ -140,20 +169,54 @@ async function getRequest(env: Env, id: string): Promise<Response> {
   return json({ entity, decision, query: `/entities/${encodeURIComponent(id)}` });
 }
 
-/** Deletes requests older than a day, with their Decision and Task entities. */
-export async function cleanup(env: Env, now = Date.now()): Promise<number> {
+const dailyLimit = (env: Env) => {
+  const n = Number(env.DAILY_LIMIT);
+  return Number.isInteger(n) && n > 0 ? n : 300;
+};
+
+/**
+ * Every hour: deletes requests older than a day, with their Decision and Task
+ * entities; and sends requests that have no result after RETRY_AFTER_MS to
+ * the bridge again (Pointsman or the broker failed when it was notified).
+ * One failing request never stops the others.
+ */
+export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: number; retried: number; skipped: number; failed: number }> {
   const broker = new Broker(env);
-  let deleted = 0;
+  const out = { deleted: 0, retried: 0, skipped: 0, failed: 0 };
   for (const e of await broker.listType(REQUEST_TYPE)) {
+    // Only the demo's own requests: never anything else, whatever the broker lists.
+    if (e.type !== REQUEST_TYPE || !isRequestId(e.id)) continue;
     const created = Date.parse(String(e.createdAt ?? ''));
-    if (!(now - created > KEEP_MS)) continue;
-    const check = e.check as { decisionId?: { value?: unknown }; inputHash?: { value?: unknown } } | undefined;
-    if (typeof check?.decisionId?.value === 'string') await broker.delete(decisionEntityId(check.decisionId.value));
-    if (typeof check?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, ROUTE.attribute, check.inputHash.value));
-    await broker.delete(e.id);
-    deleted += 1;
+    if (!Number.isFinite(created)) {
+      out.skipped += 1;
+      continue;
+    }
+    try {
+      if (now - created > KEEP_MS) {
+        const check = e.check as { decisionId?: { value?: unknown }; inputHash?: { value?: unknown } } | undefined;
+        if (typeof check?.decisionId?.value === 'string') await broker.delete(decisionEntityId(check.decisionId.value));
+        if (typeof check?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, ROUTE.attribute, check.inputHash.value));
+        await broker.delete(e.id);
+        out.deleted += 1;
+      } else if (!e.check && now - created > RETRY_AFTER_MS && out.retried < MAX_RETRIES && bridgeReady(env)) {
+        // As the subscription would, with the entity as stored (no system attributes).
+        const fresh = await broker.get(e.id);
+        if (!fresh) continue;
+        const notification = new Request('https://worker.internal/notify', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! },
+          body: JSON.stringify({ type: 'Notification', data: [fresh] }),
+        });
+        const res = await handleRequest(notification, bridgeConfig(env));
+        if (res.status !== 200) throw new Error(`retry answered ${res.status}`);
+        out.retried += 1;
+      }
+    } catch (err) {
+      out.failed += 1;
+      console.error(`cleanup ${e.id}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
-  return deleted;
+  return out;
 }
 
 export default {
@@ -204,7 +267,7 @@ export default {
 
   async scheduled(_event: ScheduledController, env: Env): Promise<void> {
     checkEnv(env);
-    const deleted = await cleanup(env);
-    if (deleted) console.log(`cleanup: ${deleted} requests deleted`);
+    const r = await cleanup(env);
+    if (r.deleted || r.retried || r.skipped || r.failed) console.log(`cleanup: ${JSON.stringify(r)}`);
   },
 } satisfies ExportedHandler<Env>;

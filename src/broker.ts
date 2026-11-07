@@ -78,6 +78,15 @@ export class Broker {
     return all;
   }
 
+  /** How many entities of a type the broker holds (NGSILD-Results-Count), or null when it does not say. */
+  async countType(type: string): Promise<number | null> {
+    const res = await this.call(`/entities?type=${encodeURIComponent(type)}&limit=1&count=true`);
+    if (!res.ok) throw new BrokerError('count', res.status);
+    await res.body?.cancel();
+    const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
+    return Number.isInteger(n) && n >= 0 ? n : null;
+  }
+
   /** Deletes an entity; a missing one is fine. */
   async delete(id: string): Promise<void> {
     const res = await this.call(`/entities/${encodeURIComponent(id)}`, { method: 'DELETE' });

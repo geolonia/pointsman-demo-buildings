@@ -79,11 +79,16 @@ type Call = { method: string; url: string; headers: Headers; body: any };
 let calls: Call[] = [];
 let stored: Map<string, Entity>;
 let pointsmanAction = 'high';
+let pointsmanStatus = 200;
+/** NGSILD-Results-Count for count=true; null: none (a broker that does not count). */
+let countHeader: (n: number) => string | null = (n) => String(n);
 
 beforeEach(() => {
   calls = [];
   stored = new Map([[building().id, building()]]);
   pointsmanAction = 'high';
+  pointsmanStatus = 200;
+  countHeader = (n) => String(n);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init);
     const text = await req.text();
@@ -93,6 +98,7 @@ beforeEach(() => {
     calls.push(c);
     const url = new URL(req.url);
     if (url.origin === 'https://pointsman.geolonia.workers.dev') {
+      if (pointsmanStatus !== 200) return new Response('down', { status: pointsmanStatus });
       return Response.json({
         decision_id: '99999999-9999-4999-8999-999999999999', action: pointsmanAction, profile: 'building-check-priority', profile_version: 1,
         model: 'none', created_at: '2026-11-07T01:00:00.000Z', rule: 0, answers: {},
@@ -103,16 +109,20 @@ beforeEach(() => {
       return new Response(null, { status: 201 });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') {
-      return Response.json([...stored.values()].filter((e) => e.type === url.searchParams.get('type')));
+      const all = [...stored.values()].filter((e) => e.type === url.searchParams.get('type'));
+      const header = url.searchParams.get('count') === 'true' ? countHeader(all.length) : null;
+      return Response.json(all.slice(0, Number(url.searchParams.get('limit') ?? 1000)), { headers: header === null ? {} : { 'NGSILD-Results-Count': header } });
     }
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)(\/attrs(?:\/([^/]+))?)?$/);
     if (m) {
       const id = decodeURIComponent(m[1]!);
       if (req.method === 'DELETE') return new Response(null, { status: stored.delete(id) ? 204 : 404 });
-      // The bridge merges attributes with PATCH on the entity; /attrs adds them.
+      // As a real broker: PATCH /attrs/<name> updates an attribute that exists
+      // (404 when it does not: the bridge then adds it with POST /attrs).
       if (m[2] || req.method === 'PATCH') {
         const e = stored.get(id);
         if (!e) return new Response(null, { status: 404 });
+        if (req.method === 'PATCH' && m[3] && !(decodeURIComponent(m[3]) in e)) return new Response(null, { status: 404 });
         // /attrs/<name> writes one attribute; otherwise the body holds several.
         stored.set(id, m[3] ? { ...e, [decodeURIComponent(m[3])]: body } : { ...e, ...body });
         return new Response(null, { status: 204 });
@@ -151,6 +161,20 @@ describe('POST /api/requests', () => {
     expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'not json' }, unlimited as Env)).status).toBe(400);
     expect((await post({ building: 'urn:ngsi-ld:Building:plateau:01100-bldg-404' })).status).toBe(404);
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+
+  it('refuses more than DAILY_LIMIT requests a day, and when the broker does not count', async () => {
+    for (let i = 0; i < 300; i++) stored.set(`urn:ngsi-ld:BuildingCheckRequest:demo-${String(i).padStart(12, '0')}-0000-4000-8000-000000000000`, { id: `r${i}`, type: 'BuildingCheckRequest' });
+    expect((await post({ building: building().id })).status).toBe(429);
+    for (const k of [...stored.keys()]) if (k.includes('BuildingCheckRequest')) stored.delete(k);
+    countHeader = () => null;
+    expect((await post({ building: building().id })).status).toBe(429);
+    expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+
+  it('refuses a large body by its declared length, before reading it', async () => {
+    const res = await worker('/api/requests', { method: 'POST', headers: { origin: PAGE, 'content-length': '999999' }, body: '{}' }, unlimited as Env);
+    expect(res.status).toBe(413);
   });
 
   it('allows 5 requests a minute per visitor', async () => {
@@ -208,13 +232,27 @@ describe('GET /api/requests/{id}', () => {
 });
 
 describe('cleanup', () => {
+  it('sends a request without a result to the bridge again, and one failure does not stop the rest', async () => {
+    const waiting = { ...toRequestEntity(building(), { yearOfConstruction: 1975 }, UUID, 'en'), createdAt: '2026-11-07T00:00:00Z' };
+    const undated = { ...toRequestEntity(building(), {}, '33333333-3333-4333-8333-333333333333', 'en') };
+    stored.set(waiting.id, waiting);
+    stored.set(undated.id, undated);
+    pointsmanStatus = 503;
+    const down = await cleanup(env, Date.parse('2026-11-07T01:00:00Z'));
+    expect(down).toMatchObject({ retried: 0, failed: 1, skipped: 1 });
+    pointsmanStatus = 200;
+    const up = await cleanup(env, Date.parse('2026-11-07T01:00:00Z'));
+    expect(up).toMatchObject({ retried: 1, failed: 0, skipped: 1 });
+    expect(stored.get(waiting.id)!.check).toMatchObject({ value: 'high' });
+  });
+
   it('deletes requests older than a day with their Decision and Task, and keeps newer ones and the buildings', async () => {
     const old = { ...toRequestEntity(building(), {}, UUID, 'en'), createdAt: '2026-11-05T00:00:00Z', check: { type: 'Property', value: 'high', decisionId: { type: 'Property', value: 'd1' }, inputHash: { type: 'Property', value: 'h1' } } };
     const fresh = { ...toRequestEntity(building(), {}, '22222222-2222-4222-8222-222222222222', 'en'), createdAt: '2026-11-07T00:00:00Z' };
     stored.set(old.id, old);
     stored.set(fresh.id, fresh);
     stored.set('urn:ngsi-ld:Decision:d1', { id: 'urn:ngsi-ld:Decision:d1', type: 'Decision' });
-    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toBe(1);
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ deleted: 1 });
     expect(stored.has(old.id)).toBe(false);
     expect(stored.has('urn:ngsi-ld:Decision:d1')).toBe(false);
     expect(calls.some((c) => c.method === 'DELETE' && c.url.includes('urn%3Angsi-ld%3ATask%3A'))).toBe(true);

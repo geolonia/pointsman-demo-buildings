@@ -16,7 +16,8 @@
     "BROKER_TENANT": "pointsman_buildings",
     // Pointsman runs on workers.dev in the same account (see compatibility_flags).
     "POINTSMAN_URL": "https://pointsman.geolonia.workers.dev",
-    "ALLOWED_ORIGINS": "https://buildings.demo.pointsman.net,http://localhost:8791"
+    // Requests a day for the whole demo, besides 5 a minute per visitor.
+    "DAILY_LIMIT": "300"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.

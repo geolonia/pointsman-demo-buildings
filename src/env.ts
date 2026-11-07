@@ -5,8 +5,8 @@ export interface Env {
   BROKER_URL: string;
   BROKER_TENANT: string;
   POINTSMAN_URL: string;
-  /** Origins allowed to send requests (POST /api/requests), besides the page's own. */
-  ALLOWED_ORIGINS: string;
+  /** Requests per day for the whole demo (the requests of the last day are counted). */
+  DAILY_LIMIT?: string;
   // Secrets
   BROKER_API_KEY: string;
   /** The bridge: a Pointsman token limited to building-check-priority. Without it, no checks are sent. */
