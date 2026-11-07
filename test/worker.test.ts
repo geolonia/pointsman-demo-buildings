@@ -118,6 +118,36 @@ describe('GET /api/buildings', () => {
     expect(most).toBe(3);
   });
 
+  it('fails as a whole when one of the later pages fails, and keeps nothing', async () => {
+    stored = Array.from({ length: 2500 }, (_, i) => building(i + 1));
+    count = 2500;
+    const spy = vi.mocked(globalThis.fetch);
+    const real = spy.getMockImplementation()!;
+    spy.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) =>
+      new URL(new Request(input, init).url).searchParams.get('offset') === '2000' ? new Response('{}', { status: 500 }) : real(input, init));
+    expect((await get('/api/buildings')).status).toBe(502);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await caches.default.match(new Request('https://buildings.test/api/buildings'))).toBeUndefined();
+  });
+
+  it('is not complete when the broker counts more than its pages give, or pages overlap', async () => {
+    stored = Array.from({ length: 2500 }, (_, i) => building(i + 1));
+    count = 3500;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+    // 2000 counted, and the second page repeats the first: 2000 entities, 1000 buildings.
+    stored = [...Array.from({ length: 1000 }, (_, i) => building(i + 1)), ...Array.from({ length: 1000 }, (_, i) => building(i + 1))];
+    count = 2000;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+  });
+
+  it('reads at most 10,000 buildings when the broker counts more', async () => {
+    stored = Array.from({ length: 1000 }, (_, i) => building(i + 1));
+    count = 12000;
+    const body = (await (await get('/api/buildings')).json()) as { complete: boolean };
+    expect(body.complete).toBe(false);
+    expect(calls).toHaveLength(10);
+  });
+
   it('keeps nothing when the broker counted more than it gave, or nothing at all', async () => {
     count = 5; // two stored: a capped or changing answer
     const partial = await get('/api/buildings');

@@ -499,6 +499,9 @@
     data = j;
     document.getElementById('dev-list').textContent = 'GET /ngsi-ld/v1' + j.query + '&limit=1000&offset=0\n\n→ ' + j.features.length + ' Building entities';
     showStatus();
+    // A map whose style never finishes (lost WebGL, a broken style) would keep
+    // the note up: it goes once the buildings have had their chance.
+    setTimeout(function () { drawn = true; showLoading(); }, 15000);
     var linked = (function () { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } })();
     if (linked) {
       select(linked.indexOf('urn:') === 0 ? linked : PLATEAU_URN + linked);

@@ -26,6 +26,9 @@ export function buildingsQuery([w, s, e, n]: Bbox): string {
   return `/entities?${params}`;
 }
 
+/** Pages of the building list read at the same time once the count is known. */
+const PARALLEL_PAGES = 3;
+
 export class Broker {
   private readonly base: string;
   // A wrapper, not `fetch` itself: Workers refuse `this.fetchFn()` with the
@@ -116,11 +119,17 @@ export class Broker {
     const total = first.total;
     if (first.batch.length < page) return { query, buildings, complete: total === null || buildings.length === total };
     if (total !== null) {
-      // Known size: the other pages at once, at most `max` buildings in all.
+      // Known size: the other pages a few at a time (not a burst the broker
+      // may refuse), at most `max` buildings in all.
       const offsets: number[] = [];
       for (let offset = page; offset < Math.min(total, max); offset += page) offsets.push(offset);
-      for (const { batch } of await Promise.all(offsets.map((o) => read(o)))) buildings.push(...batch);
-      return { query, buildings, complete: buildings.length === total };
+      for (let i = 0; i < offsets.length; i += PARALLEL_PAGES) {
+        const pages = await Promise.all(offsets.slice(i, i + PARALLEL_PAGES).map((o) => read(o)));
+        for (const { batch } of pages) buildings.push(...batch);
+      }
+      // Pages of an unordered query can overlap: complete only when every
+      // counted building came once.
+      return { query, buildings, complete: buildings.length === total && new Set(buildings.map((b) => b.id)).size === total };
     }
     // No count: page by page until a short page.
     for (let offset = page; offset < max; offset += page) {
