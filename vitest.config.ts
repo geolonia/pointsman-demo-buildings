@@ -9,7 +9,7 @@ export default defineConfig({
       // Secrets for the tests, made at run time (no secret-looking literals in
       // the repository). BROKER_URL as in wrangler.jsonc, so a local .dev.vars
       // (for example the mock broker) does not change the tests.
-      miniflare: { bindings: { BROKER_API_KEY: randomUUID(), BROKER_URL: 'https://geolonia-demo.geonicdb.jp' } },
+      miniflare: { bindings: { BROKER_API_KEY: randomUUID(), BROKER_URL: 'https://geolonia-demo.geonicdb.jp', POINTSMAN_TOKEN: `pm_${randomUUID()}`, NOTIFY_SECRET: randomUUID() } },
     }),
   ],
   test: { include: ['test/**/*.test.ts'] },

@@ -34,11 +34,63 @@ export class Broker {
     this.base = `${trimUrl(env.BROKER_URL)}/ngsi-ld/v1`;
   }
 
-  private call(path: string): Promise<Response> {
+  private call(path: string, init: { method?: string; body?: unknown } = {}): Promise<Response> {
     return this.fetchFn(`${this.base}${path}`, {
-      headers: { 'x-api-key': this.env.BROKER_API_KEY, 'NGSILD-Tenant': this.env.BROKER_TENANT, accept: 'application/json', link: link(CORE_CONTEXT) },
+      method: init.method ?? 'GET',
+      headers: {
+        'x-api-key': this.env.BROKER_API_KEY,
+        'NGSILD-Tenant': this.env.BROKER_TENANT,
+        accept: 'application/json',
+        link: link(CORE_CONTEXT),
+        ...(init.body !== undefined && { 'content-type': 'application/json' }),
+      },
+      ...(init.body !== undefined && { body: JSON.stringify(init.body) }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
+  }
+
+  /** Creates an entity (normalized, core context). */
+  async create(entity: Entity): Promise<void> {
+    const res = await this.call('/entities', { method: 'POST', body: entity });
+    if (res.status !== 201) throw new BrokerError('create', res.status);
+  }
+
+  /** An entity as stored (with system attributes when asked), or null. */
+  async get(id: string, { sysAttrs = false } = {}): Promise<Entity | null> {
+    const res = await this.call(`/entities/${encodeURIComponent(id)}${sysAttrs ? '?options=sysAttrs' : ''}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new BrokerError('get', res.status);
+    return (await res.json()) as Entity;
+  }
+
+  /** All entities of a type, with system attributes (createdAt), paged; at most `max`. */
+  async listType(type: string, max = 5000): Promise<Entity[]> {
+    const page = 1000;
+    const all: Entity[] = [];
+    for (let offset = 0; offset < max; offset += page) {
+      const res = await this.call(`/entities?type=${encodeURIComponent(type)}&limit=${page}&offset=${offset}&options=sysAttrs`);
+      if (!res.ok) throw new BrokerError('list', res.status);
+      const batch = (await res.json()) as unknown;
+      if (!Array.isArray(batch)) throw new BrokerError('list (not a list)', res.status);
+      all.push(...(batch as Entity[]));
+      if (batch.length < page) break;
+    }
+    return all;
+  }
+
+  /** How many entities of a type the broker holds (NGSILD-Results-Count), or null when it does not say. */
+  async countType(type: string): Promise<number | null> {
+    const res = await this.call(`/entities?type=${encodeURIComponent(type)}&limit=1&count=true`);
+    if (!res.ok) throw new BrokerError('count', res.status);
+    await res.body?.cancel();
+    const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
+    return Number.isInteger(n) && n >= 0 ? n : null;
+  }
+
+  /** Deletes an entity; a missing one is fine. */
+  async delete(id: string): Promise<void> {
+    const res = await this.call(`/entities/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 404) throw new BrokerError('delete', res.status);
   }
 
   /**

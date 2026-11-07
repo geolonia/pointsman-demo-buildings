@@ -4,19 +4,36 @@ export interface Env {
   // Vars
   BROKER_URL: string;
   BROKER_TENANT: string;
+  POINTSMAN_URL: string;
+  /** Requests per day for the whole demo (the requests of the last day are counted). */
+  DAILY_LIMIT?: string;
   // Secrets
   BROKER_API_KEY: string;
+  /** The bridge: a Pointsman token limited to building-check-priority. Without it, no checks are sent. */
+  POINTSMAN_TOKEN?: string;
+  /** The bridge: the secret every broker subscription sends (x-bridge-secret). */
+  NOTIFY_SECRET?: string;
   // Bindings
   ASSETS: Fetcher;
+  /** Requests per visitor and minute. */
+  REQUEST_LIMIT?: RateLimit;
+  ALL_REQUESTS_LIMIT?: RateLimit;
 }
 
-/** Throws naming the first missing or invalid setting. */
+const isServiceUrl = (value: string) => {
+  const u = URL.parse(value);
+  return !!u && (u.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(u.hostname));
+};
+
+/** Throws naming the first missing or invalid setting for reading buildings. */
 export function checkEnv(env: Env): void {
   for (const name of ['BROKER_URL', 'BROKER_TENANT', 'BROKER_API_KEY'] as const) if (!env[name]) throw new Error(`${name} is not set`);
-  const u = URL.parse(env.BROKER_URL);
-  if (!u || (u.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(u.hostname))) {
-    throw new Error('BROKER_URL must be an https URL (http only for localhost)');
-  }
+  if (!isServiceUrl(env.BROKER_URL)) throw new Error('BROKER_URL must be an https URL (http only for localhost)');
+}
+
+/** Whether the bridge can run: requests are accepted only then, so none waits for a check that never comes. */
+export function bridgeReady(env: Env): boolean {
+  return !!env.POINTSMAN_TOKEN && !!env.NOTIFY_SECRET && isServiceUrl(env.POINTSMAN_URL ?? '');
 }
 
 export const trimUrl = (u: string) => u.replace(/\/+$/, '');

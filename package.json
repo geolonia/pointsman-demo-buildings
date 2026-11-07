@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "engine": "node scripts/fetch-engine.mjs",
     "dev": "wrangler dev",
     "typecheck": "wrangler types && tsc -p tsconfig.json && tsc -p test/tsconfig.json",
     "test": "vitest run",

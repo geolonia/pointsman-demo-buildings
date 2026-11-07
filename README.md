@@ -70,12 +70,51 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 | `GET /api/config` | The demo area (bounding box) and the data credit |
 | `GET /api/buildings` | The area's buildings as GeoJSON, read from the broker (geo-query, paged); `query` is the NGSI-LD request. Cached 10 minutes, but only when the list is not empty and complete: as many as the broker counted (`NGSILD-Results-Count`), or, when the broker gives no count, the last page had fewer than 1,000 |
 | `GET /api/buildings/{id}` | One `Building` entity as stored, the request, and the same as a GeoJSON feature. Cached 1 minute |
+| `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang"}`: a check request for one building. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
+| `GET /api/requests/{id}` | The request entity with Pointsman's result (`check`) and its `Decision` entity |
+| `POST /notify` | The broker's subscription (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back |
+
+## Check requests and the bridge
+
+A check request is a `BuildingCheckRequest` entity in the broker: a link to
+the building (`refBuilding`), its centre point (`location`, for point facts
+such as J-SHIS), and the building's year built, structure and storeys.
+PLATEAU's values come first; the resident's answers fill only what PLATEAU
+does not know, and each value says where it came from (`origin`: `plateau`
+or `resident`).
+
+A broker subscription sends new and changed requests to `/notify`. The
+[FIWARE bridge](https://github.com/geolonia/pointsman/tree/main/packages/fiware)
+(from the engine commit pinned in `engine.json`) asks Pointsman, profile
+`building-check-priority` (rules only, no AI model), and writes the result to
+the request as `check`, plus a `Decision` entity, and a `Task` entity for a
+high priority, so any app that lists tasks shows the work. Every hour,
+requests older than a day are deleted with their Decision and Task entities,
+and a request that still has no result after two minutes (Pointsman or the
+broker failed when it was notified) is sent to the bridge again, at most 20
+a run.
+
+A high priority waits for a person in Pointsman (the profile's
+`people_check`). This demo does not answer those reviews yet: that comes with
+the staff view.
 
 ## Setup
 
-Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL` and
-`BROKER_TENANT` (`pointsman_buildings`). Secret: `BROKER_API_KEY`, an API key
-of that tenant (`wrangler secret put BROKER_API_KEY`).
+Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
+`BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL` and `DAILY_LIMIT`.
+Secrets (`wrangler secret put <NAME>`):
+
+| Secret | |
+|---|---|
+| `BROKER_API_KEY` | An API key of the tenant |
+| `NOTIFY_SECRET` | Random; the subscription sends it (`scripts/setup.mjs`) |
+| `POINTSMAN_TOKEN` | A Pointsman token limited to `building-check-priority` |
+
+Without `POINTSMAN_TOKEN` and `NOTIFY_SECRET` the page still shows the
+buildings, and new check requests are refused (503).
+
+Then, once: `BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs` creates
+the subscription (run it again after the inputs change).
 
 Load the buildings once (and again after the data changes):
 
@@ -93,6 +132,7 @@ up to ten minutes after a load.
 Node 24 and pnpm.
 
 ```sh
+pnpm engine        # the bridge, from the Pointsman commit in engine.json
 pnpm install
 pnpm check          # typecheck, tests, dry-run deploy
 ```

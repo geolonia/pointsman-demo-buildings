@@ -13,13 +13,26 @@
   "workers_dev": false,
   "vars": {
     "BROKER_URL": "https://geolonia-demo.geonicdb.jp",
-    "BROKER_TENANT": "pointsman_buildings"
+    "BROKER_TENANT": "pointsman_buildings",
+    // Pointsman runs on workers.dev in the same account (see compatibility_flags).
+    "POINTSMAN_URL": "https://pointsman.geolonia.workers.dev",
+    // Requests a day for the whole demo, besides 5 a minute per visitor.
+    "DAILY_LIMIT": "300"
   },
-  // The page (site/). The Worker answers only the API; everything else is a
-  // static file.
+  // The page (site/). The Worker answers the API and the bridge (/notify);
+  // everything else is a static file.
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
-  }
+    "run_worker_first": ["/api/*", "/notify"]
+  },
+  // Requests per visitor (IP) and minute.
+  "ratelimits": [
+    // Per visitor, and for all visitors together (one key). Cloudflare counts
+    // per location and only roughly, so both keep bursts small, nothing more.
+    { "name": "REQUEST_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "ALL_REQUESTS_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
+  ],
+  // Hourly: delete requests older than a day, with their Decision and Task entities.
+  "triggers": { "crons": ["23 * * * *"] }
 }
