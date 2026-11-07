@@ -42,7 +42,10 @@
   // with retries; the chained scene B route runs only from it. The queues must
   // exist before a deploy (wrangler queues create ...).
   "queues": {
-    "producers": [{ "binding": "BRIDGE_QUEUE", "queue": "pointsman-demo-buildings-bridge" }],
+    "producers": [
+      { "binding": "BRIDGE_QUEUE", "queue": "pointsman-demo-buildings-bridge" },
+      { "binding": "BRIDGE_DLQ", "queue": "pointsman-demo-buildings-bridge-dlq" }
+    ],
     "consumers": [{ "queue": "pointsman-demo-buildings-bridge", "max_batch_timeout": 1, "max_retries": 20, "max_concurrency": 1, "dead_letter_queue": "pointsman-demo-buildings-bridge-dlq" }]
   }
 }

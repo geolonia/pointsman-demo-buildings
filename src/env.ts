@@ -20,6 +20,8 @@ export interface Env {
   ALL_REQUESTS_LIMIT?: RateLimit;
   /** The bridge's queue (wrangler.jsonc "queues"); chained routes, such as scene B, run only from it. */
   BRIDGE_QUEUE?: Queue<import('../engine/packages/fiware/src/bridge').BridgeMessage>;
+  /** Its dead-letter queue, as a producer: messages no retry can fix go there at once. */
+  BRIDGE_DLQ?: Queue<import('../engine/packages/fiware/src/bridge').BridgeMessage>;
   /** "on": scene B (descriptions read by AI) is open; needs the queue and a token that may use building-concern. */
   CONCERNS?: string;
 }

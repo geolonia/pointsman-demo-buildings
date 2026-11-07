@@ -32,7 +32,6 @@ function decide(e) {
 let generation = 0;
 const generations = new Map();
 
-/** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
 /**
  * Scene B without a model: keywords stand in for the AI (EN and JA), so the
  * page's flow can be tried locally. Marked as mock in the Decision entity.
@@ -67,6 +66,7 @@ function mockConcern(e, check) {
   return { rule, action, answers };
 }
 
+/** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
 function decideLater(id, gen) {
   setTimeout(() => {
     const e = entities.get(id);

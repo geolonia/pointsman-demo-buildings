@@ -55,7 +55,6 @@ export const CONCERN_ROUTE: Route = {
   attribute: 'concern',
   name: 'concern',
   decisionEntity: true,
-  informedBy: 'check',
   requires: { priority: { attribute: 'check', rerunOnReview: true } },
   // A person acts on these first; any app that lists Task entities shows the work.
   task: { actions: ['now', 'high', 'person'], priority: { now: 1, high: 2, person: 3 } },
@@ -67,6 +66,8 @@ export function bridgeConfig(env: Env): BridgeConfig {
     // With the queue, notifications are answered at once and the queue
     // handler below runs the bridge (chained routes need it).
     ...(env.BRIDGE_QUEUE && { queue: env.BRIDGE_QUEUE }),
+    // A message no retry can fix goes there at once, to be looked at and replayed.
+    ...(env.BRIDGE_DLQ && { deadLetter: env.BRIDGE_DLQ }),
     notifySecret: env.NOTIFY_SECRET ?? '',
     pointsman: { url: trimUrl(env.POINTSMAN_URL), token: env.POINTSMAN_TOKEN ?? '' },
     broker: { url: trimUrl(env.BROKER_URL), apiKey: env.BROKER_API_KEY, tenant: env.BROKER_TENANT },
@@ -199,7 +200,7 @@ async function getRequest(env: Env, id: string): Promise<Response> {
     return typeof ref === 'string' && ref.startsWith('urn:ngsi-ld:Decision:') ? broker.get(ref) : null;
   };
   const [decision, concernDecision] = await Promise.all([decisionOf('check'), decisionOf('concern')]);
-  return json({ entity, decision, concernDecision, query: `/entities/${encodeURIComponent(id)}` });
+  return json({ entity, decision, concernDecision, concerns: concernsReady(env), query: `/entities/${encodeURIComponent(id)}` });
 }
 
 const dailyLimit = (env: Env) => {
@@ -228,6 +229,9 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
     }
     try {
       if (now - created > KEEP_MS) {
+        // Only the Decision and Task the result points to now: when a person's
+        // answer ran a route again, earlier ones stay in the broker (accepted
+        // for the demo; a query by refersTo would find them).
         for (const route of [ROUTE, CONCERN_ROUTE]) {
           const result = e[route.attribute] as { decisionId?: { value?: unknown }; inputHash?: { value?: unknown } } | undefined;
           if (typeof result?.decisionId?.value === 'string') await broker.delete(decisionEntityId(result.decisionId.value));

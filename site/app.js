@@ -37,10 +37,10 @@
       r3: 'Wooden and built before the 2000 code, on soft ground or where strong shaking is more likely.', r4: 'In a river flood zone of 3 m or deeper.', r5: 'Wooden and built before the 2000 code, but the ground or the chance of strong shaking here could not be read.',
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later; staff can also check it.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
-      worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only.',
+      worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
-      checkContext: 'The building\u2019s check priority (from its data)',
+      checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
       ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
       cn_now: 'Staff are asked to act today. If anyone is in danger, call 119 or leave the building now.', cn_high: 'Staff check this soon and confirm the priority.', cn_medium: 'A check is worth planning.', cn_low: 'Nothing in the description points to an early check.', cn_person: 'The AI was not sure, so a person reads the description before anything else.', 'cn_more-evidence': 'Say what you see, where on the building and since when, and send it again.',
       c0: 'The description does not seem to be about a building.', c1: 'The words point to danger to people now, or to a part that has collapsed.', c2: 'The words point to serious damage, or to parts that lean, sink or may fall.', c3: 'Cracks in load-bearing parts, in a building whose check is already high.', c4: 'Cracks in load-bearing parts, or water or fire damage.', c5: 'The AI is not sure what the damage is, or sees some sign of danger.', c6: 'The description does not say clearly what is damaged.', c7: 'Only surface damage, but the building\u2019s check is high anyway.', cd: 'Only small surface damage is described.',
@@ -79,10 +79,10 @@
       r3: '2000年の基準より前の木造で、揺れやすい地盤か、強い揺れの起きやすい場所にあります。', r4: '想定最大規模で3 m以上浸水する区域にあります。', r5: '2000年の基準より前の木造ですが、この場所の地盤か強い揺れの起きやすさを読み取れませんでした。',
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。職員が確認することもできます。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
-      worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。',
+      worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
-      checkContext: '建物の確認の優先度（建物のデータから）',
+      checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
       ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
       cn_now: '職員に今日中の対応を求めます。危険な人がいるときは、119 番に電話するか、すぐに建物から離れてください。', cn_high: '職員が早めに確認し、優先度を確定します。', cn_medium: '確認を計画する価値があります。', cn_low: '説明からは、早めの確認が必要な理由は見つかりませんでした。', cn_person: 'AI が判断しきれなかったため、まず人が説明を読みます。', 'cn_more-evidence': '何が見えるか、建物のどこか、いつからかを書いて、もう一度送ってください。',
       c0: '説明が建物についてのものではないようです。', c1: '今、人に危険がある、または一部が崩れたことを示す言葉があります。', c2: '深刻な被害、または傾き・沈み・落下のおそれを示す言葉があります。', c3: '構造部分のひびで、建物の確認の優先度もすでに高です。', c4: '構造部分のひび、または水や火による被害です。', c5: 'AI が被害の種類を判断しきれないか、危険のきざしを読み取りました。', c6: '何が壊れているかが説明からはっきりしません。', c7: '表面の被害だけですが、建物の確認の優先度がもともと高です。', cd: '表面の小さな被害だけが説明されています。',
@@ -126,6 +126,8 @@
 
   function t(key, vars) {
     var s = (T[lang] && T[lang][key]) || T.en[key] || key;
+    // A value the page has no words for (a changed profile): the value itself, without the key's prefix.
+    if (s === key && /^(ca_|cn_|d_|sev)/.test(key)) s = key.replace(/^(ca_|cn_|d_|sev)/, '');
     Object.keys(vars || {}).forEach(function (k) { s = s.replace('{' + k + '}', vars[k]); });
     return s;
   }
@@ -367,6 +369,12 @@
         // With a description, the result is the concern (it comes after the check).
         var result = j && j.entity && (f.withConcern ? j.entity.concern : j.entity.check);
         if (result && typeof result.value === 'string') { f.state = 'done'; showFlow(); return; }
+        // The check is there but the concern will not come (scene B was switched
+        // off) or is late (2 minutes): show the check, and say so.
+        var checked = j && j.entity && j.entity.check && typeof j.entity.check.value === 'string';
+        if (f.withConcern && checked && (j.concerns === false || Date.now() - f.sentAt > 2 * 60000)) {
+          f.withConcern = false; f.notRead = true; f.state = 'done'; showFlow(); return;
+        }
         if (res.status === 404 || res.status === 400) { f.state = 'failed'; f.error = 'e_lost'; showFlow(); return; }
         var waited = Date.now() - f.sentAt;
         if (waited > GIVE_UP_MS) { f.state = 'gaveUp'; showFlow(); return; }
@@ -393,14 +401,14 @@
     var action = check.value;
     // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
     var rule = check.policyRule && /^[0-5]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
-    return [
+    return (flow.notRead ? [el('p', { class: 'note' }, [t('notRead')])] : []).concat([
       el('p', { class: 'verdict v-' + action }, [t('a_' + action)]),
       // Rule 5 asks again for the hazard data, not for papers.
       el('p', {}, [t(rule === 'r5' ? 'n_hazard' : 'n_' + action)]),
       el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
       el('p', { class: 'note' }, [t('care')]),
       again,
-    ];
+    ]);
   }
 
   /** The answers of a Decision entity as stored (full IRIs, a JSON property): by question name. */

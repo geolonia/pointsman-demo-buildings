@@ -5,9 +5,8 @@ import { env as cfEnv } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toEntity, type Entity, type PlateauFeature } from '../src/buildings';
 import type { Env } from '../src/env';
-import demo, { cleanup } from '../src/index';
+import demo, { cleanup, CONCERN_ROUTE } from '../src/index';
 import { centreOf, CONCERN_INPUTS, parseAnswers, parseConcern, RequestError, REQUEST_INPUTS, toRequestEntity } from '../src/requests';
-import { CONCERN_ROUTE } from '../src/index';
 import setupScript from '../scripts/setup.mjs?raw';
 
 // Without the queue (wrangler.jsonc has one): the bridge then runs in the request, as the tests read it.
@@ -366,5 +365,43 @@ describe('the bridge queue', () => {
     const res = await demo.fetch(new Request(`${PAGE}/notify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! }, body: JSON.stringify({ type: 'Notification', data: [req] }) }), queued, ctx);
     expect(res.status).toBe(202);
     expect(sent).toHaveLength(1);
+  });
+});
+
+describe('scene B, more', () => {
+  const open = () => ({ ...unlimited, CONCERNS: 'on', BRIDGE_QUEUE: { send: async () => {}, sendBatch: async () => {} } }) as unknown as Env;
+  const notify = (path: string, data: unknown[], e: Env) => demo.fetch(new Request(`${PAGE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! }, body: JSON.stringify({ type: 'Notification', data }) }), e, ctx);
+
+  it('with scene B off, /notify?route=concern runs nothing', async () => {
+    const req = toRequestEntity(building(), {}, UUID, 'en', { description: 'x' });
+    const res = await notify('/notify?route=concern', [req], env);
+    expect([200, 202]).toContain(res.status);
+    expect(calls.some((c) => c.url.includes('/v1/decide/'))).toBe(false);
+  });
+
+  it('cleanup sends a request whose concern is missing to the concern route, and not while scene B is off', async () => {
+    const waiting = {
+      ...toRequestEntity(building(), {}, UUID, 'en', { description: 'x' }), createdAt: '2026-11-07T00:00:00Z',
+      check: { type: 'Property', value: 'low', decisionId: { type: 'Property', value: 'd1' } },
+    };
+    stored.set(waiting.id, waiting);
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ retried: 0 });
+    const sent: { body: { route?: string } }[] = [];
+    const queued = { ...open(), BRIDGE_QUEUE: { send: async () => {}, sendBatch: async (m: { body: { route?: string } }[]) => { sent.push(...m); } } } as unknown as Env;
+    expect(await cleanup(queued, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ retried: 1, failed: 0 });
+    expect(sent[0]!.body.route).toBe('concern');
+  });
+
+  it('the queue handler retries everything later while the bridge is not ready', async () => {
+    let retried = 0;
+    const batch = { messages: [], retryAll: () => { retried += 1; } } as unknown as MessageBatch<never>;
+    await demo.queue(batch, { ...env, POINTSMAN_TOKEN: '' } as Env);
+    expect(retried).toBe(1);
+  });
+
+  it('the request answer says whether scene B is open', async () => {
+    const req = toRequestEntity(building(), {}, UUID, 'en');
+    stored.set(req.id, req);
+    expect(((await (await worker(`/api/requests/${encodeURIComponent(req.id)}`)).json()) as { concerns: boolean }).concerns).toBe(false);
   });
 });
