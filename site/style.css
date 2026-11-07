@@ -71,6 +71,14 @@ main { padding: 24px; display: grid; gap: 16px; align-content: start; min-width:
 .note { color: var(--fg-2); border-left: 3px solid var(--amber); padding-left: 10px; }
 
 .map-wrap { position: relative; }
+.map-box { position: relative; }
+/* Over the map until the buildings are drawn (or failed to load). */
+.map-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.map-loading[hidden] { display: none; }
+.map-loading .pill { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--fg); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
 #map { height: 60vh; min-height: 360px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 /* A MapLibre control (bottom-left): MapLibre places it inside the map, beside the other controls. */
 .legend { display: grid; gap: 4px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }

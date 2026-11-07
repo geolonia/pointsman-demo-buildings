@@ -14,7 +14,7 @@
       pick: 'Pick a building on the map.',
       devLead: 'What the page asks the data platform (NGSI-LD), and what it gets back.', devList: 'All buildings in the area', devEntity: 'The selected building',
       lSource: 'Source of this demo', lPointsman: 'Pointsman', gsi: 'GSI map tiles',
-      loading: 'Loading the buildings…', loaded: '{n} buildings. {k} of them without a year built.', failed: 'The buildings could not be loaded. Try again later.',
+      loading: 'Loading the buildings…', drawing: 'Drawing the buildings on the map…', mapSlow: 'The map is slow to draw the buildings. Reload the page if they do not appear.', loaded: '{n} buildings. {k} of them without a year built.', failed: 'The buildings could not be loaded. Try again later.',
       building: 'Building', year: 'Year built', structure: 'Structure', usage: 'Use', storeys: 'Storeys above ground', height: 'Height',
       flood: 'River flood (worst case)', landslide: 'Landslide zone', unknown: 'not known', none: 'none', id: 'PLATEAU id',
       unknownNote: 'Some values are not in the city model. In a request, Pointsman asks for them instead of guessing.',
@@ -47,7 +47,7 @@
       pick: '地図で建物を選んでください。',
       devLead: 'このページがデータ基盤に何を問い合わせ（NGSI-LD）、何が返ってくるか。', devList: 'この地区のすべての建物', devEntity: '選んだ建物',
       lSource: 'このデモのソース', lPointsman: 'Pointsman', gsi: '地理院タイル',
-      loading: '建物を読み込んでいます…', loaded: '{n} 棟。そのうち {k} 棟は建築年が不明です。', failed: '建物を読み込めませんでした。しばらくしてからもう一度お試しください。',
+      loading: '建物を読み込んでいます…', drawing: '地図に建物を描いています…', mapSlow: '地図に建物を描くのに時間がかかっています。表示されないときは、ページを再読み込みしてください。', loaded: '{n} 棟。そのうち {k} 棟は建築年が不明です。', failed: '建物を読み込めませんでした。しばらくしてからもう一度お試しください。',
       building: '建物', year: '建築年', structure: '構造', usage: '用途', storeys: '地上階数', height: '高さ',
       flood: '洪水（想定最大規模）', landslide: '土砂災害警戒区域', unknown: '不明', none: 'なし', id: 'PLATEAU ID',
       unknownNote: '3D都市モデルにない値があります。依頼では、Pointsman は推測せずにそれを尋ねます。',
@@ -92,6 +92,10 @@
   var data = null;
   var PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
   var zoomTo = null;
+  /** The buildings layer is on the map and drawn once. */
+  var drawn = false;
+  /** The map did not draw them within 15 s (lost WebGL, a broken style): said so, not taken as drawn. */
+  var mapSlow = false;
   var selected = null;
   var map = null;
   /** Whether the Worker accepts check requests (/api/config `checks`). */
@@ -124,11 +128,19 @@
     showFlow();
   }
 
+  /** The note over the map: until the buildings are drawn, or the load failed (the status line says why). */
+  function showLoading() {
+    document.getElementById('map-loading').hidden = data === false || (data !== null && (drawn || mapSlow || !map));
+  }
+
   function showStatus() {
+    showLoading();
     var s = document.getElementById('status');
     if (data === null) s.textContent = t('loading');
     else if (data === false) s.textContent = t('failed');
-    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (data.complete === false || data.skipped > 0 ? ' ' + t('partial') : '') + (map ? '' : ' ' + t('noMap'));
+    else s.textContent = t('loaded', { n: data.features.length, k: data.features.filter(function (f) { return f.properties.yearOfConstruction === null; }).length }) + (data.complete === false || data.skipped > 0 ? ' ' + t('partial') : '') + (map ? '' : ' ' + t('noMap'))
+      // While the map draws them, and when it is slow: screen readers hear this line, not the note over the map.
+      + (map && !drawn ? ' ' + t(mapSlow ? 'mapSlow' : 'drawing') : '');
   }
 
   function value(v) { return v === null || v === undefined ? el('span', { class: 'unknown' }, [t('unknown')]) : String(v); }
@@ -407,6 +419,7 @@
     Object.keys(ERA_COLOUR).forEach(function (k) { colour.push(k, ERA_COLOUR[k]); });
     colour.push('#8f8a82');
     m.addLayer({ id: 'buildings', type: 'fill', source: 'buildings', paint: { 'fill-color': colour, 'fill-opacity': 0.85 } }, 'labels');
+    if (!drawn) m.once('idle', function () { drawn = true; mapSlow = false; showStatus(); });
     m.addLayer({ id: 'selected', type: 'line', source: 'buildings', filter: ['==', ['get', 'id'], selected ? selected.feature.id : ''],
       paint: { 'line-color': PALETTE[theme()].outline, 'line-width': 2.5 } }, 'labels');
     // A linked building: shown close up once the map has its first view.
@@ -493,6 +506,9 @@
     data = j;
     document.getElementById('dev-list').textContent = 'GET /ngsi-ld/v1' + j.query + '&limit=1000&offset=0\n\n→ ' + j.features.length + ' Building entities';
     showStatus();
+    // A map whose style never finishes (lost WebGL, a broken style) would keep
+    // the note up: it goes once the buildings have had their chance.
+    setTimeout(function () { if (!drawn) { mapSlow = true; showStatus(); } }, 15000);
     var linked = (function () { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ''; } })();
     if (linked) {
       select(linked.indexOf('urn:') === 0 ? linked : PLATEAU_URN + linked);

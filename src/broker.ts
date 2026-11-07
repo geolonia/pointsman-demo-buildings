@@ -26,6 +26,9 @@ export function buildingsQuery([w, s, e, n]: Bbox): string {
   return `/entities?${params}`;
 }
 
+/** Pages of the building list read at the same time once the count is known. */
+const PARALLEL_PAGES = 3;
+
 export class Broker {
   private readonly base: string;
   // A wrapper, not `fetch` itself: Workers refuse `this.fetchFn()` with the
@@ -98,25 +101,41 @@ export class Broker {
    * at 1000); `max` bounds the total. `query` is the request without paging,
    * for the page's developer view. `complete`: every building the broker
    * counted (count=true) was read; without a count, the last page was short.
+   * With a count, the pages after the first are read at the same time.
    */
   async listBuildings(bbox: Bbox, max = 10_000): Promise<{ query: string; buildings: Entity[]; complete: boolean }> {
     const page = 1000;
     const query = buildingsQuery(bbox);
-    const buildings: Entity[] = [];
-    let total: number | null = null;
-    for (let offset = 0; offset < max; offset += page) {
-      const res = await this.call(`${query}&limit=${page}&offset=${offset}${offset === 0 ? '&count=true' : ''}`);
+    const read = async (offset: number, count = false) => {
+      const res = await this.call(`${query}&limit=${page}&offset=${offset}${count ? '&count=true' : ''}`);
       if (!res.ok) throw new BrokerError('list', res.status);
-      if (offset === 0) {
-        const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
-        total = Number.isInteger(n) && n >= 0 ? n : null;
-      }
+      const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
       const batch = (await res.json()) as unknown;
       if (!Array.isArray(batch)) throw new BrokerError('list (not a list)', res.status);
-      buildings.push(...(batch as Entity[]));
-      if (batch.length < page || (total !== null && buildings.length >= total)) {
-        return { query, buildings, complete: total === null || buildings.length === total };
+      return { batch: batch as Entity[], total: count && Number.isInteger(n) && n >= 0 ? n : null };
+    };
+    const first = await read(0, true);
+    const buildings = [...first.batch];
+    const total = first.total;
+    // Pages of an unordered query can overlap: complete only when every building came once.
+    const once = () => new Set(buildings.map((b) => b.id)).size === buildings.length;
+    if (first.batch.length < page) return { query, buildings, complete: (total === null || buildings.length === total) && once() };
+    if (total !== null) {
+      // Known size: the other pages a few at a time (not a burst the broker
+      // may refuse), at most `max` buildings in all.
+      const offsets: number[] = [];
+      for (let offset = page; offset < Math.min(total, max); offset += page) offsets.push(offset);
+      for (let i = 0; i < offsets.length; i += PARALLEL_PAGES) {
+        const pages = await Promise.all(offsets.slice(i, i + PARALLEL_PAGES).map((o) => read(o)));
+        for (const { batch } of pages) buildings.push(...batch);
       }
+      return { query, buildings, complete: buildings.length === total && once() };
+    }
+    // No count: page by page until a short page.
+    for (let offset = page; offset < max; offset += page) {
+      const { batch } = await read(offset);
+      buildings.push(...batch);
+      if (batch.length < page) return { query, buildings, complete: once() };
     }
     return { query, buildings, complete: false };
   }

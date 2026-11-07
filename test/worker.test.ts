@@ -98,6 +98,65 @@ describe('GET /api/buildings', () => {
     expect(calls).toHaveLength(2);
   });
 
+  it('with a count, reads the pages after the first at the same time, and only as many as counted', async () => {
+    stored = Array.from({ length: 3500 }, (_, i) => building(i + 1));
+    count = 3500;
+    let open = 0;
+    let most = 0;
+    const spy = vi.mocked(globalThis.fetch);
+    const real = spy.getMockImplementation()!;
+    spy.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      open += 1;
+      most = Math.max(most, open);
+      await new Promise((r) => setTimeout(r, 5));
+      try { return await real(input, init); } finally { open -= 1; }
+    });
+    const body = await (await get('/api/buildings')).json() as { features: unknown[]; complete: boolean };
+    expect(body.features).toHaveLength(3500);
+    expect(body.complete).toBe(true);
+    expect(calls.map((c) => new URL(c.url).searchParams.get('offset'))).toEqual(['0', '1000', '2000', '3000']);
+    expect(most).toBe(3);
+  });
+
+  it('fails as a whole when one of the later pages fails, and keeps nothing', async () => {
+    stored = Array.from({ length: 2500 }, (_, i) => building(i + 1));
+    count = 2500;
+    const spy = vi.mocked(globalThis.fetch);
+    const real = spy.getMockImplementation()!;
+    spy.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) =>
+      new URL(new Request(input, init).url).searchParams.get('offset') === '2000' ? new Response('{}', { status: 500 }) : real(input, init));
+    expect((await get('/api/buildings')).status).toBe(502);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await caches.default.match(new Request('https://buildings.test/api/buildings'))).toBeUndefined();
+  });
+
+  it('is not complete when the broker counts more than its pages give, or pages overlap', async () => {
+    stored = Array.from({ length: 2500 }, (_, i) => building(i + 1));
+    count = 3500;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+    // 2000 counted, and the second page repeats the first: 2000 entities, 1000 buildings.
+    stored = [...Array.from({ length: 1000 }, (_, i) => building(i + 1)), ...Array.from({ length: 1000 }, (_, i) => building(i + 1))];
+    count = 2000;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+  });
+
+  it('is not complete when a short first page repeats a building, with or without a count', async () => {
+    stored = [building(1), building(1)];
+    count = 2;
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+    count = null;
+    await caches.default.delete(new Request('https://buildings.test/api/buildings'));
+    expect(((await (await get('/api/buildings')).json()) as { complete: boolean }).complete).toBe(false);
+  });
+
+  it('reads at most 10,000 buildings when the broker counts more', async () => {
+    stored = Array.from({ length: 1000 }, (_, i) => building(i + 1));
+    count = 12000;
+    const body = (await (await get('/api/buildings')).json()) as { complete: boolean };
+    expect(body.complete).toBe(false);
+    expect(calls).toHaveLength(10);
+  });
+
   it('keeps nothing when the broker counted more than it gave, or nothing at all', async () => {
     count = 5; // two stored: a capped or changing answer
     const partial = await get('/api/buildings');

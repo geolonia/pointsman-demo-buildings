@@ -34,7 +34,13 @@
     </section>
 
     <section class="map-wrap" aria-label="Map">
-      <div id="map"></div>
+      <div class="map-box">
+        <div id="map"></div>
+        <!-- Over the map while the buildings load; the status line below says the same to screen readers. -->
+        <div class="map-loading" id="map-loading" aria-hidden="true">
+          <span class="pill"><span class="spinner"></span><span data-i18n="loading">Loading the buildings…</span></span>
+        </div>
+      </div>
       <div class="legend" id="legend" aria-label="Legend" hidden>
         <strong data-i18n="legendTitle">Year built</strong>
         <span><i class="sw era-old"></i><span data-i18n="eraBefore">1981 or earlier</span></span>
