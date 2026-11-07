@@ -129,3 +129,5 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .verdict.v-medium { border-left-color: var(--amber); }
 .verdict.v-low { border-left-color: var(--green); }
 .verdict.v-more-evidence { border-left-color: var(--grey); }
+.field-error { margin: 4px 0 0; font-size: 14px; color: #C8463A; }
+.field input[aria-invalid="true"] { border-color: #C8463A; }

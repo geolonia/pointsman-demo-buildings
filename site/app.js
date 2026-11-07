@@ -24,7 +24,9 @@
       dontKnow: 'I do not know', woodQ: 'Is it a wooden building?', yes: 'Yes', no: 'No', yearQ: 'Year built', storeysQ: 'Storeys above ground',
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
       fromModel: 'city model', fromYou: 'you', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
-      sending: 'Sending…', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', sendFailed: 'The request could not be sent: {e}',
+      sending: 'Sending…', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', steps: 'Steps', emptyIsUnknown: 'leave it empty', outOfRange: 'Enter a whole number from {min} to {max}, or leave it empty.',
+      e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
+      e_lost: 'The request is no longer there (requests are deleted after a day).', gaveUp: 'No result yet. The demo tries again every hour; you can also look again later.', lookAgain: 'Look again',
       wood: 'Wood', notWood: 'Not wood',
       a_high: 'High: a seismic check should come first', a_medium: 'Medium', a_low: 'Low', 'a_more-evidence': 'More information needed',
       n_high: 'Staff confirm this priority. A wooden house begun on or before 31 May 1981 may get Sapporo\u2019s free seismic check.',
@@ -54,7 +56,9 @@
       dontKnow: 'わからない', woodQ: '木造の建物ですか', yes: 'はい', no: 'いいえ', yearQ: '建築年', storeysQ: '地上階数',
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
       fromModel: '3D都市モデル', fromYou: 'あなた', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
-      sending: '送信しています…', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', sendFailed: '依頼を送れませんでした：{e}',
+      sending: '送信しています…', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', steps: '手順', emptyIsUnknown: '空欄のまま', outOfRange: '{min}から{max}までの整数を入れるか、空欄のままにしてください。',
+      e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
+      e_lost: '依頼はもうありません（依頼は1日で削除されます）。', gaveUp: 'まだ結果がありません。デモは1時間ごとにやり直します。あとでもう一度ご覧ください。', lookAgain: 'もう一度見る',
       wood: '木造', notWood: '非木造',
       a_high: '高：耐震の確認を先に', a_medium: '中', a_low: '低', 'a_more-evidence': '情報が足りません',
       n_high: '職員がこの優先度を確認します。1981年5月31日以前に着工した木造住宅は、札幌市の無料の耐震診断を受けられることがあります。',
@@ -109,6 +113,7 @@
   function applyLang() {
     document.documentElement.lang = lang;
     document.querySelectorAll('[data-i18n]').forEach(function (n) { n.textContent = t(n.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-label]').forEach(function (n) { n.setAttribute('aria-label', t(n.dataset.i18nLabel)); });
     var b = document.getElementById('lang');
     b.textContent = lang === 'ja' ? 'English' : '日本語';
     b.lang = lang === 'ja' ? 'en' : 'ja';
@@ -169,7 +174,7 @@
   function startFlow() {
     if (!selected) return;
     var p = selected.feature.properties;
-    flow = { step: 2, building: selected.feature, answers: {}, known: { year: p.yearOfConstruction !== null, structure: p.structure !== null, storeys: p.storeys !== null } };
+    flow = { step: 2, building: selected.feature, answers: {}, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
     showFlow();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -180,12 +185,18 @@
   function numberField(key, label, min, max) {
     var input = el('input', { type: 'number', min: String(min), max: String(max), step: '1', inputmode: 'numeric', id: 'q-' + key });
     if (typeof flow.answers[key] === 'number') input.value = String(flow.answers[key]);
-    input.addEventListener('input', function () {
+    var error = el('p', { class: 'field-error', id: 'q-' + key + '-error', hidden: '' }, [t('outOfRange', { min: min, max: max })]);
+    var check = function () {
       var n = Number(input.value);
-      if (input.value !== '' && Number.isInteger(n) && n >= min && n <= max) flow.answers[key] = n;
+      var ok = input.value === '' && input.validity.valid;
+      if (input.value !== '' && Number.isInteger(n) && n >= min && n <= max) { flow.answers[key] = n; ok = true; }
       else delete flow.answers[key];
-    });
-    return el('div', { class: 'field' }, [el('label', { for: 'q-' + key }, [label]), input, el('span', { class: 'muted' }, [' ' + t('dontKnow') + ': ' + (lang === 'ja' ? '空欄のまま' : 'leave it empty')])]);
+      if (ok) { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); error.hidden = true; }
+      else { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', error.id); error.hidden = false; }
+    };
+    input.addEventListener('input', check);
+    input.addEventListener('change', check);
+    return el('div', { class: 'field' }, [el('label', { for: 'q-' + key }, [label]), input, el('span', { class: 'muted' }, [' ' + t('dontKnow') + ': ' + t('emptyIsUnknown')]), error]);
   }
 
   function woodField() {
@@ -232,7 +243,7 @@
       if (!flow.known.structure) fields.push(woodField());
       if (!flow.known.storeys) fields.push(numberField('storeysAboveGround', t('storeysQ'), 1, 99));
       body.replaceChildren.apply(body, (fields.length ? fields : [el('p', {}, [t('allKnown')])]).concat([
-        el('div', { class: 'actions' }, [button(t('next'), function () { stepTo(3); }, 'btn')]),
+        el('div', { class: 'actions' }, [button(t('next'), function () { var bad = body.querySelector('[aria-invalid="true"]'); if (bad) { bad.focus(); return; } stepTo(3); }, 'btn')]),
       ]));
     } else if (flow.step === 3) {
       title.textContent = t('t3');
@@ -245,33 +256,74 @@
     }
   }
 
-  function send() {
-    flow.step = 4;
-    flow.state = 'sending';
-    showFlow();
-    fetch('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ building: flow.building.id, answers: flow.answers, lang: lang }) })
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || String(r.status)); return j; }); })
-      .then(function (j) { flow.requestId = j.id; flow.state = 'waiting'; flow.sentAt = Date.now(); showFlow(); poll(j.id); })
-      .catch(function (e) { flow.state = 'failed'; flow.error = e.message; showFlow(); });
+  /** The page's own words for a failed send (the server's are English only). */
+  function sendError(status) {
+    if (status === 429) return 'e_busy';
+    if (status === 503) return 'e_closed';
+    if (status === 400 || status === 404) return 'e_building';
+    return 'e_other';
   }
 
-  /** Every 2 s until the result is there; after 30 s the page says it takes longer, and keeps asking every 10 s. */
-  function poll(id) {
-    if (!flow || flow.requestId !== id) return;
-    fetch('/api/requests/' + encodeURIComponent(id)).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j) {
-      if (!flow || flow.requestId !== id) return;
-      if (j) { flow.request = j.entity; flow.decision = j.decision; flow.query = j.query; showDev(); }
-      if (j && j.entity && j.entity.check && typeof j.entity.check.value === 'string') { flow.state = 'done'; showFlow(); return; }
-      var waited = Date.now() - flow.sentAt;
-      if (waited > 30000 && flow.state !== 'slow') { flow.state = 'slow'; showFlow(); }
-      setTimeout(function () { poll(id); }, waited > 30000 ? 10000 : 2000);
-    });
+  function send() {
+    // This flow only: the visitor may start another one before the answer comes.
+    var f = flow;
+    f.step = 4;
+    f.state = 'sending';
+    showFlow();
+    fetch('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ building: f.building.id, answers: f.answers, lang: lang }) })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (j) {
+          if (!r.ok || !j || typeof j.id !== 'string') throw { key: sendError(r.ok ? 0 : r.status) };
+          return j;
+        });
+      })
+      .then(function (j) {
+        if (flow !== f) return;
+        f.requestId = j.id; f.state = 'waiting'; f.sentAt = Date.now(); showFlow(); poll(f, j.id);
+      })
+      .catch(function (e) {
+        if (flow !== f) return;
+        f.state = 'failed'; f.error = e && e.key ? e.key : 'e_other'; showFlow();
+      });
+  }
+
+  var SLOW_MS = 30000;
+  var GIVE_UP_MS = 15 * 60000;
+  /**
+   * Every 2 s until the result is there; after 30 s the page says it takes
+   * longer and asks every 10 s; after 15 min it stops and offers to look
+   * again. A request that is gone (404) ends the wait.
+   */
+  function poll(f, id) {
+    if (flow !== f || f.requestId !== id) return;
+    fetch('/api/requests/' + encodeURIComponent(id))
+      .then(function (r) { return r.ok ? r.json().then(function (j) { return { j: j }; }) : { status: r.status }; })
+      .catch(function () { return {}; })
+      .then(function (res) {
+        if (flow !== f || f.requestId !== id) return;
+        var j = res.j;
+        if (j) { f.request = j.entity; f.decision = j.decision; f.query = j.query; showDev(); }
+        if (j && j.entity && j.entity.check && typeof j.entity.check.value === 'string') { f.state = 'done'; showFlow(); return; }
+        if (res.status === 404 || res.status === 400) { f.state = 'failed'; f.error = 'e_lost'; showFlow(); return; }
+        var waited = Date.now() - f.sentAt;
+        if (waited > GIVE_UP_MS) { f.state = 'gaveUp'; showFlow(); return; }
+        if (waited > SLOW_MS && f.state !== 'slow') { f.state = 'slow'; showFlow(); }
+        setTimeout(function () { poll(f, id); }, waited > SLOW_MS ? 10000 : 2000);
+      });
   }
 
   function resultView() {
     var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); })]);
     if (flow.state === 'sending') return [el('p', { class: 'muted' }, [t('sending')])];
-    if (flow.state === 'failed') return [el('p', { class: 'note' }, [t('sendFailed', { e: flow.error })]), again];
+    if (flow.state === 'failed') {
+      // Back to the answers, kept, unless the request was sent and is gone.
+      var back = flow.error === 'e_lost' ? [] : [button(t('back'), function () { stepTo(3); })];
+      return [el('p', { class: 'note' }, [t(flow.error)]), el('div', { class: 'actions' }, back.concat(again.firstChild))];
+    }
+    if (flow.state === 'gaveUp') {
+      var f = flow;
+      return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
+    }
     if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')])];
     var check = flow.request.check;
     var action = check.value;
@@ -296,6 +348,8 @@
   function select(id) {
     var f = data && data.features.find(function (x) { return x.id === id; });
     if (!f) return;
+    // A flow belongs to one building: another pick ends it.
+    if (flow && flow.building.id !== id) { flow = null; showFlow(); showDev(); }
     selected = { feature: f, entity: null, query: '', failed: false };
     // A link to this building: the address shows it, and opens it again.
     try { history.replaceState(null, '', '#' + encodeURIComponent(id.replace(PLATEAU_URN, ''))); } catch (e) { /* not in every frame */ }
