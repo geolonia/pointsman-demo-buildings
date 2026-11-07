@@ -34,7 +34,8 @@
       n_low: 'No reason for an early check was found in the data.',
       'n_more-evidence': 'The year built or the structure is missing. They are on the building certificate (登記事項証明書) or the building permit (確認済証).',
       why: 'Why', r0: 'The year built or the structure is not known.', r1: 'Wooden, and built under the building code before June 1981 (or in 1981).', r2: 'Built under the building code before June 1981 (or in 1981).',
-      r3: 'Wooden and built before the 2000 code, on soft ground or where strong shaking is more likely.', r4: 'In a river flood zone of 3 m or deeper.', rd: 'None of the rules for an earlier check applied.',
+      r3: 'Wooden and built before the 2000 code, on soft ground or where strong shaking is more likely.', r4: 'In a river flood zone of 3 m or deeper.', r5: 'Wooden and built before the 2000 code, but the ground or the chance of strong shaking here could not be read.',
+      n_hazard: 'The earthquake data for this place could not be read just now. Try again later; staff can also check it.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)',
       floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', partial: 'Not all buildings could be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
     },
@@ -66,7 +67,8 @@
       n_low: 'データからは、早めの確認が必要な理由は見つかりませんでした。',
       'n_more-evidence': '建築年か構造が足りません。登記事項証明書や確認済証に書かれています。',
       why: '理由', r0: '建築年か構造がわかりません。', r1: '木造で、1981年6月より前の基準（または1981年）で建てられています。', r2: '1981年6月より前の基準（または1981年）で建てられています。',
-      r3: '2000年の基準より前の木造で、揺れやすい地盤か、強い揺れの起きやすい場所にあります。', r4: '想定最大規模で3 m以上浸水する区域にあります。', rd: '早めの確認につながる条件には当てはまりませんでした。',
+      r3: '2000年の基準より前の木造で、揺れやすい地盤か、強い揺れの起きやすい場所にあります。', r4: '想定最大規模で3 m以上浸水する区域にあります。', r5: '2000年の基準より前の木造ですが、この場所の地盤か強い揺れの起きやすさを読み取れませんでした。',
+      n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。職員が確認することもできます。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）',
       floodValue: '{depth} m（{rank}）', noMap: '地図を読み込めませんでした。', partial: 'すべての建物は読み込めませんでした。', devFailed: 'データ基盤から応答がありませんでした。', eraNote1981: '1981年6月より前の基準、または1981年の建築です（確認の日付で決まります）。',
     },
@@ -327,11 +329,12 @@
     if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')])];
     var check = flow.request.check;
     var action = check.value;
-    // The rule's index as the bridge writes it ("0" to "4"), or "default" (building-check-priority v1).
-    var rule = check.policyRule && /^[0-4]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
+    // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
+    var rule = check.policyRule && /^[0-5]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
     return [
       el('p', { class: 'verdict v-' + action }, [t('a_' + action)]),
-      el('p', {}, [t('n_' + action)]),
+      // Rule 5 asks again for the hazard data, not for papers.
+      el('p', {}, [t(rule === 'r5' ? 'n_hazard' : 'n_' + action)]),
       el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
       el('p', { class: 'note' }, [t('care')]),
       again,
