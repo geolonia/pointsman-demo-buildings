@@ -90,6 +90,8 @@
   var data = null;
   var PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
   var zoomTo = null;
+  /** The buildings layer is on the map and drawn once. */
+  var drawn = false;
   var selected = null;
   var map = null;
   /** Whether the Worker accepts check requests (/api/config `checks`). */
@@ -122,7 +124,13 @@
     showFlow();
   }
 
+  /** The note over the map: until the buildings are drawn, or the load failed (the status line says why). */
+  function showLoading() {
+    document.getElementById('map-loading').hidden = data === false || (data !== null && (drawn || !map));
+  }
+
   function showStatus() {
+    showLoading();
     var s = document.getElementById('status');
     if (data === null) s.textContent = t('loading');
     else if (data === false) s.textContent = t('failed');
@@ -404,6 +412,7 @@
     Object.keys(ERA_COLOUR).forEach(function (k) { colour.push(k, ERA_COLOUR[k]); });
     colour.push('#8f8a82');
     m.addLayer({ id: 'buildings', type: 'fill', source: 'buildings', paint: { 'fill-color': colour, 'fill-opacity': 0.85 } }, 'labels');
+    if (!drawn) m.once('idle', function () { drawn = true; showLoading(); });
     m.addLayer({ id: 'selected', type: 'line', source: 'buildings', filter: ['==', ['get', 'id'], selected ? selected.feature.id : ''],
       paint: { 'line-color': PALETTE[theme()].outline, 'line-width': 2.5 } }, 'labels');
     // A linked building: shown close up once the map has its first view.

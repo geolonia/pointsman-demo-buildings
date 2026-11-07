@@ -98,6 +98,26 @@ describe('GET /api/buildings', () => {
     expect(calls).toHaveLength(2);
   });
 
+  it('with a count, reads the pages after the first at the same time, and only as many as counted', async () => {
+    stored = Array.from({ length: 3500 }, (_, i) => building(i + 1));
+    count = 3500;
+    let open = 0;
+    let most = 0;
+    const spy = vi.mocked(globalThis.fetch);
+    const real = spy.getMockImplementation()!;
+    spy.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      open += 1;
+      most = Math.max(most, open);
+      await new Promise((r) => setTimeout(r, 5));
+      try { return await real(input, init); } finally { open -= 1; }
+    });
+    const body = await (await get('/api/buildings')).json() as { features: unknown[]; complete: boolean };
+    expect(body.features).toHaveLength(3500);
+    expect(body.complete).toBe(true);
+    expect(calls.map((c) => new URL(c.url).searchParams.get('offset'))).toEqual(['0', '1000', '2000', '3000']);
+    expect(most).toBe(3);
+  });
+
   it('keeps nothing when the broker counted more than it gave, or nothing at all', async () => {
     count = 5; // two stored: a capped or changing answer
     const partial = await get('/api/buildings');

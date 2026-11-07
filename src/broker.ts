@@ -98,25 +98,35 @@ export class Broker {
    * at 1000); `max` bounds the total. `query` is the request without paging,
    * for the page's developer view. `complete`: every building the broker
    * counted (count=true) was read; without a count, the last page was short.
+   * With a count, the pages after the first are read at the same time.
    */
   async listBuildings(bbox: Bbox, max = 10_000): Promise<{ query: string; buildings: Entity[]; complete: boolean }> {
     const page = 1000;
     const query = buildingsQuery(bbox);
-    const buildings: Entity[] = [];
-    let total: number | null = null;
-    for (let offset = 0; offset < max; offset += page) {
-      const res = await this.call(`${query}&limit=${page}&offset=${offset}${offset === 0 ? '&count=true' : ''}`);
+    const read = async (offset: number, count = false) => {
+      const res = await this.call(`${query}&limit=${page}&offset=${offset}${count ? '&count=true' : ''}`);
       if (!res.ok) throw new BrokerError('list', res.status);
-      if (offset === 0) {
-        const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
-        total = Number.isInteger(n) && n >= 0 ? n : null;
-      }
+      const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
       const batch = (await res.json()) as unknown;
       if (!Array.isArray(batch)) throw new BrokerError('list (not a list)', res.status);
-      buildings.push(...(batch as Entity[]));
-      if (batch.length < page || (total !== null && buildings.length >= total)) {
-        return { query, buildings, complete: total === null || buildings.length === total };
-      }
+      return { batch: batch as Entity[], total: count && Number.isInteger(n) && n >= 0 ? n : null };
+    };
+    const first = await read(0, true);
+    const buildings = [...first.batch];
+    const total = first.total;
+    if (first.batch.length < page) return { query, buildings, complete: total === null || buildings.length === total };
+    if (total !== null) {
+      // Known size: the other pages at once, at most `max` buildings in all.
+      const offsets: number[] = [];
+      for (let offset = page; offset < Math.min(total, max); offset += page) offsets.push(offset);
+      for (const { batch } of await Promise.all(offsets.map((o) => read(o)))) buildings.push(...batch);
+      return { query, buildings, complete: buildings.length === total };
+    }
+    // No count: page by page until a short page.
+    for (let offset = page; offset < max; offset += page) {
+      const { batch } = await read(offset);
+      buildings.push(...batch);
+      if (batch.length < page) return { query, buildings, complete: true };
     }
     return { query, buildings, complete: false };
   }
