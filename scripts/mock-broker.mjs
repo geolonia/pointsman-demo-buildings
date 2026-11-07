@@ -29,10 +29,14 @@ function decide(e) {
   return ['default', 'low'];
 }
 
-function decideLater(id) {
+let generation = 0;
+const generations = new Map();
+
+/** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
+function decideLater(id, gen) {
   setTimeout(() => {
     const e = entities.get(id);
-    if (!e) return;
+    if (!e || generations.get(id) !== gen) return;
     const [rule, action] = decide(e);
     const decisionId = crypto.randomUUID();
     const decision = `urn:ngsi-ld:Decision:${decisionId}`;
@@ -53,9 +57,12 @@ createServer((req, res) => {
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'POST') {
       let e;
       try { e = JSON.parse(text); } catch { return send(400, { title: 'not JSON' }); }
+      if (!e || typeof e !== 'object' || Array.isArray(e) || typeof e.id !== 'string' || typeof e.type !== 'string') return send(400, { title: 'not an entity' });
       if (entities.has(e.id)) return send(409, { title: 'exists' });
+      const gen = ++generation;
       entities.set(e.id, { ...e, createdAt: new Date().toISOString() });
-      if (e.type === 'BuildingCheckRequest') decideLater(e.id);
+      generations.set(e.id, gen);
+      if (e.type === 'BuildingCheckRequest') decideLater(e.id, gen);
       return send(201);
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') {
