@@ -3,3 +3,5 @@ node_modules/
 worker-configuration.d.ts
 .dev.vars
 __pycache__/
+engine
+engine-tmp-*
