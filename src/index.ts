@@ -145,6 +145,8 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     const broker = new Broker(env);
     // All demo requests of the last day (older ones are deleted): refused
     // when there are as many as the daily limit, and when the count is unknown.
+    // A soft limit: requests sent at the same moment can pass it by a few
+    // (REQUEST_LIMIT keeps that small); it caps cost, not an exact number.
     const current = await broker.countType(REQUEST_TYPE);
     if (current === null || current >= dailyLimit(env)) return json({ error: 'the demo has had enough requests for today, try again tomorrow' }, 429);
     const { entity: building } = await broker.getBuilding(body.building);
@@ -183,6 +185,8 @@ const dailyLimit = (env: Env) => {
 export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: number; retried: number; skipped: number; failed: number }> {
   const broker = new Broker(env);
   const out = { deleted: 0, retried: 0, skipped: 0, failed: 0 };
+  // Retries tried, failed ones included: each costs subrequests.
+  let attempts = 0;
   for (const e of await broker.listType(REQUEST_TYPE)) {
     // Only the demo's own requests: never anything else, whatever the broker lists.
     if (e.type !== REQUEST_TYPE || !isRequestId(e.id)) continue;
@@ -198,7 +202,8 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
         if (typeof check?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, ROUTE.attribute, check.inputHash.value));
         await broker.delete(e.id);
         out.deleted += 1;
-      } else if (!e.check && now - created > RETRY_AFTER_MS && out.retried < MAX_RETRIES && bridgeReady(env)) {
+      } else if (!e.check && now - created > RETRY_AFTER_MS && attempts < MAX_RETRIES && bridgeReady(env)) {
+        attempts += 1;
         // As the subscription would, with the entity as stored (no system attributes).
         const fresh = await broker.get(e.id);
         if (!fresh) continue;

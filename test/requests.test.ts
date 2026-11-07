@@ -249,6 +249,17 @@ describe('cleanup', () => {
     expect(stored.get(waiting.id)!.check).toMatchObject({ value: 'high' });
   });
 
+  it('counts failed retries toward the limit of a run', async () => {
+    for (let i = 0; i < 25; i++) {
+      const uuid = `44444444-4444-4444-8444-${String(i).padStart(12, '0')}`;
+      const e = { ...toRequestEntity(building(), { yearOfConstruction: 1975 }, uuid, 'en'), createdAt: '2026-11-07T00:00:00Z' };
+      stored.set(e.id, e);
+    }
+    pointsmanStatus = 503;
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ retried: 0, failed: 20 });
+    pointsmanStatus = 200;
+  });
+
   it('deletes requests older than a day with their Decision and Task, and keeps newer ones and the buildings', async () => {
     const old = { ...toRequestEntity(building(), {}, UUID, 'en'), createdAt: '2026-11-05T00:00:00Z', check: { type: 'Property', value: 'high', decisionId: { type: 'Property', value: 'd1' }, inputHash: { type: 'Property', value: 'h1' } } };
     const fresh = { ...toRequestEntity(building(), {}, '22222222-2222-4222-8222-222222222222', 'en'), createdAt: '2026-11-07T00:00:00Z' };

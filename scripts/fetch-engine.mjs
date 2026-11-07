@@ -23,6 +23,8 @@ if (existsSync('engine')) {
   let head = '';
   try { head = git('-C', 'engine', 'rev-parse', 'HEAD'); } catch { /* not a complete checkout */ }
   if (head !== ref) throw new Error(`engine/ is at ${head || 'no commit'}, engine.json pins ${ref}: delete engine/ and run again`);
+  // Changed files would go into the build unseen.
+  if (git('-C', 'engine', 'status', '--porcelain', '--untracked-files=no') !== '') throw new Error('engine/ has changed files: delete engine/ and run again');
   console.log(`engine/ already at ${ref}`);
   process.exit(0);
 }
