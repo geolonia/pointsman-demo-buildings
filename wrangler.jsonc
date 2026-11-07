@@ -20,7 +20,9 @@
     "DAILY_LIMIT": "300",
     // Scene B (descriptions read by AI): "on" once the queue exists, the token
     // may use building-concern, and the profile is published.
-    "CONCERNS": "off"
+    "CONCERNS": "off",
+    // Photos in scene B: "on" once the profile reads images (engine image support, pointsman#289).
+    "PHOTOS": "off"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.
@@ -36,6 +38,9 @@
     { "name": "REQUEST_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
     { "name": "ALL_REQUESTS_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
   ],
+  // Scene B's photos (src/photos.ts). The bucket must exist, with a lifecycle
+  // rule that deletes objects after 1 day.
+  "r2_buckets": [{ "binding": "PHOTOS_BUCKET", "bucket_name": "pointsman-demo-buildings-photos" }],
   // Hourly: delete requests older than a day, with their Decision and Task entities.
   "triggers": { "crons": ["23 * * * *"] },
   // The bridge's queue: notifications are answered at once and handled here

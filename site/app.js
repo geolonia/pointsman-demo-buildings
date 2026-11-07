@@ -38,6 +38,7 @@
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later; staff can also check it.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
       worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers.',
+      photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
       checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
@@ -80,6 +81,7 @@
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。職員が確認することもできます。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
       worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。',
+      photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
       checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
@@ -120,6 +122,9 @@
   var checksOpen = false;
   /** Scene B: the person's own words, read by AI (/api/config concerns). */
   var concernsOpen = false;
+  /** Photos with the description (/api/config photos). */
+  var photosOpen = false;
+  var MAX_PHOTOS = 3;
   var MAX_WORDS = 1000;
   /** The request flow: step 1 to 4, the answers, the sent request and its result. */
   var flow = null;
@@ -211,7 +216,7 @@
   function startFlow() {
     if (!selected) return;
     var p = selected.feature.properties;
-    flow = { step: 2, building: selected.feature, answers: {}, concern: { description: '' }, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
+    flow = { step: 2, building: selected.feature, answers: {}, concern: { description: '', photos: [] }, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
     showFlow();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -254,6 +259,52 @@
     return [words, after];
   }
 
+  /**
+   * A photo as the AI should get it: about 1 megapixel (Clef scales larger
+   * ones down anyway), JPEG. Drawn on a canvas, so it also drops the photo's
+   * metadata (place, camera, time).
+   */
+  function shrink(file) {
+    return createImageBitmap(file).then(function (img) {
+      var scale = Math.min(1, Math.sqrt(1000000 / (img.width * img.height)), 1600 / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (img.close) img.close();
+      return canvas.toDataURL('image/jpeg', 0.8);
+    });
+  }
+
+  function photosField() {
+    var box = el('div', { class: 'field' }, [el('label', { for: 'q-photos' }, [t('photosQ')]), el('p', { class: 'muted', id: 'q-photos-hint' }, [t('photosHint')])]);
+    var input = el('input', { type: 'file', id: 'q-photos', accept: 'image/jpeg,image/png,image/webp,image/heic', multiple: '', 'aria-describedby': 'q-photos-hint' });
+    var list = el('div', { class: 'photos' });
+    var error = el('p', { class: 'field-error', hidden: '' }, [t('photoFailed')]);
+    var f = flow;
+    function render() {
+      list.replaceChildren.apply(list, f.concern.photos.map(function (src, i) {
+        var remove = button('×', function () { f.concern.photos.splice(i, 1); render(); }, 'btn ghost small');
+        remove.setAttribute('aria-label', t('removePhoto', { n: i + 1 }));
+        return el('figure', {}, [el('img', { src: src, alt: '' }), remove]);
+      }));
+      input.disabled = f.concern.photos.length >= MAX_PHOTOS;
+    }
+    input.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(input.files || [], 0, MAX_PHOTOS - f.concern.photos.length);
+      input.value = '';
+      error.hidden = true;
+      files.reduce(function (done, file) {
+        return done.then(function () { return shrink(file); }).then(function (url) {
+          if (flow === f && f.concern.photos.length < MAX_PHOTOS) { f.concern.photos.push(url); render(); }
+        }).catch(function () { error.hidden = false; });
+      }, Promise.resolve());
+    });
+    render();
+    box.append(input, list, error);
+    return box;
+  }
+
   function woodField() {
     var box = el('fieldset', { class: 'field' }, [el('legend', {}, [t('woodQ')])]);
     [['true', t('yes')], ['false', t('no')], ['', t('dontKnow')]].forEach(function (o) {
@@ -279,7 +330,7 @@
       row(t('storeys'), flow.known.storeys, String(p.storeys), flow.answers.storeysAboveGround),
     ].concat(concernsOpen && flow.concern.description.trim() ? [
       [t('yourWords'), [flow.concern.description.trim(), ' ', origin(false)]],
-    ].concat(flow.concern.afterDisaster ? [[t('afterQ'), [t(flow.concern.afterDisaster === 'unsure' ? 'unsure' : flow.concern.afterDisaster), ' ', origin(false)]]] : []) : []);
+    ].concat(photosOpen && flow.concern.photos.length ? [[t('photos'), [t('photoCount', { n: flow.concern.photos.length }), ' ', origin(false)]]] : []).concat(flow.concern.afterDisaster ? [[t('afterQ'), [t(flow.concern.afterDisaster === 'unsure' ? 'unsure' : flow.concern.afterDisaster), ' ', origin(false)]]] : []) : []);
   }
 
   function showFlow() {
@@ -296,7 +347,7 @@
     if (flow.step === 2) {
       title.textContent = t('t2');
       // Scene B first: the story is the person's worry; the building's data fills in.
-      var fields = concernsOpen ? concernFields() : [];
+      var fields = concernsOpen ? concernFields().concat(photosOpen ? [photosField()] : []) : [];
       if (!flow.known.year) fields.push(numberField('yearOfConstruction', t('yearQ'), 1868, THIS_YEAR));
       if (!flow.known.structure) fields.push(woodField());
       if (!flow.known.storeys) fields.push(numberField('storeysAboveGround', t('storeysQ'), 1, 99));
@@ -332,7 +383,11 @@
     var words = concernsOpen ? f.concern.description.trim() : '';
     f.withConcern = words !== '';
     var payload = { building: f.building.id, answers: f.answers, lang: lang };
-    if (f.withConcern) payload.concern = f.concern.afterDisaster ? { description: words, afterDisaster: f.concern.afterDisaster } : { description: words };
+    if (f.withConcern) {
+      payload.concern = { description: words };
+      if (f.concern.afterDisaster) payload.concern.afterDisaster = f.concern.afterDisaster;
+      if (photosOpen && f.concern.photos.length) payload.concern.photos = f.concern.photos;
+    }
     fetch('/api/requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
       .then(function (r) {
         return r.json().catch(function () { return null; }).then(function (j) {
@@ -594,6 +649,7 @@
   fetch('/api/config').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (config) {
     checksOpen = !!(config && config.checks);
     concernsOpen = !!(config && config.concerns);
+    photosOpen = !!(config && config.photos);
     showBuilding();
     map = makeMap(config && Array.isArray(config.area) ? config.area : AREA);
     return fetch('/api/buildings');

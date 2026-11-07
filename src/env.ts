@@ -24,6 +24,10 @@ export interface Env {
   BRIDGE_DLQ?: Queue<import('../engine/packages/fiware/src/bridge').BridgeMessage>;
   /** "on": scene B (descriptions read by AI) is open; needs the queue and a token that may use building-concern. */
   CONCERNS?: string;
+  /** "on": scene B also takes photos; needs CONCERNS, the bucket and a profile that reads images (engine with image support). */
+  PHOTOS?: string;
+  /** Photos of requests (R2, deleted with the request, and by the bucket's 1-day rule). */
+  PHOTOS_BUCKET?: R2Bucket;
 }
 
 const isServiceUrl = (value: string) => {
@@ -45,6 +49,11 @@ export function bridgeReady(env: Env): boolean {
 /** Whether scene B runs: the bridge, its queue, and the switch (the token must also allow building-concern). */
 export function concernsReady(env: Env): boolean {
   return bridgeReady(env) && !!env.BRIDGE_QUEUE && env.CONCERNS === 'on';
+}
+
+/** Whether photos are taken: scene B, and the switch. */
+export function photosReady(env: Env): boolean {
+  return concernsReady(env) && env.PHOTOS === 'on' && !!env.PHOTOS_BUCKET;
 }
 
 export const trimUrl = (u: string) => u.replace(/\/+$/, '');

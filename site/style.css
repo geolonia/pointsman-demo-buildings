@@ -144,3 +144,8 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .field textarea { font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; max-width: 40rem; box-sizing: border-box; resize: vertical; }
 .verdict.v-now { border-left-color: var(--red); border-left-width: 8px; }
 .verdict.v-person { border-left-color: var(--amber); }
+
+.photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.photos figure { position: relative; margin: 0; }
+.photos img { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.photos .small { position: absolute; top: 4px; right: 4px; min-width: 28px; padding: 2px 8px; }
