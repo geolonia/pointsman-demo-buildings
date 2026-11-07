@@ -33,6 +33,40 @@ let generation = 0;
 const generations = new Map();
 
 /** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
+/**
+ * Scene B without a model: keywords stand in for the AI (EN and JA), so the
+ * page's flow can be tried locally. Marked as mock in the Decision entity.
+ * The real answers come from Clef through Pointsman (profile building-concern).
+ */
+function mockConcern(e, check) {
+  const text = String(e.description?.value ?? '').toLowerCase();
+  const has = (...words) => words.some((w) => text.includes(w));
+  let damage = 'nothing_clear';
+  if (has('collapse', '崩れ', '倒壊')) damage = 'partial_collapse';
+  else if (has('lean', 'tilt', 'sink', '傾', '沈')) damage = 'tilt_or_sinking';
+  else if (has('tile', 'fall', '落ち', '瓦')) damage = 'falling_parts';
+  else if (has('diagonal', 'x-shaped', 'column', '斜め', '柱')) damage = 'structural_cracks';
+  else if (has('foundation', 'sand', '基礎', '液状化', '砂')) damage = 'foundation_or_ground';
+  else if (has('water', 'leak', 'fire', '水', '雨漏り', '火')) damage = 'water_or_fire';
+  else if (has('crack', 'paint', 'ひび', '塗装')) damage = 'cosmetic';
+  const danger = damage === 'partial_collapse' || has('gas', 'trapped', 'ガス', '閉じ込め');
+  const severity = { partial_collapse: 4, tilt_or_sinking: 3, falling_parts: 2, structural_cracks: 2, foundation_or_ground: 2, water_or_fire: 2, cosmetic: 1, nothing_clear: 0 }[damage];
+  let rule = 'default', action = 'low';
+  if (danger) [rule, action] = ['1', 'now'];
+  else if (['tilt_or_sinking', 'falling_parts', 'foundation_or_ground'].includes(damage)) [rule, action] = ['2', 'high'];
+  else if (damage === 'structural_cracks' && check === 'high') [rule, action] = ['3', 'high'];
+  else if (damage === 'structural_cracks' || damage === 'water_or_fire') [rule, action] = ['4', 'medium'];
+  else if (damage === 'nothing_clear') [rule, action] = ['6', 'more-evidence'];
+  else if (check === 'high') [rule, action] = ['7', 'medium'];
+  const answers = [
+    { name: 'about_building', type: 'noul', value: true, probability: 0.9 },
+    { name: 'damage', type: 'choice', value: damage, probability: 0.8 },
+    { name: 'danger_now', type: 'noul', value: danger, probability: 0.8 },
+    { name: 'severity', type: 'score', value: severity, probability: 0.7 },
+  ];
+  return { rule, action, answers };
+}
+
 function decideLater(id, gen) {
   setTimeout(() => {
     const e = entities.get(id);
@@ -42,6 +76,18 @@ function decideLater(id, gen) {
     const decision = `urn:ngsi-ld:Decision:${decisionId}`;
     entities.set(decision, { id: decision, type: 'Decision', note: P('made by scripts/mock-broker.mjs, not by Pointsman') });
     entities.set(id, { ...e, check: { type: 'Property', value: action, decisionId: P(decisionId), decision: { type: 'Relationship', object: decision }, profile: P('building-check-priority'), policyRule: P(rule), model: P('none') } });
+    // Scene B: a second decision on the description, a moment later (as the chained route would).
+    if (e.description) {
+      setTimeout(() => {
+        const now = entities.get(id);
+        if (!now || generations.get(id) !== gen) return;
+        const c = mockConcern(now, action);
+        const cid = crypto.randomUUID();
+        const cdecision = `urn:ngsi-ld:Decision:${cid}`;
+        entities.set(cdecision, { id: cdecision, type: 'Decision', note: P('made by scripts/mock-broker.mjs with keywords, not by an AI'), 'https://datamodels.jp/ns/decision/answers': { type: 'JsonProperty', json: c.answers } });
+        entities.set(id, { ...now, concern: { type: 'Property', value: c.action, decisionId: P(cid), decision: { type: 'Relationship', object: cdecision }, profile: P('building-concern'), policyRule: P(c.rule), model: P('mock') } });
+      }, 2000);
+    }
   }, 2000);
 }
 

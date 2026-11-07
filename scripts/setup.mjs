@@ -43,6 +43,20 @@ const subscriptions = {
       endpoint: { uri: `${WORKER_URL}/notify`, accept: 'application/json', receiverInfo: [{ key: 'x-bridge-secret', value: NOTIFY_SECRET }] },
     },
   },
+  // Scene B: requests with a description, once their check is written, to the
+  // concern route (building-concern, src/index.ts CONCERN_ROUTE).
+  'urn:ngsi-ld:Subscription:pointsman-demo-buildings-concerns': {
+    description: 'Pointsman buildings demo: check requests with a description, to the concern route',
+    entities: [{ type: 'BuildingCheckRequest' }],
+    // Only requests that have a description (attribute exists).
+    q: 'description',
+    // The inputs of building-concern (src/requests.ts CONCERN_INPUTS).
+    watchedAttributes: ['description', 'afterDisaster', 'check'],
+    notification: {
+      format: 'normalized',
+      endpoint: { uri: `${WORKER_URL}/notify?route=concern`, accept: 'application/json', receiverInfo: [{ key: 'x-bridge-secret', value: NOTIFY_SECRET }] },
+    },
+  },
 };
 
 for (const [id, subscription] of Object.entries(subscriptions)) {

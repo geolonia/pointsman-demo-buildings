@@ -17,7 +17,10 @@
     // Pointsman runs on workers.dev in the same account (see compatibility_flags).
     "POINTSMAN_URL": "https://pointsman.geolonia.workers.dev",
     // Requests a day for the whole demo, besides 5 a minute per visitor.
-    "DAILY_LIMIT": "300"
+    "DAILY_LIMIT": "300",
+    // Scene B (descriptions read by AI): "on" once the queue exists, the token
+    // may use building-concern, and the profile is published.
+    "CONCERNS": "off"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.
@@ -34,5 +37,12 @@
     { "name": "ALL_REQUESTS_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
   ],
   // Hourly: delete requests older than a day, with their Decision and Task entities.
-  "triggers": { "crons": ["23 * * * *"] }
+  "triggers": { "crons": ["23 * * * *"] },
+  // The bridge's queue: notifications are answered at once and handled here
+  // with retries; the chained scene B route runs only from it. The queues must
+  // exist before a deploy (wrangler queues create ...).
+  "queues": {
+    "producers": [{ "binding": "BRIDGE_QUEUE", "queue": "pointsman-demo-buildings-bridge" }],
+    "consumers": [{ "queue": "pointsman-demo-buildings-bridge", "max_batch_timeout": 1, "max_retries": 20, "max_concurrency": 1, "dead_letter_queue": "pointsman-demo-buildings-bridge-dlq" }]
+  }
 }
