@@ -21,10 +21,10 @@ export interface Answers {
   storeysAboveGround?: number;
 }
 
-const THIS_YEAR = new Date().getUTCFullYear();
-
 /** The answers from a request body, checked; throws a message for the page on anything else. */
-export function parseAnswers(body: unknown): Answers {
+export function parseAnswers(body: unknown, now = new Date()): Answers {
+  // Read per request: in a Worker, the clock does not run while the module loads (it reads 1970).
+  const thisYear = now.getUTCFullYear();
   if (body === undefined || body === null) return {};
   if (typeof body !== 'object' || Array.isArray(body)) throw new RequestError('answers must be an object');
   const a = body as Record<string, unknown>;
@@ -32,7 +32,7 @@ export function parseAnswers(body: unknown): Answers {
   const out: Answers = {};
   if (a.yearOfConstruction !== undefined && a.yearOfConstruction !== null) {
     const y = a.yearOfConstruction;
-    if (typeof y !== 'number' || !Number.isInteger(y) || y < 1868 || y > THIS_YEAR) throw new RequestError(`yearOfConstruction must be a year from 1868 to ${THIS_YEAR}`);
+    if (typeof y !== 'number' || !Number.isInteger(y) || y < 1868 || y > thisYear) throw new RequestError(`yearOfConstruction must be a year from 1868 to ${thisYear}`);
     out.yearOfConstruction = y;
   }
   if (a.wood !== undefined && a.wood !== null) {

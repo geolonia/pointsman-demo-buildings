@@ -38,6 +38,9 @@ describe('answers', () => {
     expect(parseAnswers(undefined)).toEqual({});
     expect(parseAnswers({ yearOfConstruction: 1975, wood: true, storeysAboveGround: 2 })).toEqual({ yearOfConstruction: 1975, wood: true, storeysAboveGround: 2 });
     expect(parseAnswers({ yearOfConstruction: null })).toEqual({});
+    // The year is checked against the current year at the time of the request.
+    expect(parseAnswers({ yearOfConstruction: 2026 }, new Date('2026-11-07T00:00:00Z'))).toEqual({ yearOfConstruction: 2026 });
+    expect(() => parseAnswers({ yearOfConstruction: 2027 }, new Date('2026-11-07T00:00:00Z'))).toThrow(RequestError);
     for (const bad of [[], 'x', { yearOfConstruction: '1975' }, { yearOfConstruction: 1700 }, { yearOfConstruction: 3000 }, { yearOfConstruction: 1975.5 },
       { wood: 'yes' }, { storeysAboveGround: 0 }, { storeysAboveGround: 100 }, { name: 'Tanaka' }]) {
       expect(() => parseAnswers(bad), JSON.stringify(bad)).toThrow(RequestError);
