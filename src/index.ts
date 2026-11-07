@@ -146,9 +146,10 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     const broker = new Broker(env);
     // All demo requests of the last day (older ones are deleted): refused
     // when there are as many as the daily limit, and when the count is unknown.
-    // A soft limit: requests sent at the same moment can pass it by a few;
-    // ALL_REQUESTS_LIMIT (20 a minute for everyone) keeps that small. It caps
-    // cost, not an exact number (an exact one needs a Durable Object).
+    // A soft limit: requests sent at the same moment can pass it. The rate
+    // limits (counted per Cloudflare location, roughly) make that less likely
+    // but set no bound. It caps cost, not an exact number; an exact one needs
+    // a Durable Object.
     const current = await broker.countType(REQUEST_TYPE);
     if (current === null || current >= dailyLimit(env)) return json({ error: 'the demo has had enough requests for today, try again tomorrow' }, 429);
     const { entity: building } = await broker.getBuilding(body.building);
