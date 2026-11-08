@@ -18,9 +18,10 @@
     "POINTSMAN_URL": "https://pointsman.geolonia.workers.dev",
     // Requests a day for the whole demo, besides 5 a minute per visitor.
     "DAILY_LIMIT": "300",
-    // Scene B (descriptions read by AI): "on" once the queue exists, the token
-    // may use building-concern, and the profile is published.
-    "CONCERNS": "off"
+    // Scene B (descriptions read by AI): "on" needs the queue, a token that may
+    // use building-concern, the published profile and the concerns
+    // subscription (scripts/setup.mjs). "off" refuses descriptions (503).
+    "CONCERNS": "on"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.

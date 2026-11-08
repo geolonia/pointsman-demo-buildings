@@ -9,7 +9,7 @@ export interface Env {
   DAILY_LIMIT?: string;
   // Secrets
   BROKER_API_KEY: string;
-  /** The bridge: a Pointsman token limited to building-check-priority. Without it, no checks are sent. */
+  /** The bridge: a Pointsman token limited to building-check-priority and building-concern. Without it, no checks are sent. */
   POINTSMAN_TOKEN?: string;
   /** The bridge: the secret every broker subscription sends (x-bridge-secret). */
   NOTIFY_SECRET?: string;
