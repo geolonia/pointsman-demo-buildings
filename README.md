@@ -101,20 +101,28 @@ the staff view.
 ## Setup
 
 Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
-`BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL` and `DAILY_LIMIT`.
+`BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL`, `DAILY_LIMIT` and
+`CONCERNS` (`"on"` lets people describe their concern for the AI to read;
+`"off"` refuses descriptions with 503 and keeps the check from the building's
+data).
 Secrets (`wrangler secret put <NAME>`):
 
 | Secret | |
 |---|---|
 | `BROKER_API_KEY` | An API key of the tenant |
 | `NOTIFY_SECRET` | Random; the subscription sends it (`scripts/setup.mjs`) |
-| `POINTSMAN_TOKEN` | A Pointsman token limited to `building-check-priority` |
+| `POINTSMAN_TOKEN` | A Pointsman token limited to `building-check-priority` and `building-concern` |
 
 Without `POINTSMAN_TOKEN` and `NOTIFY_SECRET` the page still shows the
 buildings, and new check requests are refused (503).
 
 Then, once: `BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs` creates
-the subscription (run it again after the inputs change).
+the two subscriptions, one for the check and one for descriptions (run it
+again after the inputs change). Turn `CONCERNS` on only after it ran.
+
+The bridge's queues must exist before the first deploy (create them once):
+`wrangler queues create pointsman-demo-buildings-bridge` and
+`wrangler queues create pointsman-demo-buildings-bridge-dlq`.
 
 Load the buildings once (and again after the data changes):
 
