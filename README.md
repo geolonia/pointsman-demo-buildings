@@ -105,6 +105,8 @@ Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
 `CONCERNS` (`"on"` lets people describe their concern for the AI to read;
 `"off"` refuses new descriptions with 503 and leaves the description route
 out of the bridge, so the check from the building's data still runs).
+Before `"on"`, the `building-concern` profile must be published on
+`POINTSMAN_URL`.
 Secrets (`wrangler secret put <NAME>`):
 
 | Secret | |
@@ -123,8 +125,8 @@ again after the inputs change). Run it before a deploy that turns
 hourly retry.
 
 The bridge's queues must exist before the first deploy (create them once):
-`wrangler queues create pointsman-demo-buildings-bridge` and
-`wrangler queues create pointsman-demo-buildings-bridge-dlq`.
+`pnpm exec wrangler queues create pointsman-demo-buildings-bridge` and
+`pnpm exec wrangler queues create pointsman-demo-buildings-bridge-dlq`.
 
 Load the buildings once (and again after the data changes):
 
