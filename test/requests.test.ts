@@ -262,6 +262,13 @@ describe('cleanup', () => {
     expect(stored.get(waiting.id)!.check).toMatchObject({ value: 'high' });
   });
 
+  it('does not send a request again after two hours, so no queued copy outlives it', async () => {
+    const late = { ...toRequestEntity(building(), { yearOfConstruction: 1975 }, UUID, 'en'), createdAt: '2026-11-07T00:00:00Z' };
+    stored.set(late.id, late);
+    expect(await cleanup(env, Date.parse('2026-11-07T02:30:00Z'))).toMatchObject({ retried: 0, failed: 0, deleted: 0 });
+    expect(stored.get(late.id)!.check).toBeUndefined();
+  });
+
   it('counts failed retries toward the limit of a run', async () => {
     for (let i = 0; i < 25; i++) {
       const uuid = `44444444-4444-4444-8444-${String(i).padStart(12, '0')}`;

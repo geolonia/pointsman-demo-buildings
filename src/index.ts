@@ -29,6 +29,13 @@ const KEEP_MS = 24 * 3600_000;
 const MAX_BODY = 8192;
 /** A request without a result after this long is sent to the bridge again (hourly, at most MAX_RETRIES a run). */
 const RETRY_AFTER_MS = 2 * 60_000;
+/**
+ * Only requests younger than this are sent again. A queue message carries the
+ * request with its description, and the queues keep messages 10 hours (each,
+ * README): 2 h + 10 h + 10 h in the dead-letter queue stays under KEEP_MS, so
+ * no copy outlives the request.
+ */
+const RETRY_UNTIL_MS = 2 * 3600_000;
 const MAX_RETRIES = 20;
 
 /** The check: Pointsman's profile in the private deployment config, rules only (no model). */
@@ -210,8 +217,8 @@ const dailyLimit = (env: Env) => {
 
 /**
  * Every hour: deletes requests older than a day, with their Decision and Task
- * entities; and sends requests that have no result after RETRY_AFTER_MS to
- * the bridge again (Pointsman or the broker failed when it was notified).
+ * entities; and sends requests that have no result after RETRY_AFTER_MS (and
+ * are younger than RETRY_UNTIL_MS) to the bridge again (Pointsman or the broker failed when it was notified).
  * One failing request never stops the others.
  */
 export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: number; retried: number; skipped: number; failed: number }> {
@@ -239,7 +246,7 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
         }
         await broker.delete(e.id);
         out.deleted += 1;
-      } else if (now - created > RETRY_AFTER_MS && attempts < MAX_RETRIES && bridgeReady(env)
+      } else if (now - created > RETRY_AFTER_MS && now - created < RETRY_UNTIL_MS && attempts < MAX_RETRIES && bridgeReady(env)
         && (!e.check || (e.description && !e.concern && concernsReady(env)))) {
         attempts += 1;
         // As the subscription would, with the entity as stored (no system attributes).
