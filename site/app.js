@@ -272,7 +272,10 @@
       canvas.height = Math.max(1, Math.round(img.height * scale));
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       if (img.close) img.close();
-      return canvas.toDataURL('image/jpeg', 0.8);
+      // The server takes at most 700,000 characters per photo: lower the quality until it fits.
+      var url = canvas.toDataURL('image/jpeg', 0.8);
+      for (var q = 0.65; url.length > 680000 && q > 0.3; q -= 0.15) url = canvas.toDataURL('image/jpeg', q);
+      return url;
     });
   }
 

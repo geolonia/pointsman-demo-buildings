@@ -11,6 +11,13 @@ const KEY = /^photos\/[0-9a-f-]{36}\/[1-3]\.(jpg|png|webp)$/;
 const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const TYPE: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
+function fromBase64(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 export const isPhotoKey = (k: unknown): k is string => typeof k === 'string' && KEY.test(k);
 
 /** Stores checked data URLs (requests.ts parseConcern); returns their keys, in order. */
@@ -18,7 +25,7 @@ export async function storePhotos(bucket: R2Bucket, uuid: string, photos: string
   return Promise.all(photos.map(async (url, i) => {
     const [, type, b64] = /^data:([^;]+);base64,(.*)$/.exec(url)!;
     const key = `photos/${uuid}/${i + 1}.${EXT[type!]}`;
-    await bucket.put(key, Uint8Array.from(atob(b64!), (c) => c.charCodeAt(0)), { httpMetadata: { contentType: type! } });
+    await bucket.put(key, fromBase64(b64!), { httpMetadata: { contentType: type! } });
     return key;
   }));
 }
@@ -41,7 +48,8 @@ async function dataUrl(bucket: R2Bucket, key: string): Promise<string | null> {
 /**
  * The fetch the bridge uses: a decide request to Pointsman for `profile`
  * gets the photos in place of their keys (state.photos.value); everything
- * else is passed on unchanged. A photo that is gone is left out.
+ * else is passed on unchanged. If a photo is missing, it answers 503 without
+ * calling Pointsman (the bridge retries).
  */
 export function inlinePhotos(fetcher: typeof fetch, env: Pick<Env, 'PHOTOS_BUCKET' | 'POINTSMAN_URL'>, profile: string): typeof fetch {
   const target = `${env.POINTSMAN_URL.replace(/\/+$/, '')}/v1/decide/${profile}`;
@@ -56,8 +64,16 @@ export function inlinePhotos(fetcher: typeof fetch, env: Pick<Env, 'PHOTOS_BUCKE
     }
     const keys = body.state?.photos?.value;
     if (!Array.isArray(keys) || keys.length === 0) return fetcher(input, init);
-    const urls = (await Promise.all(keys.filter(isPhotoKey).map((k) => dataUrl(env.PHOTOS_BUCKET!, k)))).filter((u): u is string => u !== null);
-    body.state!.photos!.value = urls;
+    const wanted = keys.filter(isPhotoKey);
+    const urls = await Promise.all(wanted.map((k) => dataUrl(env.PHOTOS_BUCKET!, k)));
+    // A photo that is not (yet) in R2: Pointsman is not called, so the decision
+    // is never made on fewer photos than the person sent. The bridge retries a 503.
+    const missing = wanted.filter((_, i) => urls[i] === null);
+    if (missing.length > 0) {
+      console.warn('photos missing in R2, the decision waits', { missing });
+      return new Response(JSON.stringify({ error: 'photos not available' }), { status: 503, headers: { 'content-type': 'application/json' } });
+    }
+    body.state!.photos!.value = urls as string[];
     return fetcher(input, { ...init, body: JSON.stringify(body) });
   }) as typeof fetch;
 }

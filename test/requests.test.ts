@@ -90,6 +90,8 @@ let calls: Call[] = [];
 let stored: Map<string, Entity>;
 let pointsmanAction = 'high';
 let pointsmanStatus = 200;
+/** How the broker answers a create: 'ok', 'fail' (nothing stored) or 'lost' (stored, then the answer is lost). */
+let createMode: 'ok' | 'fail' | 'lost' = 'ok';
 /** NGSILD-Results-Count for count=true; null: none (a broker that does not count). */
 let countHeader: (n: number) => string | null = (n) => String(n);
 
@@ -98,6 +100,7 @@ beforeEach(() => {
   stored = new Map([[building().id, building()]]);
   pointsmanAction = 'high';
   pointsmanStatus = 200;
+  createMode = 'ok';
   countHeader = (n) => String(n);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init);
@@ -115,7 +118,9 @@ beforeEach(() => {
       });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'POST') {
+      if (createMode === 'fail') return new Response('down', { status: 503 });
       stored.set(body.id, body);
+      if (createMode === 'lost') return new Response('timeout', { status: 504 });
       return new Response(null, { status: 201 });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') {
@@ -451,13 +456,36 @@ describe('scene B: photos', () => {
     const sent: string[] = [];
     const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
     const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
-    const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`, 'photos/../../secret', `photos/${uuid}/2.jpg`] } };
+    const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`, 'photos/../../secret'] } };
     await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
     expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
     await f('https://pointsman.test/v1/decide/building-check-priority', { method: 'POST', body: JSON.stringify({ state }) });
     expect(JSON.parse(sent[1]!).state.photos.value).toEqual(state.photos.value);
     await deletePhotos(env.PHOTOS_BUCKET!, uuid);
     expect(await env.PHOTOS_BUCKET!.get(`photos/${uuid}/1.jpg`)).toBeNull();
+  });
+
+  it('a failed create deletes the photos, a create that went through after all keeps them', async () => {
+    const body = { building: building().id, concern: { description: 'Cracks, see the photo.', photos: [jpeg] } };
+    const photoCount = async () => (await env.PHOTOS_BUCKET!.list({ prefix: 'photos/' })).objects.length;
+    const before = await photoCount();
+    createMode = 'fail';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before);
+    createMode = 'lost';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before + 1);
+  });
+
+  it('a photo missing in R2: Pointsman is not called, the bridge gets a 503 to retry', async () => {
+    const sent: string[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const state = { description: { value: 'x' }, photos: { value: ['photos/88888888-8888-4888-8888-888888888888/1.jpg'] } };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const res = await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(res.status).toBe(503);
+    expect(sent).toEqual([]);
   });
 
   it('cleanup deletes a request\'s photos with it', async () => {

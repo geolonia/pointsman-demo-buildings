@@ -191,16 +191,20 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     const { entity: building } = await broker.getBuilding(body.building);
     if (!building) return json({ error: 'building not found' }, 404);
     const uuid = crypto.randomUUID();
-    // Photos to R2 first; the entity carries their keys (GeonicDB drops large change events).
-    const keys = concern?.photos ? await storePhotos(env.PHOTOS_BUCKET!, uuid, concern.photos) : undefined;
-    const entity = toRequestEntity(building, answers, uuid, lang, concern && (keys ? { ...concern, photos: keys } : concern));
+    let id: string | undefined;
     try {
+      // Photos to R2 first; the entity carries their keys (GeonicDB drops large change events).
+      const keys = concern?.photos ? await storePhotos(env.PHOTOS_BUCKET!, uuid, concern.photos) : undefined;
+      const entity = toRequestEntity(building, answers, uuid, lang, concern && (keys ? { ...concern, photos: keys } : concern));
+      id = entity.id;
       await broker.create(entity);
+      return json({ id: entity.id }, 201);
     } catch (err) {
-      if (keys) await deletePhotos(env.PHOTOS_BUCKET!, uuid).catch(() => {});
+      // Delete the photos unless the entity was created after all (a create that
+      // timed out after the broker committed): then they are still needed.
+      if (concern?.photos && !(id && await broker.get(id).catch(() => null))) await deletePhotos(env.PHOTOS_BUCKET!, uuid).catch(() => {});
       throw err;
     }
-    return json({ id: entity.id }, 201);
   } catch (err) {
     if (err instanceof RequestError) return json({ error: err.message }, 400);
     throw err;
@@ -255,7 +259,7 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
           if (typeof result?.decisionId?.value === 'string') await broker.delete(decisionEntityId(result.decisionId.value));
           if (typeof result?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, route.attribute, result.inputHash.value));
         }
-        if (env.PHOTOS_BUCKET) await deletePhotos(env.PHOTOS_BUCKET, e.id.slice(-36));
+        if (env.PHOTOS_BUCKET && e.photos) await deletePhotos(env.PHOTOS_BUCKET, e.id.slice(-36));
         await broker.delete(e.id);
         out.deleted += 1;
       } else if (now - created > RETRY_AFTER_MS && now - created < RETRY_UNTIL_MS && attempts < MAX_RETRIES && bridgeReady(env)
