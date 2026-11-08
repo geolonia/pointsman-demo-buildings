@@ -5,11 +5,13 @@ import { env as cfEnv } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toEntity, type Entity, type PlateauFeature } from '../src/buildings';
 import type { Env } from '../src/env';
-import demo, { cleanup } from '../src/index';
-import { centreOf, parseAnswers, RequestError, REQUEST_INPUTS, toRequestEntity } from '../src/requests';
+import demo, { cleanup, CONCERN_ROUTE } from '../src/index';
+import { centreOf, CONCERN_INPUTS, parseAnswers, parseConcern, RequestError, REQUEST_INPUTS, toRequestEntity } from '../src/requests';
 import setupScript from '../scripts/setup.mjs?raw';
 
-const env = cfEnv as unknown as Env;
+// Without the queue (wrangler.jsonc has one): the bridge then runs in the request, as the tests read it.
+const { BRIDGE_QUEUE: queueBinding, ...withoutQueue } = cfEnv as unknown as Env;
+const env = withoutQueue as Env;
 const BROKER = 'https://geolonia-demo.geonicdb.jp/ngsi-ld/v1';
 const PAGE = 'https://buildings.test';
 const ctx = { waitUntil: (p: Promise<unknown>) => void p.catch(() => {}), passThroughOnException: () => {}, props: {} } as unknown as ExecutionContext;
@@ -30,6 +32,10 @@ describe('the subscription', () => {
   it('watches the inputs the bridge hashes', () => {
     const watched = /watchedAttributes: (\[[^\]]*\])/.exec(setupScript)![1]!.replaceAll("'", '"');
     expect(JSON.parse(watched)).toEqual(REQUEST_INPUTS);
+    const all = [...setupScript.matchAll(/watchedAttributes: (\[[^\]]*\])/g)].map((m) => JSON.parse(m[1]!.replaceAll("'", '"')));
+    expect(all[1]).toEqual(CONCERN_INPUTS);
+    expect(setupScript).toContain("q: 'description'");
+    expect(setupScript).toContain('/notify?route=concern');
   });
 });
 
@@ -167,7 +173,7 @@ describe('POST /api/requests', () => {
     expect((await worker('/api/requests', { method: 'POST', body: '{}' }, unlimited as Env)).status).toBe(403);
     expect((await post({ building: 'urn:x' })).status).toBe(400);
     expect((await post({ building: building().id, answers: { yearOfConstruction: 'old' } })).status).toBe(400);
-    expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'x'.repeat(5000) }, unlimited as Env)).status).toBe(413);
+    expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'x'.repeat(9000) }, unlimited as Env)).status).toBe(413);
     expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'not json' }, unlimited as Env)).status).toBe(400);
     expect((await post({ building: 'urn:ngsi-ld:Building:plateau:01100-bldg-404' })).status).toBe(404);
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
@@ -279,5 +285,123 @@ describe('cleanup', () => {
     expect(calls.some((c) => c.method === 'DELETE' && c.url.includes('urn%3Angsi-ld%3ATask%3A'))).toBe(true);
     expect(stored.has(fresh.id)).toBe(true);
     expect(stored.has(building().id)).toBe(true);
+  });
+});
+
+describe('scene B: the concern in the person\'s own words', () => {
+  const open = () => ({ ...unlimited, CONCERNS: 'on', BRIDGE_QUEUE: { send: async () => {}, sendBatch: async () => {} } }) as unknown as Env;
+
+  it('reads a description and whether it started after a disaster; empty is none', () => {
+    expect(parseConcern(undefined)).toBeUndefined();
+    expect(parseConcern({ description: '   ' })).toBeUndefined();
+    expect(parseConcern({ description: ' 地震のあと、壁に斜めのひびが入った。', afterDisaster: 'yes' })).toEqual({ description: '地震のあと、壁に斜めのひびが入った。', afterDisaster: 'yes' });
+    expect(parseConcern({ description: 'Line one\nline two' })).toEqual({ description: 'Line one\nline two' });
+  });
+
+  it('refuses other fields, kinds, control characters and long text', () => {
+    for (const bad of [[], { description: 1 }, { description: 'x', other: 1 }, { description: 'x', afterDisaster: 'maybe' }, { description: 'a\u0007b' }, { description: 'x'.repeat(1001) }]) {
+      expect(() => parseConcern(bad), JSON.stringify(bad)).toThrow(RequestError);
+    }
+  });
+
+  it('puts the words on the request entity, as the resident\'s', () => {
+    const e = toRequestEntity(building(), {}, UUID, 'en', { description: 'The balcony is cracked.', afterDisaster: 'unsure' });
+    expect(e.description).toEqual({ type: 'Property', value: 'The balcony is cracked.', origin: { type: 'Property', value: 'resident' } });
+    expect(e.afterDisaster).toMatchObject({ value: 'unsure' });
+    expect(CONCERN_INPUTS).toEqual(['description', 'afterDisaster', 'check']);
+    expect(CONCERN_ROUTE).toMatchObject({ profile: 'building-concern', attribute: 'concern', name: 'concern', requires: { priority: { attribute: 'check' } } });
+  });
+
+  it('refuses a description while scene B is closed, and takes it when open', async () => {
+    const body = { building: building().id, concern: { description: 'The house leans.' } };
+    expect((await post(body)).status).toBe(503);
+    expect(calls.some((c) => c.method === 'POST')).toBe(false);
+    const res = await post(body, {}, open());
+    expect(res.status).toBe(201);
+    const created = calls.find((c) => c.method === 'POST' && c.url === `${BROKER}/entities`)!;
+    expect(created.body).toMatchObject({ description: { value: 'The house leans.' } });
+  });
+
+  it('says in the config whether scene B is open', async () => {
+    const closed = await (await worker('/api/config')).json() as { concerns: boolean };
+    expect(closed.concerns).toBe(false);
+    const opened = await (await worker('/api/config', {}, open())).json() as { concerns: boolean };
+    expect(opened.concerns).toBe(true);
+  });
+
+  it('gives both Decision entities with the request', async () => {
+    const req = {
+      ...toRequestEntity(building(), {}, UUID, 'en', { description: 'x' }),
+      check: { type: 'Property', value: 'low', decision: { type: 'Relationship', object: 'urn:ngsi-ld:Decision:9' } },
+      concern: { type: 'Property', value: 'high', decision: { type: 'Relationship', object: 'urn:ngsi-ld:Decision:10' } },
+    };
+    stored.set(req.id, req);
+    stored.set('urn:ngsi-ld:Decision:9', { id: 'urn:ngsi-ld:Decision:9', type: 'Decision' });
+    stored.set('urn:ngsi-ld:Decision:10', { id: 'urn:ngsi-ld:Decision:10', type: 'Decision' });
+    const body = await (await worker(`/api/requests/${encodeURIComponent(req.id)}`)).json() as { decision: Entity; concernDecision: Entity };
+    expect(body.decision.id).toBe('urn:ngsi-ld:Decision:9');
+    expect(body.concernDecision.id).toBe('urn:ngsi-ld:Decision:10');
+  });
+
+  it('cleanup deletes the concern\'s Decision entity too', async () => {
+    const old = {
+      ...toRequestEntity(building(), {}, UUID, 'en', { description: 'x' }), createdAt: '2026-11-05T00:00:00Z',
+      check: { type: 'Property', value: 'low', decisionId: { type: 'Property', value: 'd1' } },
+      concern: { type: 'Property', value: 'high', decisionId: { type: 'Property', value: 'd2' } },
+    };
+    stored.set(old.id, old);
+    stored.set('urn:ngsi-ld:Decision:d2', { id: 'urn:ngsi-ld:Decision:d2', type: 'Decision' });
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ deleted: 1 });
+    expect(stored.has('urn:ngsi-ld:Decision:d2')).toBe(false);
+  });
+});
+
+describe('the bridge queue', () => {
+  it('with the queue, /notify answers 202 at once and queues the notification', async () => {
+    expect(queueBinding).toBeDefined();
+    const sent: unknown[] = [];
+    const queued = { ...env, BRIDGE_QUEUE: { send: async () => {}, sendBatch: async (m: unknown[]) => { sent.push(...m); } } } as unknown as Env;
+    const req = toRequestEntity(building(), {}, UUID, 'en');
+    const res = await demo.fetch(new Request(`${PAGE}/notify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! }, body: JSON.stringify({ type: 'Notification', data: [req] }) }), queued, ctx);
+    expect(res.status).toBe(202);
+    expect(sent).toHaveLength(1);
+  });
+});
+
+describe('scene B, more', () => {
+  const open = () => ({ ...unlimited, CONCERNS: 'on', BRIDGE_QUEUE: { send: async () => {}, sendBatch: async () => {} } }) as unknown as Env;
+  const notify = (path: string, data: unknown[], e: Env) => demo.fetch(new Request(`${PAGE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! }, body: JSON.stringify({ type: 'Notification', data }) }), e, ctx);
+
+  it('with scene B off, /notify?route=concern runs nothing', async () => {
+    const req = toRequestEntity(building(), {}, UUID, 'en', { description: 'x' });
+    const res = await notify('/notify?route=concern', [req], env);
+    expect([200, 202]).toContain(res.status);
+    expect(calls.some((c) => c.url.includes('/v1/decide/'))).toBe(false);
+  });
+
+  it('cleanup sends a request whose concern is missing to the concern route, and not while scene B is off', async () => {
+    const waiting = {
+      ...toRequestEntity(building(), {}, UUID, 'en', { description: 'x' }), createdAt: '2026-11-07T00:00:00Z',
+      check: { type: 'Property', value: 'low', decisionId: { type: 'Property', value: 'd1' } },
+    };
+    stored.set(waiting.id, waiting);
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ retried: 0 });
+    const sent: { body: { route?: string } }[] = [];
+    const queued = { ...open(), BRIDGE_QUEUE: { send: async () => {}, sendBatch: async (m: { body: { route?: string } }[]) => { sent.push(...m); } } } as unknown as Env;
+    expect(await cleanup(queued, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ retried: 1, failed: 0 });
+    expect(sent[0]!.body.route).toBe('concern');
+  });
+
+  it('the queue handler retries everything later while the bridge is not ready', async () => {
+    let retried = 0;
+    const batch = { messages: [], retryAll: () => { retried += 1; } } as unknown as MessageBatch<never>;
+    await demo.queue(batch, { ...env, POINTSMAN_TOKEN: '' } as Env);
+    expect(retried).toBe(1);
+  });
+
+  it('the request answer says whether scene B is open', async () => {
+    const req = toRequestEntity(building(), {}, UUID, 'en');
+    stored.set(req.id, req);
+    expect(((await (await worker(`/api/requests/${encodeURIComponent(req.id)}`)).json()) as { concerns: boolean }).concerns).toBe(false);
   });
 });

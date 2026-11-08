@@ -49,6 +49,35 @@ export function parseAnswers(body: unknown, now = new Date()): Answers {
 
 export class RequestError extends Error {}
 
+/** Scene B: what worries the person, in their own words. */
+export interface Concern {
+  description: string;
+  /** Do they say it started after an earthquake or another disaster? */
+  afterDisaster?: 'yes' | 'no' | 'unsure';
+}
+
+export const MAX_DESCRIPTION = 1000;
+
+/** The concern from a request body, checked; undefined when there is none. Throws a message for the page otherwise. */
+export function parseConcern(body: unknown): Concern | undefined {
+  if (body === undefined || body === null) return undefined;
+  if (typeof body !== 'object' || Array.isArray(body)) throw new RequestError('concern must be an object');
+  const c = body as Record<string, unknown>;
+  for (const key of Object.keys(c)) if (!['description', 'afterDisaster'].includes(key)) throw new RequestError(`unknown concern field "${key}"`);
+  if (typeof c.description !== 'string') throw new RequestError('concern.description must be text');
+  const description = c.description.trim();
+  if (description === '') return undefined;
+  if (description.length > MAX_DESCRIPTION) throw new RequestError(`concern.description must be at most ${MAX_DESCRIPTION} characters`);
+  // Control characters other than line breaks and tabs: never part of a description.
+  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(description)) throw new RequestError('concern.description must not contain control characters');
+  if (c.afterDisaster !== undefined && c.afterDisaster !== null && !['yes', 'no', 'unsure'].includes(c.afterDisaster as string)) {
+    throw new RequestError('concern.afterDisaster must be yes, no or unsure');
+  }
+  const out: Concern = { description };
+  if (typeof c.afterDisaster === 'string') out.afterDisaster = c.afterDisaster as NonNullable<Concern['afterDisaster']>;
+  return out;
+}
+
 const P = (value: unknown, origin: 'plateau' | 'resident') => ({ type: 'Property', value, origin: { type: 'Property', value: origin } });
 
 const valueOf = (e: Entity, name: string): unknown => {
@@ -66,7 +95,7 @@ export function centreOf(p: Polygon): [number, number] {
 }
 
 /** The request entity for a building and the resident's answers (normalized NGSI-LD, core context). */
-export function toRequestEntity(building: Entity, answers: Answers, uuid: string, lang: 'en' | 'ja'): Entity {
+export function toRequestEntity(building: Entity, answers: Answers, uuid: string, lang: 'en' | 'ja', concern?: Concern): Entity {
   const footprint = valueOf(building, 'location') as Polygon | undefined;
   if (footprint?.type !== 'Polygon') throw new RequestError('the building has no footprint');
   const e: Entity = {
@@ -88,8 +117,15 @@ export function toRequestEntity(building: Entity, answers: Answers, uuid: string
   else if (answers.storeysAboveGround !== undefined) e.storeysAboveGround = P(answers.storeysAboveGround, 'resident');
   const usage = valueOf(building, 'usage');
   if (typeof usage === 'string') e.usage = P(usage, 'plateau');
+  if (concern) {
+    e.description = P(concern.description, 'resident');
+    if (concern.afterDisaster) e.afterDisaster = P(concern.afterDisaster, 'resident');
+  }
   return e;
 }
 
 /** The attributes the profile reads (the bridge's loop guard hashes them). */
 export const REQUEST_INPUTS = ['location', 'yearOfConstruction', 'buildingStructureType', 'storeysAboveGround'];
+
+/** The attributes building-concern reads (scene B): the words, and the check it builds on. */
+export const CONCERN_INPUTS = ['description', 'afterDisaster', 'check'];

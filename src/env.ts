@@ -18,6 +18,12 @@ export interface Env {
   /** Requests per visitor and minute. */
   REQUEST_LIMIT?: RateLimit;
   ALL_REQUESTS_LIMIT?: RateLimit;
+  /** The bridge's queue (wrangler.jsonc "queues"); chained routes, such as scene B, run only from it. */
+  BRIDGE_QUEUE?: Queue<import('../engine/packages/fiware/src/bridge').BridgeMessage>;
+  /** Its dead-letter queue, as a producer: messages no retry can fix go there at once. */
+  BRIDGE_DLQ?: Queue<import('../engine/packages/fiware/src/bridge').BridgeMessage>;
+  /** "on": scene B (descriptions read by AI) is open; needs the queue and a token that may use building-concern. */
+  CONCERNS?: string;
 }
 
 const isServiceUrl = (value: string) => {
@@ -34,6 +40,11 @@ export function checkEnv(env: Env): void {
 /** Whether the bridge can run: requests are accepted only then, so none waits for a check that never comes. */
 export function bridgeReady(env: Env): boolean {
   return !!env.POINTSMAN_TOKEN && !!env.NOTIFY_SECRET && isServiceUrl(env.POINTSMAN_URL ?? '');
+}
+
+/** Whether scene B runs: the bridge, its queue, and the switch (the token must also allow building-concern). */
+export function concernsReady(env: Env): boolean {
+  return bridgeReady(env) && !!env.BRIDGE_QUEUE && env.CONCERNS === 'on';
 }
 
 export const trimUrl = (u: string) => u.replace(/\/+$/, '');

@@ -10,12 +10,12 @@
 //
 // See README.md.
 
-import { type BridgeConfig, decisionEntityId, handleRequest, type Route, taskEntityId } from '../engine/packages/fiware/src/bridge';
+import { type BridgeConfig, type BridgeMessage, decisionEntityId, handleQueueBatch, handleRequest, type Route, taskEntityId } from '../engine/packages/fiware/src/bridge';
 import { PLATEAU_SOURCE, toFeature } from './buildings';
 import { type Bbox, Broker, BrokerError } from './broker';
-import { bridgeReady, checkEnv, type Env, trimUrl } from './env';
+import { bridgeReady, checkEnv, concernsReady, type Env, trimUrl } from './env';
 import { fetchWithAgent } from './http';
-import { isRequestId, parseAnswers, REQUEST_INPUTS, REQUEST_TYPE, RequestError, toRequestEntity } from './requests';
+import { CONCERN_INPUTS, isRequestId, parseAnswers, parseConcern, REQUEST_INPUTS, REQUEST_TYPE, RequestError, toRequestEntity } from './requests';
 
 /** The demo area: Kiyota-ku, Sapporo, around Satozuka (PLATEAU meshes 64413375 and 64413376). */
 export const AREA: Bbox = [141.4370, 42.9745, 141.4630, 42.9840];
@@ -25,7 +25,8 @@ const ONE_CACHE_S = 60;
 const BUILDING_ID = /^urn:ngsi-ld:Building:plateau:\d{5}-bldg-\d+$/;
 /** Demo requests live this long; the hourly cleanup deletes them with their Decision and Task entities. */
 const KEEP_MS = 24 * 3600_000;
-const MAX_BODY = 4096;
+/** A request with a description of up to 1,000 characters (3 bytes each in Japanese) fits. */
+const MAX_BODY = 8192;
 /** A request without a result after this long is sent to the bridge again (hourly, at most MAX_RETRIES a run). */
 const RETRY_AFTER_MS = 2 * 60_000;
 const MAX_RETRIES = 20;
@@ -41,9 +42,32 @@ export const ROUTE: Route = {
   task: { actions: ['high'], priority: { high: 1 } },
 };
 
+/**
+ * Scene B: the AI reads the person's words (profile building-concern, which
+ * requires the check above). Runs from the queue only (the bridge's rule for
+ * chained routes), when the request has a description: its subscription
+ * notifies /notify?route=concern.
+ */
+export const CONCERN_ROUTE: Route = {
+  type: REQUEST_TYPE,
+  profile: 'building-concern',
+  inputs: CONCERN_INPUTS,
+  attribute: 'concern',
+  name: 'concern',
+  decisionEntity: true,
+  requires: { priority: { attribute: 'check', rerunOnReview: true } },
+  // A person acts on these first; any app that lists Task entities shows the work.
+  task: { actions: ['now', 'high', 'person'], priority: { now: 1, high: 2, person: 3 } },
+};
+
 export function bridgeConfig(env: Env): BridgeConfig {
   return {
-    routes: [ROUTE],
+    routes: concernsReady(env) ? [ROUTE, CONCERN_ROUTE] : [ROUTE],
+    // With the queue, notifications are answered at once and the queue
+    // handler below runs the bridge (chained routes need it).
+    ...(env.BRIDGE_QUEUE && { queue: env.BRIDGE_QUEUE }),
+    // A message no retry can fix goes there at once, to be looked at and replayed.
+    ...(env.BRIDGE_DLQ && { deadLetter: env.BRIDGE_DLQ }),
     notifySecret: env.NOTIFY_SECRET ?? '',
     pointsman: { url: trimUrl(env.POINTSMAN_URL), token: env.POINTSMAN_TOKEN ?? '' },
     broker: { url: trimUrl(env.BROKER_URL), apiKey: env.BROKER_API_KEY, tenant: env.BROKER_TENANT },
@@ -132,7 +156,7 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
   if (env.ALL_REQUESTS_LIMIT && !(await env.ALL_REQUESTS_LIMIT.limit({ key: 'all' })).success) return json({ error: 'the demo is busy, try again in a minute' }, 429);
   const text = await boundedText(request, MAX_BODY);
   if (text === null) return json({ error: 'request too large' }, 413);
-  let body: { building?: unknown; answers?: unknown; lang?: unknown };
+  let body: { building?: unknown; answers?: unknown; concern?: unknown; lang?: unknown };
   try {
     body = JSON.parse(text) as typeof body;
   } catch {
@@ -143,6 +167,8 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
   const lang = body.lang === 'ja' ? 'ja' : 'en';
   try {
     const answers = parseAnswers(body.answers);
+    const concern = parseConcern(body.concern);
+    if (concern && !concernsReady(env)) return json({ error: 'descriptions are not read yet' }, 503);
     const broker = new Broker(env);
     // All demo requests of the last day (older ones are deleted): refused
     // when there are as many as the daily limit, and when the count is unknown.
@@ -154,7 +180,7 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     if (current === null || current >= dailyLimit(env)) return json({ error: 'the demo has had enough requests for today, try again tomorrow' }, 429);
     const { entity: building } = await broker.getBuilding(body.building);
     if (!building) return json({ error: 'building not found' }, 404);
-    const entity = toRequestEntity(building, answers, crypto.randomUUID(), lang);
+    const entity = toRequestEntity(building, answers, crypto.randomUUID(), lang, concern);
     await broker.create(entity);
     return json({ id: entity.id }, 201);
   } catch (err) {
@@ -168,10 +194,13 @@ async function getRequest(env: Env, id: string): Promise<Response> {
   const broker = new Broker(env);
   const entity = await broker.get(id);
   if (!entity) return json({ error: 'not found' }, 404);
-  const ref = (entity.check as { decision?: { object?: unknown } } | undefined)?.decision?.object;
-  // The Decision entity as stored, without a context: its terms come back as full IRIs.
-  const decision = typeof ref === 'string' && ref.startsWith('urn:ngsi-ld:Decision:') ? await broker.get(ref) : null;
-  return json({ entity, decision, query: `/entities/${encodeURIComponent(id)}` });
+  // The Decision entities as stored, without a context: their terms come back as full IRIs.
+  const decisionOf = async (attribute: string) => {
+    const ref = (entity[attribute] as { decision?: { object?: unknown } } | undefined)?.decision?.object;
+    return typeof ref === 'string' && ref.startsWith('urn:ngsi-ld:Decision:') ? broker.get(ref) : null;
+  };
+  const [decision, concernDecision] = await Promise.all([decisionOf('check'), decisionOf('concern')]);
+  return json({ entity, decision, concernDecision, concerns: concernsReady(env), query: `/entities/${encodeURIComponent(id)}` });
 }
 
 const dailyLimit = (env: Env) => {
@@ -200,23 +229,30 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
     }
     try {
       if (now - created > KEEP_MS) {
-        const check = e.check as { decisionId?: { value?: unknown }; inputHash?: { value?: unknown } } | undefined;
-        if (typeof check?.decisionId?.value === 'string') await broker.delete(decisionEntityId(check.decisionId.value));
-        if (typeof check?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, ROUTE.attribute, check.inputHash.value));
+        // Only the Decision and Task the result points to now: when a person's
+        // answer ran a route again, earlier ones stay in the broker (accepted
+        // for the demo; a query by refersTo would find them).
+        for (const route of [ROUTE, CONCERN_ROUTE]) {
+          const result = e[route.attribute] as { decisionId?: { value?: unknown }; inputHash?: { value?: unknown } } | undefined;
+          if (typeof result?.decisionId?.value === 'string') await broker.delete(decisionEntityId(result.decisionId.value));
+          if (typeof result?.inputHash?.value === 'string') await broker.delete(await taskEntityId(e.id, route.attribute, result.inputHash.value));
+        }
         await broker.delete(e.id);
         out.deleted += 1;
-      } else if (!e.check && now - created > RETRY_AFTER_MS && attempts < MAX_RETRIES && bridgeReady(env)) {
+      } else if (now - created > RETRY_AFTER_MS && attempts < MAX_RETRIES && bridgeReady(env)
+        && (!e.check || (e.description && !e.concern && concernsReady(env)))) {
         attempts += 1;
         // As the subscription would, with the entity as stored (no system attributes).
         const fresh = await broker.get(e.id);
         if (!fresh) continue;
-        const notification = new Request('https://worker.internal/notify', {
+        const notification = new Request(`https://worker.internal/notify${e.check ? '?route=concern' : ''}`, {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! },
           body: JSON.stringify({ type: 'Notification', data: [fresh] }),
         });
         const res = await handleRequest(notification, bridgeConfig(env));
-        if (res.status !== 200) throw new Error(`retry answered ${res.status}`);
+        // 202: queued, the queue handler runs it.
+        if (res.status !== 200 && res.status !== 202) throw new Error(`retry answered ${res.status}`);
         out.retried += 1;
       }
     } catch (err) {
@@ -240,7 +276,7 @@ export default {
     if (request.method !== 'GET' && !posting) return json({ error: 'method not allowed' }, 405, { allow: 'GET' });
     // Static: answered also when the broker is not set up, so the page still has its map.
     if (url.pathname === '/api/config') {
-      return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
+      return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env), concerns: concernsReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
     }
     try {
       checkEnv(env);
@@ -278,4 +314,14 @@ export default {
     const r = await cleanup(env);
     if (r.deleted || r.retried || r.skipped || r.failed) console.log(`cleanup: ${JSON.stringify(r)}`);
   },
-} satisfies ExportedHandler<Env>;
+
+  // The bridge's queue (wrangler.jsonc "queues"): what /notify put on
+  // BRIDGE_QUEUE, handled with retries; chained routes run only here.
+  async queue(batch: MessageBatch<BridgeMessage>, env: Env): Promise<void> {
+    if (!bridgeReady(env)) {
+      batch.retryAll({ delaySeconds: 300 });
+      return;
+    }
+    await handleQueueBatch(batch, bridgeConfig(env));
+  },
+} satisfies ExportedHandler<Env, BridgeMessage>;
