@@ -122,7 +122,10 @@ Then, once: `BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs` create
 the two subscriptions, one for the check and one for descriptions (run it
 again after the inputs change). Run it before a deploy that turns
 `CONCERNS` on: without the second subscription, descriptions wait for the
-hourly retry.
+hourly retry. The broker sends notifications to
+`WORKER_URL`, by default the public demo (`https://buildings.demo.pointsman.net`):
+for your own deployment, set `WORKER_URL` to your Worker's address, or the
+descriptions and `NOTIFY_SECRET` go to the public demo.
 
 The bridge's queues must exist before the first deploy (create them once):
 `pnpm exec wrangler queues create pointsman-demo-buildings-bridge` and
