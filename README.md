@@ -129,7 +129,10 @@ descriptions and `NOTIFY_SECRET` go to the public demo.
 
 The bridge's queues must exist before the first deploy (create them once):
 `pnpm exec wrangler queues create pointsman-demo-buildings-bridge` and
-`pnpm exec wrangler queues create pointsman-demo-buildings-bridge-dlq`.
+`pnpm exec wrangler queues create pointsman-demo-buildings-bridge-dlq`. Messages carry the
+request with its description, so keep them no longer than the requests
+(a day): `pnpm exec wrangler queues update <name> --message-retention-period-secs 86400`
+for both queues. Nothing reads the dead-letter queue; messages there expire.
 
 Load the buildings once (and again after the data changes):
 
