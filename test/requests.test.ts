@@ -450,7 +450,7 @@ describe('scene B: photos', () => {
     await storePhotos(env.PHOTOS_BUCKET!, uuid, [jpeg]);
     const sent: string[] = [];
     const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
-    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
     const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`, 'photos/../../secret', `photos/${uuid}/2.jpg`] } };
     await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
     expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
