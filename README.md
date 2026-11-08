@@ -67,12 +67,12 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 
 | Endpoint | |
 |---|---|
-| `GET /api/config` | The demo area (bounding box) and the data credit |
+| `GET /api/config` | The demo area (bounding box), the data credit, and whether checks (`checks`) and descriptions (`concerns`) are open |
 | `GET /api/buildings` | The area's buildings as GeoJSON, read from the broker (geo-query, paged); `query` is the NGSI-LD request. Cached 10 minutes, but only when the list is not empty and complete: as many as the broker counted (`NGSILD-Results-Count`), or, when the broker gives no count, the last page had fewer than 1,000 |
 | `GET /api/buildings/{id}` | One `Building` entity as stored, the request, and the same as a GeoJSON feature. Cached 1 minute |
-| `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang"}`: a check request for one building. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
-| `GET /api/requests/{id}` | The request entity with Pointsman's result (`check`) and its `Decision` entity |
-| `POST /notify` | The broker's subscription (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back |
+| `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang", "concern": {"description", "afterDisaster"}}`: a check request for one building; `concern` is optional, and refused (503) while descriptions are off. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
+| `GET /api/requests/{id}` | The request entity with Pointsman's results (`check`, and `concern` for a description), their `Decision` entities (`decision`, `concernDecision`), and whether descriptions are on (`concerns`) |
+| `POST /notify` | The broker's subscriptions (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back; `?route=concern` is the description route (`building-concern`) |
 
 ## Check requests and the bridge
 
@@ -83,7 +83,7 @@ PLATEAU's values come first; the resident's answers fill only what PLATEAU
 does not know, and each value says where it came from (`origin`: `plateau`
 or `resident`).
 
-A broker subscription sends new and changed requests to `/notify`. The
+A broker subscription sends new and changed requests to `/notify`; a second one sends requests with a description, once their check is written, to `/notify?route=concern` (profile `building-concern`, read by an AI model). The
 [FIWARE bridge](https://github.com/geolonia/pointsman/tree/main/packages/fiware)
 (from the engine commit pinned in `engine.json`) asks Pointsman, profile
 `building-check-priority` (rules only, no AI model), and writes the result to
@@ -103,8 +103,8 @@ the staff view.
 Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
 `BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL`, `DAILY_LIMIT` and
 `CONCERNS` (`"on"` lets people describe their concern for the AI to read;
-`"off"` refuses descriptions with 503 and keeps the check from the building's
-data).
+`"off"` refuses new descriptions with 503 and leaves the description route
+out of the bridge, so the check from the building's data still runs).
 Secrets (`wrangler secret put <NAME>`):
 
 | Secret | |
@@ -118,7 +118,9 @@ buildings, and new check requests are refused (503).
 
 Then, once: `BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs` creates
 the two subscriptions, one for the check and one for descriptions (run it
-again after the inputs change). Turn `CONCERNS` on only after it ran.
+again after the inputs change). Run it before a deploy that turns
+`CONCERNS` on: without the second subscription, descriptions wait for the
+hourly retry.
 
 The bridge's queues must exist before the first deploy (create them once):
 `wrangler queues create pointsman-demo-buildings-bridge` and
