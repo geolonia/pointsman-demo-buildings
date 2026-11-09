@@ -263,6 +263,16 @@
     flow.concern.afterDisaster = x.after;
     send();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The clicked card is hidden now: keep keyboard focus on the request.
+    focusHeading('flow-title');
+  }
+
+  /** Moves focus to a heading (made focusable for this), without a second scroll. */
+  function focusHeading(id) {
+    var h = document.getElementById(id);
+    if (!h || h.closest('[hidden]')) return;
+    h.setAttribute('tabindex', '-1');
+    h.focus({ preventScroll: true });
   }
 
   /** The note over the map: until the buildings are drawn, or the load failed (the status line says why). */
@@ -563,7 +573,7 @@
   }
 
   function resultView() {
-    var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); })]);
+    var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading('examples-title'); })]);
     if (flow.state === 'sending') return [el('p', { class: 'muted' }, [t('sending')])];
     if (flow.state === 'failed') {
       // Back to the answers, kept, unless the request was sent and is gone.
@@ -574,7 +584,8 @@
       var f = flow;
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
-    if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')])];
+    // While waiting, the visitor may leave: the request is decided anyway.
+    if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')]), again];
     if (flow.withConcern) return [el('blockquote', { class: 'quote' }, [flow.concern.description.trim()])].concat(concernView(again), [sentView()]);
     var check = flow.request.check;
     var action = check.value;
