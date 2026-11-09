@@ -54,9 +54,9 @@ function mockConcern(e, check) {
   if (danger) [rule, action] = ['1', 'now'];
   else if (['tilt_or_sinking', 'falling_parts', 'foundation_or_ground'].includes(damage)) [rule, action] = ['2', 'high'];
   else if (damage === 'structural_cracks' && check === 'high') [rule, action] = ['3', 'high'];
-  else if (damage === 'structural_cracks' || damage === 'water_or_fire') [rule, action] = ['4', 'medium'];
-  else if (damage === 'nothing_clear') [rule, action] = ['6', 'more-evidence'];
-  else if (check === 'high') [rule, action] = ['7', 'medium'];
+  else if (damage === 'structural_cracks' || damage === 'water_or_fire') [rule, action] = ['5', 'medium'];
+  else if (damage === 'nothing_clear') [rule, action] = ['7', 'more-evidence'];
+  else if (check === 'high') [rule, action] = ['8', 'medium'];
   const answers = [
     { name: 'about_building', type: 'noul', value: true, probability: 0.9 },
     { name: 'damage', type: 'choice', value: damage, probability: 0.8 },
