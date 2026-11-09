@@ -457,9 +457,16 @@ describe('scene B: photos', () => {
     const sent: string[] = [];
     const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
     const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
-    const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`, 'photos/../../secret'] } };
+    const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`] } };
     await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
     expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
+    // A key that is not a photo key, alone or with good ones: 503, Pointsman is not called.
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const value of [[`photos/${uuid}/1.jpg`, 'photos/../../secret'], ['photos/../../secret']]) {
+      const res = await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state: { ...state, photos: { value } } }) });
+      expect(res.status).toBe(503);
+    }
+    expect(sent).toHaveLength(1);
     await f('https://pointsman.test/v1/decide/building-check-priority', { method: 'POST', body: JSON.stringify({ state }) });
     expect(JSON.parse(sent[1]!).state.photos.value).toEqual(state.photos.value);
     await deletePhotos(env.PHOTOS_BUCKET!, uuid);

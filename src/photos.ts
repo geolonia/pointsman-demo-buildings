@@ -66,7 +66,13 @@ export function inlinePhotos(fetcher: typeof fetch, env: Pick<Env, 'PHOTOS_BUCKE
     const raw = body.state?.photos?.value;
     const keys = typeof raw === 'string' ? [raw] : raw;
     if (!Array.isArray(keys) || keys.length === 0) return fetcher(input, init);
-    const wanted = keys.filter(isPhotoKey);
+    // Only the Worker writes these keys: one that is not a photo key is a fault,
+    // and Pointsman is not called with fewer photos than the person sent.
+    if (!keys.every(isPhotoKey)) {
+      console.warn('a photo key is not valid, the decision waits');
+      return new Response(JSON.stringify({ error: 'photos not available' }), { status: 503, headers: { 'content-type': 'application/json' } });
+    }
+    const wanted = keys as string[];
     const urls = await Promise.all(wanted.map((k) => dataUrl(env.PHOTOS_BUCKET!, k)));
     // A photo that is not (yet) in R2: Pointsman is not called, so the decision
     // is never made on fewer photos than the person sent. The bridge retries a 503.

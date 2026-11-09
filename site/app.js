@@ -301,7 +301,11 @@
       f.concern.pending = (f.concern.pending || 0) + files.length;
       files.reduce(function (done, file) {
         return done.then(function () { return shrink(file); }).then(function (url) {
-          if (flow === f && f.concern.photos.length < MAX_PHOTOS) { f.concern.photos.push(url); render(); }
+          if (flow === f && f.concern.photos.length < MAX_PHOTOS) {
+            f.concern.photos.push(url);
+            // After a language switch this field is no longer shown: draw the step again.
+            if (box.isConnected) render(); else if (f.step === 2) showFlow();
+          }
         }).catch(function () { error.hidden = false; }).then(function () { f.concern.pending -= 1; });
       }, Promise.resolve());
     });
