@@ -22,8 +22,9 @@
     // use building-concern, the published profile and the concerns
     // subscription (scripts/setup.mjs). "off" refuses descriptions (503).
     "CONCERNS": "on",
-    // Photos in scene B: "on" once the profile reads images (engine image support, pointsman#289).
-    "PHOTOS": "off"
+    // Photos in scene B: "on" needs CONCERNS on, the photos bucket below and a
+    // building-concern version that reads images (v2). "off" refuses photos (503).
+    "PHOTOS": "on"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.

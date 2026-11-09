@@ -67,10 +67,10 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 
 | Endpoint | |
 |---|---|
-| `GET /api/config` | The demo area (bounding box), the data credit, and whether checks (`checks`) and descriptions (`concerns`) are open |
+| `GET /api/config` | The demo area (bounding box), the data credit, and whether checks (`checks`), descriptions (`concerns`) and photos (`photos`) are open |
 | `GET /api/buildings` | The area's buildings as GeoJSON, read from the broker (geo-query, paged); `query` is the NGSI-LD request. Cached 10 minutes, but only when the list is not empty and complete: as many as the broker counted (`NGSILD-Results-Count`), or, when the broker gives no count, the last page had fewer than 1,000 |
 | `GET /api/buildings/{id}` | One `Building` entity as stored, the request, and the same as a GeoJSON feature. Cached 1 minute |
-| `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang", "concern": {"description", "afterDisaster"}}`: a check request for one building; `concern` is optional, and refused (503) while descriptions are off. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
+| `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang", "concern": {"description", "afterDisaster", "photos"}}`: a check request for one building; `concern` is optional, and refused (503) while descriptions are off. `photos` is optional: up to 3 base64 data URLs of JPEG, PNG or WebP images, each at most about 500 KB, refused (503) while photos are off. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
 | `GET /api/requests/{id}` | The request entity with Pointsman's results (`check`, and `concern` for a description), their `Decision` entities (`decision`, `concernDecision`), and whether descriptions are on (`concerns`) |
 | `POST /notify` | The broker's subscriptions (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back; `?route=concern` is the description route (`building-concern`) |
 
@@ -94,6 +94,15 @@ and a request that still has no result after two minutes (Pointsman or the
 broker failed when it was notified) is sent to the bridge again, at most 20
 a run, during its first two hours.
 
+Photos never go into the broker: GeonicDB drops the change notification of
+an entity larger than about 230 KB. They are stored in R2 under the
+request's id, the request carries only their keys, and the bridge's call to
+Pointsman gets the photos in place of the keys (profile `building-concern`
+v2 reads them). A photo that is not in R2 yet makes the call wait for a
+retry, so a decision never sees fewer photos than the person sent. Photos
+are deleted with the request, and the bucket deletes anything left after a
+day.
+
 A high priority waits for a person in Pointsman (the profile's
 `people_check`). This demo does not answer those reviews yet: that comes with
 the staff view.
@@ -106,7 +115,10 @@ Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
 `"off"` refuses new descriptions with 503 and leaves the description route
 out of the bridge, so the check from the building's data still runs).
 Before `"on"`, the `building-concern` profile must be published on
-`POINTSMAN_URL`.
+`POINTSMAN_URL`. `PHOTOS` (`"on"` takes up to 3 photos with a description)
+needs `CONCERNS` on, the photos bucket, and a `building-concern` version
+that reads images (v2, engine 0.21.0 or later); `"off"` refuses photos with
+503.
 Secrets (`wrangler secret put <NAME>`):
 
 | Secret | |
@@ -135,6 +147,13 @@ cleanup sends a request again only in its first two hours, and both queues
 keep messages 10 hours
 (`pnpm exec wrangler queues update <name> --message-retention-period-secs 36000`).
 Nothing reads the dead-letter queue; messages there expire.
+
+The photos bucket must exist before the first deploy, with a rule that
+deletes objects after a day:
+`pnpm exec wrangler r2 bucket create pointsman-demo-buildings-photos` and
+`pnpm exec wrangler r2 bucket lifecycle add pointsman-demo-buildings-photos delete-after-a-day --expire-days 1`.
+Run `scripts/setup.mjs` again before a deploy that turns `PHOTOS` on: the
+description subscription then also watches `photos`.
 
 Load the buildings once (and again after the data changes):
 
