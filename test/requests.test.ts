@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toEntity, type Entity, type PlateauFeature } from '../src/buildings';
 import type { Env } from '../src/env';
 import demo, { cleanup, CONCERN_ROUTE } from '../src/index';
+import { deletePhotos, inlinePhotos, storePhotos } from '../src/photos';
 import { centreOf, CONCERN_INPUTS, parseAnswers, parseConcern, RequestError, REQUEST_INPUTS, toRequestEntity } from '../src/requests';
 import setupScript from '../scripts/setup.mjs?raw';
 
@@ -89,6 +90,8 @@ let calls: Call[] = [];
 let stored: Map<string, Entity>;
 let pointsmanAction = 'high';
 let pointsmanStatus = 200;
+/** How the broker answers a create: 'ok', 'fail' (nothing stored), 'lost' (stored, then the answer is lost), or 'lost-unreadable' (lost, and reading one entity fails). */
+let createMode: 'ok' | 'fail' | 'lost' | 'lost-unreadable' = 'ok';
 /** NGSILD-Results-Count for count=true; null: none (a broker that does not count). */
 let countHeader: (n: number) => string | null = (n) => String(n);
 
@@ -97,6 +100,7 @@ beforeEach(() => {
   stored = new Map([[building().id, building()]]);
   pointsmanAction = 'high';
   pointsmanStatus = 200;
+  createMode = 'ok';
   countHeader = (n) => String(n);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init);
@@ -114,7 +118,9 @@ beforeEach(() => {
       });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'POST') {
+      if (createMode === 'fail') return new Response('down', { status: 503 });
       stored.set(body.id, body);
+      if (createMode === 'lost' || createMode === 'lost-unreadable') return new Response('timeout', { status: 504 });
       return new Response(null, { status: 201 });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') {
@@ -122,6 +128,7 @@ beforeEach(() => {
       const header = url.searchParams.get('count') === 'true' ? countHeader(all.length) : null;
       return Response.json(all.slice(0, Number(url.searchParams.get('limit') ?? 1000)), { headers: header === null ? {} : { 'NGSILD-Results-Count': header } });
     }
+    if (createMode === 'lost-unreadable' && req.method === 'GET' && url.pathname.startsWith('/ngsi-ld/v1/entities/') && decodeURIComponent(url.pathname).includes('BuildingCheckRequest')) return new Response('down', { status: 500 });
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)(\/attrs(?:\/([^/]+))?)?$/);
     if (m) {
       const id = decodeURIComponent(m[1]!);
@@ -173,7 +180,7 @@ describe('POST /api/requests', () => {
     expect((await worker('/api/requests', { method: 'POST', body: '{}' }, unlimited as Env)).status).toBe(403);
     expect((await post({ building: 'urn:x' })).status).toBe(400);
     expect((await post({ building: building().id, answers: { yearOfConstruction: 'old' } })).status).toBe(400);
-    expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'x'.repeat(9000) }, unlimited as Env)).status).toBe(413);
+    expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'x'.repeat(2_300_000) }, unlimited as Env)).status).toBe(413);
     expect((await worker('/api/requests', { method: 'POST', headers: { origin: PAGE }, body: 'not json' }, unlimited as Env)).status).toBe(400);
     expect((await post({ building: 'urn:ngsi-ld:Building:plateau:01100-bldg-404' })).status).toBe(404);
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
@@ -189,7 +196,7 @@ describe('POST /api/requests', () => {
   });
 
   it('refuses a large body by its declared length, before reading it', async () => {
-    const res = await worker('/api/requests', { method: 'POST', headers: { origin: PAGE, 'content-length': '999999' }, body: '{}' }, unlimited as Env);
+    const res = await worker('/api/requests', { method: 'POST', headers: { origin: PAGE, 'content-length': '3000000' }, body: '{}' }, unlimited as Env);
     expect(res.status).toBe(413);
   });
 
@@ -315,7 +322,7 @@ describe('scene B: the concern in the person\'s own words', () => {
     const e = toRequestEntity(building(), {}, UUID, 'en', { description: 'The balcony is cracked.', afterDisaster: 'unsure' });
     expect(e.description).toEqual({ type: 'Property', value: 'The balcony is cracked.', origin: { type: 'Property', value: 'resident' } });
     expect(e.afterDisaster).toMatchObject({ value: 'unsure' });
-    expect(CONCERN_INPUTS).toEqual(['description', 'afterDisaster', 'check']);
+    expect(CONCERN_INPUTS).toEqual(['description', 'afterDisaster', 'photos', 'check']);
     expect(CONCERN_ROUTE).toMatchObject({ profile: 'building-concern', attribute: 'concern', name: 'concern', requires: { priority: { attribute: 'check' } } });
   });
 
@@ -410,5 +417,106 @@ describe('scene B, more', () => {
     const req = toRequestEntity(building(), {}, UUID, 'en');
     stored.set(req.id, req);
     expect(((await (await worker(`/api/requests/${encodeURIComponent(req.id)}`)).json()) as { concerns: boolean }).concerns).toBe(false);
+  });
+});
+
+describe('scene B: photos', () => {
+  const jpeg = `data:image/jpeg;base64,${btoa(String.fromCharCode(0xff, 0xd8, 0xff, 0xe0) + 'a jpeg')}`;
+  const withPhotos = (on: boolean) => ({ ...unlimited, CONCERNS: 'on', PHOTOS: on ? 'on' : 'off', BRIDGE_QUEUE: { send: async () => {}, sendBatch: async () => {} } }) as unknown as Env;
+
+  it('takes up to 3 real images with a description', () => {
+    expect(parseConcern({ description: 'The wall in the photo.', photos: [jpeg, jpeg] })).toEqual({ description: 'The wall in the photo.', photos: [jpeg, jpeg] });
+  });
+
+  it('refuses photos without words, more than 3, other kinds, and data that is not that image', () => {
+    expect(() => parseConcern({ description: '', photos: [jpeg] })).toThrow('describe in a few words');
+    expect(() => parseConcern({ description: 'x', photos: [jpeg, jpeg, jpeg, jpeg] })).toThrow('at most 3 photos');
+    for (const bad of ['https://example.com/a.jpg', 'data:image/gif;base64,R0lGODlh', `data:image/jpeg;base64,${btoa('not a jpeg at all')}`, `data:image/jpeg;base64,${'A'.repeat(700_004)}`, 42]) {
+      expect(() => parseConcern({ description: 'x', photos: [bad] }), String(bad).slice(0, 40)).toThrow(/photo 1/);
+    }
+  });
+
+  it('keeps the photos in R2, the entity has their keys, and refuses them while photos are off', async () => {
+    const body = { building: building().id, concern: { description: 'Cracks, see the photo.', photos: [jpeg] } };
+    expect((await post(body, {}, withPhotos(false))).status).toBe(503);
+    const res = await post(body, {}, withPhotos(true));
+    expect(res.status).toBe(201);
+    const { id } = await res.json() as { id: string };
+    const uuid = id.slice(-36);
+    const created = calls.find((c) => c.method === 'POST' && c.url === `${BROKER}/entities`)!;
+    expect(created.body).toMatchObject({ photos: { value: [`photos/${uuid}/1.jpg`], origin: { value: 'resident' } } });
+    expect(JSON.stringify(created.body)).not.toContain('base64');
+    const obj = await env.PHOTOS_BUCKET!.get(`photos/${uuid}/1.jpg`);
+    expect(obj?.httpMetadata?.contentType).toBe('image/jpeg');
+    expect(new Uint8Array(await obj!.arrayBuffer()).slice(0, 3)).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+  });
+
+  it('the bridge\'s call to building-concern gets the photos in place of their keys, other calls are unchanged', async () => {
+    const uuid = '99999999-9999-4999-8999-999999999999';
+    await storePhotos(env.PHOTOS_BUCKET!, uuid, [jpeg]);
+    const sent: string[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const state = { description: { value: 'x' }, photos: { value: [`photos/${uuid}/1.jpg`] } };
+    await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
+    // A key that is not a photo key, alone or with good ones: 503, Pointsman is not called.
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const value of [[`photos/${uuid}/1.jpg`, 'photos/../../secret'], ['photos/../../secret']]) {
+      const res = await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state: { ...state, photos: { value } } }) });
+      expect(res.status).toBe(503);
+    }
+    expect(sent).toHaveLength(1);
+    await f('https://pointsman.test/v1/decide/building-check-priority', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(JSON.parse(sent[1]!).state.photos.value).toEqual(state.photos.value);
+    await deletePhotos(env.PHOTOS_BUCKET!, uuid);
+    expect(await env.PHOTOS_BUCKET!.get(`photos/${uuid}/1.jpg`)).toBeNull();
+  });
+
+  it('a failed create deletes the photos, a create that went through after all keeps them', async () => {
+    const body = { building: building().id, concern: { description: 'Cracks, see the photo.', photos: [jpeg] } };
+    const photoCount = async () => (await env.PHOTOS_BUCKET!.list({ prefix: 'photos/' })).objects.length;
+    const before = await photoCount();
+    createMode = 'fail';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before);
+    createMode = 'lost';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before + 1);
+    // Lost, and the read to check fails too: the photos stay (the request may exist).
+    createMode = 'lost-unreadable';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before + 2);
+  });
+
+  it('a single photo key given back as a string (JSON-LD compaction) is inlined too', async () => {
+    const uuid = '77777777-7777-4777-8777-777777777777';
+    await storePhotos(env.PHOTOS_BUCKET!, uuid, [jpeg]);
+    const sent: string[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const state = { description: { value: 'x' }, photos: { value: `photos/${uuid}/1.jpg` } };
+    await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
+    await deletePhotos(env.PHOTOS_BUCKET!, uuid);
+  });
+
+  it('a photo missing in R2: Pointsman is not called, the bridge gets a 503 to retry', async () => {
+    const sent: string[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const state = { description: { value: 'x' }, photos: { value: ['photos/88888888-8888-4888-8888-888888888888/1.jpg'] } };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const res = await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(res.status).toBe(503);
+    expect(sent).toEqual([]);
+  });
+
+  it('cleanup deletes a request\'s photos with it', async () => {
+    const old = { ...toRequestEntity(building(), {}, UUID, 'en', { description: 'x', photos: [`photos/${UUID}/1.jpg`] }), createdAt: '2026-11-05T00:00:00Z' };
+    stored.set(old.id, old);
+    await storePhotos(env.PHOTOS_BUCKET!, UUID, [jpeg]);
+    expect(await cleanup(env, Date.parse('2026-11-07T01:00:00Z'))).toMatchObject({ deleted: 1 });
+    expect(await env.PHOTOS_BUCKET!.get(`photos/${UUID}/1.jpg`)).toBeNull();
   });
 });

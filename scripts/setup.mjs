@@ -51,7 +51,7 @@ const subscriptions = {
     // Only requests that have a description (attribute exists).
     q: 'description',
     // The inputs of building-concern (src/requests.ts CONCERN_INPUTS).
-    watchedAttributes: ['description', 'afterDisaster', 'check'],
+    watchedAttributes: ['description', 'afterDisaster', 'photos', 'check'],
     notification: {
       format: 'normalized',
       endpoint: { uri: `${WORKER_URL}/notify?route=concern`, accept: 'application/json', receiverInfo: [{ key: 'x-bridge-secret', value: NOTIFY_SECRET }] },

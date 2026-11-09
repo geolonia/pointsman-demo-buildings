@@ -21,7 +21,10 @@
     // Scene B (descriptions read by AI): "on" needs the queue, a token that may
     // use building-concern, the published profile and the concerns
     // subscription (scripts/setup.mjs). "off" refuses descriptions (503).
-    "CONCERNS": "on"
+    "CONCERNS": "on",
+    // Photos in scene B: "on" needs CONCERNS on, the photos bucket below and a
+    // building-concern version that reads images (v2). "off" refuses photos (503).
+    "PHOTOS": "on"
   },
   // The page (site/). The Worker answers the API and the bridge (/notify);
   // everything else is a static file.
@@ -37,6 +40,9 @@
     { "name": "REQUEST_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
     { "name": "ALL_REQUESTS_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }
   ],
+  // Scene B's photos (src/photos.ts). The bucket must exist, with a lifecycle
+  // rule that deletes objects after 1 day.
+  "r2_buckets": [{ "binding": "PHOTOS_BUCKET", "bucket_name": "pointsman-demo-buildings-photos" }],
   // Hourly: delete requests older than a day, with their Decision and Task entities.
   "triggers": { "crons": ["23 * * * *"] },
   // The bridge's queue: notifications are answered at once and handled here

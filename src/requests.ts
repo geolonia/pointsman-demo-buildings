@@ -54,19 +54,58 @@ export interface Concern {
   description: string;
   /** Do they say it started after an earthquake or another disaster? */
   afterDisaster?: 'yes' | 'no' | 'unsure';
+  /**
+   * Photos of the building: as the page sends them, base64 data URLs shrunk to
+   * about 1 megapixel; on the entity, their keys in R2 (src/photos.ts).
+   */
+  photos?: string[];
 }
 
 export const MAX_DESCRIPTION = 1000;
+/** Photos per request; Clef takes up to 4 images, the profile reads 3. */
+export const MAX_PHOTOS = 3;
+/** One photo as a data URL (about 500 KB of JPEG): the page shrinks them well below this. */
+export const MAX_PHOTO_CHARS = 700_000;
+
+const PHOTO = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
+
+/** Whether the first bytes are the format the data URL names (the AI is sent only real images). */
+function photoMatches(type: string, b64: string): boolean {
+  let b: Uint8Array;
+  try {
+    b = Uint8Array.from(atob(b64.slice(0, 16)), (c) => c.charCodeAt(0));
+  } catch {
+    return false;
+  }
+  if (type === 'image/jpeg') return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  if (type === 'image/png') return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+  return String.fromCharCode(...b.slice(0, 4)) === 'RIFF' && String.fromCharCode(...b.slice(8, 12)) === 'WEBP';
+}
+
+function parsePhotos(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new RequestError('concern.photos must be a list');
+  if (value.length > MAX_PHOTOS) throw new RequestError(`at most ${MAX_PHOTOS} photos`);
+  value.forEach((v, i) => {
+    const m = typeof v === 'string' && v.length <= MAX_PHOTO_CHARS ? PHOTO.exec(v) : null;
+    if (!m || m[2]!.length % 4 !== 0 || !photoMatches(m[1]!, m[2]!)) throw new RequestError(`photo ${i + 1}: must be a JPEG, PNG or WebP image of at most 500 KB`);
+  });
+  return value as string[];
+}
 
 /** The concern from a request body, checked; undefined when there is none. Throws a message for the page otherwise. */
 export function parseConcern(body: unknown): Concern | undefined {
   if (body === undefined || body === null) return undefined;
   if (typeof body !== 'object' || Array.isArray(body)) throw new RequestError('concern must be an object');
   const c = body as Record<string, unknown>;
-  for (const key of Object.keys(c)) if (!['description', 'afterDisaster'].includes(key)) throw new RequestError(`unknown concern field "${key}"`);
+  for (const key of Object.keys(c)) if (!['description', 'afterDisaster', 'photos'].includes(key)) throw new RequestError(`unknown concern field "${key}"`);
   if (typeof c.description !== 'string') throw new RequestError('concern.description must be text');
   const description = c.description.trim();
-  if (description === '') return undefined;
+  const photos = c.photos === undefined || c.photos === null ? [] : parsePhotos(c.photos);
+  // Photos come with words: the AI reads both, and a description says what the photos are about.
+  if (description === '') {
+    if (photos.length > 0) throw new RequestError('describe in a few words what the photos show');
+    return undefined;
+  }
   if (description.length > MAX_DESCRIPTION) throw new RequestError(`concern.description must be at most ${MAX_DESCRIPTION} characters`);
   // Control characters other than line breaks and tabs: never part of a description.
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(description)) throw new RequestError('concern.description must not contain control characters');
@@ -75,6 +114,7 @@ export function parseConcern(body: unknown): Concern | undefined {
   }
   const out: Concern = { description };
   if (typeof c.afterDisaster === 'string') out.afterDisaster = c.afterDisaster as NonNullable<Concern['afterDisaster']>;
+  if (photos.length > 0) out.photos = photos;
   return out;
 }
 
@@ -120,6 +160,7 @@ export function toRequestEntity(building: Entity, answers: Answers, uuid: string
   if (concern) {
     e.description = P(concern.description, 'resident');
     if (concern.afterDisaster) e.afterDisaster = P(concern.afterDisaster, 'resident');
+    if (concern.photos) e.photos = P(concern.photos, 'resident');
   }
   return e;
 }
@@ -128,4 +169,4 @@ export function toRequestEntity(building: Entity, answers: Answers, uuid: string
 export const REQUEST_INPUTS = ['location', 'yearOfConstruction', 'buildingStructureType', 'storeysAboveGround'];
 
 /** The attributes building-concern reads (scene B): the words, and the check it builds on. */
-export const CONCERN_INPUTS = ['description', 'afterDisaster', 'check'];
+export const CONCERN_INPUTS = ['description', 'afterDisaster', 'photos', 'check'];
