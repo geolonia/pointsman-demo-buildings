@@ -218,12 +218,16 @@
     return data && data.features ? data.features.find(function (x) { return x.id === PLATEAU_URN + plateauId; }) : null;
   }
 
-  /** The example cards: only with the buildings loaded and descriptions open; an example whose building is missing is left out. */
+  /**
+   * The example cards: only with the buildings loaded and descriptions open,
+   * and only in step 1 (as the roads demo hides "Pick a report" once one is
+   * sent); an example whose building is missing is left out.
+   */
   function showExamples() {
     var section = document.getElementById('examples');
     var list = document.getElementById('cards');
     var shown = checksOpen && concernsOpen ? EXAMPLES.filter(function (x) { return featureOf(x.id); }) : [];
-    section.hidden = shown.length === 0;
+    section.hidden = shown.length === 0 || !!(flow && flow.step >= 2);
     var busy = !!(flow && flow.state === 'sending');
     list.replaceChildren.apply(list, shown.map(function (x) {
       var p = featureOf(x.id).properties;
