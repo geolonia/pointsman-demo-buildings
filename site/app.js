@@ -7,7 +7,21 @@
 
   var T = {
     en: {
-      demo: 'buildings demo', devTitle: 'For developers', title: 'Every building, the same checks',
+      demo: 'buildings demo', devTitle: 'Developer view', devShort: 'Dev', close: 'Close', aTheme: 'Switch theme',
+      resize: 'Drag to make the panel wider or narrower (arrow keys work too)',
+      howTitle: 'How it works', forDevs: 'For developers', lBridge: 'The connector (FIWARE bridge)',
+      howLead: 'What happens to a request, step by step. GeonicDB, a FIWARE data platform, keeps the data and starts each step. A small connector passes the step to Pointsman, and Pointsman answers. The AI only answers fixed questions about your words and photos; the building\u2019s data and the city\u2019s rules do the rest.',
+      h1k: '1 · Saved', h1t: 'The page saves the request in GeonicDB', h1d: 'A BuildingCheckRequest entity, linked to the Building entity. Your answers fill only what the city model does not know.',
+      h2k: '2 · Notified', h2t: 'GeonicDB tells the connector', h2d: 'A subscription on new requests sends it a notification.',
+      h3k: '3 · First check', h3t: 'Pointsman sorts the building', h3d: 'Rules only, no AI: year built, structure, and the ground and earthquake data for the place give a priority for a seismic check.',
+      h4k: '4 · Your description', h4t: 'Pointsman reads your words', h4d: 'With a description, a second check starts. The AI answers fixed questions: what kind of damage, how serious, is anyone in danger now. The city\u2019s rules turn the answers and the first result into one urgency.',
+      h5k: '5 · Written back', h5t: 'The results go back into GeonicDB', h5d: 'The connector writes each result onto the request, with a Decision entity. A result that a person must check also gets a Task entity.',
+      h6k: '6 · Used', h6t: 'Any app can read the results', h6d: 'A city dashboard or a ticket system can subscribe to them. This page reads them and shows you the result.',
+      exTitle: 'Pick an example', exNote: 'Each one is sent live to Pointsman. They show four different outcomes.',
+      exFoot: 'Made-up descriptions of real buildings from the city model. Requests are deleted after a day.',
+      exAfter: 'After a disaster: {v}', exAdds: 'You add: {v}', exBuilt: 'built {y}', exStoreys: '{n} storeys', exYearUnknown: 'year not known',
+      mapTitle: 'Or pick any building on the map', sentTitle: 'What was sent',
+      title: 'Every building, the same checks',
       lead: 'These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, ask how urgent a seismic check is, and watch Pointsman sort the request: what to check first, and why.',
       care: 'Pointsman sorts and explains. It never decides that a building is safe: that is always a person’s decision.',
       legendTitle: 'Year built', eraBefore: '1981 or earlier', eraMiddle: '1982 to 2000', eraAfter: '2001 or later', eraUnknown: 'Not known',
@@ -19,7 +33,7 @@
       flood: 'River flood (worst case)', landslide: 'Landslide zone', unknown: 'not known', none: 'none', id: 'PLATEAU id',
       unknownNote: 'Some values are not in the city model. In a request, Pointsman asks for them instead of guessing.',
       checkThis: 'Check this building', checksClosed: 'Checks are not open yet.',
-      s1: 'Building', s2: 'Details', s3: 'Check and send', s4: 'Result',
+      s1: 'Pick a building', s2: 'Details', s3: 'Check and send', s4: 'Result',
       t2: 'What the city model does not know', t3: 'Check and send', t4: 'How urgent is a seismic check?',
       dontKnow: 'I do not know', woodQ: 'Is it a wooden building?', yes: 'Yes', no: 'No', yearQ: 'Year built', storeysQ: 'Storeys above ground',
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
@@ -50,7 +64,21 @@
       floodValue: '{depth} m ({rank})', noMap: 'The map could not be loaded.', partial: 'Not all buildings could be loaded.', devFailed: 'The data platform did not answer.', eraNote1981: 'Built under the building code before June 1981, or in 1981 (the permit date decides).',
     },
     ja: {
-      demo: '建物デモ', devTitle: '開発者向け', title: 'すべての建物を、同じ基準で',
+      demo: '建物デモ', devTitle: '開発者向け表示', devShort: '開発', close: '閉じる', aTheme: '表示テーマを切り替える',
+      resize: 'ドラッグでパネルの幅を変えられます（矢印キーでも変えられます）',
+      howTitle: '仕組み', forDevs: '開発者向け', lBridge: 'つなぎ役（FIWARE ブリッジ）',
+      howLead: '依頼に何が起きるかを、順に説明します。FIWARE のデータ基盤 GeonicDB がデータを持ち、各手順を始めます。小さなつなぎ役が手順を Pointsman に渡し、Pointsman が答えます。AI はあなたの説明と写真について決まった質問に答えるだけで、残りは建物のデータと市の規則が決めます。',
+      h1k: '1・保存', h1t: 'ページが依頼を GeonicDB に保存する', h1d: '建物（Building エンティティ）にひもづいた BuildingCheckRequest エンティティです。あなたの回答は、3D都市モデルにない値だけを補います。',
+      h2k: '2・通知', h2t: 'GeonicDB がつなぎ役に知らせる', h2d: '新しい依頼へのサブスクリプションが、通知を送ります。',
+      h3k: '3・最初の確認', h3t: 'Pointsman が建物を仕分ける', h3d: '規則だけで、AI は使いません。建築年、構造、その場所の地盤と地震のデータから、耐震の確認の優先度を決めます。',
+      h4k: '4・あなたの説明', h4t: 'Pointsman があなたの言葉を読む', h4d: '説明があると、2つ目の確認が始まります。AI は決まった質問にだけ答えます（被害の種類、深刻さ、今、人に危険があるか）。市の規則が、その答えと最初の結果から急ぎの度合いを1つ決めます。',
+      h5k: '5・書き戻し', h5t: '結果が GeonicDB に戻る', h5d: 'つなぎ役が、それぞれの結果を Decision エンティティと一緒に依頼に書き込みます。人が確認すべき結果には Task エンティティもできます。',
+      h6k: '6・利用', h6t: 'どのアプリも結果を読める', h6d: '市のダッシュボードやチケットシステムは、結果をサブスクライブできます。このページも結果を読んで表示します。',
+      exTitle: '例を選ぶ', exNote: 'どれもその場で Pointsman に送られます。4 つとも結果が違います。',
+      exFoot: '説明は作り話で、建物は3D都市モデルにある実在のものです。依頼は1日で削除されます。',
+      exAfter: '災害のあと：{v}', exAdds: 'あなたが補う：{v}', exBuilt: '{y}年築', exStoreys: '{n}階建て', exYearUnknown: '建築年不明',
+      mapTitle: 'または、地図で好きな建物を選ぶ', sentTitle: '送った内容',
+      title: 'すべての建物を、同じ基準で',
       lead: '札幌市清田区の一地区の建物です。国の3D都市モデル（PLATEAU）のデータを、FIWARE のデータ基盤 GeonicDB に Building エンティティとして入れています。建物を選んで耐震の確認がどれだけ急ぎかを尋ね、Pointsman がその依頼をどう仕分けるか（何を先に確認するか、なぜか）を見てください。',
       care: 'Pointsman は仕分けて理由を示します。建物が安全かどうかは判断しません。それは常に人が決めます。',
       legendTitle: '建築年', eraBefore: '1981年以前', eraMiddle: '1982〜2000年', eraAfter: '2001年以降', eraUnknown: '不明',
@@ -62,7 +90,7 @@
       flood: '洪水（想定最大規模）', landslide: '土砂災害警戒区域', unknown: '不明', none: 'なし', id: 'PLATEAU ID',
       unknownNote: '3D都市モデルにない値があります。依頼では、Pointsman は推測せずにそれを尋ねます。',
       checkThis: 'この建物を確認する', checksClosed: '確認はまだ受け付けていません。',
-      s1: '建物', s2: '詳細', s3: '確認して送信', s4: '結果',
+      s1: '建物を選ぶ', s2: '詳細', s3: '確認して送信', s4: '結果',
       t2: '3D都市モデルにない情報', t3: '確認して送信', t4: '耐震の確認はどれだけ急ぎか',
       dontKnow: 'わからない', woodQ: '木造の建物ですか', yes: 'はい', no: 'いいえ', yearQ: '建築年', storeysQ: '地上階数',
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
@@ -104,6 +132,26 @@
     '610': ['非木造', 'Not wood'], '612': ['簡易耐火', 'Simple fire-resistant'], '613': ['耐火', 'Fire-resistant'] };
   var FLOOD_RANK = { 1: ['0.5m未満', 'below 0.5 m'], 2: ['0.5m以上3m未満', '0.5 to 3 m'], 3: ['3m以上5m未満', '3 to 5 m'], 4: ['5m以上10m未満', '5 to 10 m'], 5: ['10m以上20m未満', '10 to 20 m'], 6: ['20m以上', '20 m or more'] };
   var ERA_COLOUR = { 'before-1981': '#C8463A', '1981-2000': '#C98A1B', 'from-2000': '#2E9E6B', unknown: '#8f8a82' };
+
+  /**
+   * Prepared examples: a real building (by its PLATEAU id) and every field
+   * filled. The descriptions are from the plan's checked samples (8.6), whose
+   * outcomes with building-concern v3 (act today at danger 0.75, a person
+   * at 0.40) were: tilt high, balcony now, paint cracks low (on a building
+   * whose check is low), vague more-evidence. `answers` fill only what the
+   * city model does not know (the Worker ignores the rest).
+   */
+  var EXAMPLES = [
+    { id: '01100-bldg-596155', label: { en: 'The house leans', ja: '家が傾いた' }, after: 'yes',
+      answers: { yearOfConstruction: 1976, wood: true, storeysAboveGround: 2 },
+      description: { en: 'Since this morning\u2019s earthquake the house leans towards the street and the front door no longer closes.', ja: '地震のあと、家が道路側に傾いて、玄関のドアが閉まらなくなりました。' } },
+    { id: '01100-bldg-595855', label: { en: 'Part of it came down', ja: '一部が落ちた' }, after: 'unsure', answers: {},
+      description: { en: 'Part of the balcony on the second floor came down an hour ago. Nobody was hurt, but more pieces are hanging.', ja: '2階のベランダの一部が1時間前に落ちました。けが人はいませんが、まだ破片がぶら下がっています。' } },
+    { id: '01100-bldg-597856', label: { en: 'Old, thin cracks', ja: '前からある細いひび' }, after: 'no', answers: {},
+      description: { en: 'Thin cracks in the paint of the hallway ceiling. They have been there for years.', ja: '廊下の天井の塗装に細いひびがあります。何年も前からです。' } },
+    { id: '01100-bldg-595870', label: { en: 'A vague worry', ja: 'はっきりしない心配' }, after: 'unsure', answers: {},
+      description: { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' } },
+  ];
 
   // The visitor's choice, else the browser's language.
   var stored = null;
@@ -154,6 +202,63 @@
     showStatus();
     showBuilding();
     showFlow();
+  }
+
+  /** The stepper in the intro: step 1 until a request is started, then the flow's step. */
+  function showStepper() {
+    var step = flow ? flow.step : 1;
+    document.querySelectorAll('#stepper li').forEach(function (li) {
+      var n = Number(li.dataset.step);
+      li.className = n < step ? 'done' : n === step ? 'active' : '';
+      if (n === step) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+  }
+
+  function featureOf(plateauId) {
+    return data && data.features ? data.features.find(function (x) { return x.id === PLATEAU_URN + plateauId; }) : null;
+  }
+
+  /** The example cards: only with the buildings loaded and descriptions open; an example whose building is missing is left out. */
+  function showExamples() {
+    var section = document.getElementById('examples');
+    var list = document.getElementById('cards');
+    var shown = checksOpen && concernsOpen ? EXAMPLES.filter(function (x) { return featureOf(x.id); }) : [];
+    section.hidden = shown.length === 0;
+    var busy = !!(flow && flow.state === 'sending');
+    list.replaceChildren.apply(list, shown.map(function (x) {
+      var p = featureOf(x.id).properties;
+      var what = [name(USAGE, p.usage) || t('building'), p.yearOfConstruction ? String(p.yearOfConstruction) : t('exYearUnknown'), name(STRUCTURE, p.structure)].filter(Boolean).join(' · ');
+      var adds = [];
+      if (p.yearOfConstruction === null && x.answers.yearOfConstruction !== undefined) adds.push(t('exBuilt', { y: x.answers.yearOfConstruction }));
+      if (!(p.structure && STRUCTURE[p.structure]) && x.answers.wood !== undefined) adds.push(t(x.answers.wood ? 'wood' : 'notWood'));
+      if (p.storeys === null && x.answers.storeysAboveGround !== undefined) adds.push(t('exStoreys', { n: x.answers.storeysAboveGround }));
+      var b = el('button', { type: 'button', class: 'ex-card' }, [
+        el('span', { class: 'label' }, [x.label[lang]]),
+        el('strong', { class: 'what' }, [what]),
+        el('span', { class: 'text' }, [lang === 'ja' ? '「' + x.description.ja + '」' : '\u201c' + x.description.en + '\u201d']),
+        el('span', { class: 'hint' }, [el('span', {}, [t('exAfter', { v: t(x.after) })])].concat(adds.length ? [el('span', {}, [t('exAdds', { v: adds.join(lang === 'ja' ? '、' : ', ') })])] : [])),
+      ]);
+      b.disabled = busy;
+      b.addEventListener('click', function () { sendExample(x); });
+      return el('li', {}, [b]);
+    }));
+  }
+
+  /** An example as roads does it: the building picked, every field filled, sent at once. */
+  function sendExample(x) {
+    var f = featureOf(x.id);
+    if (!f || (flow && flow.state === 'sending')) return;
+    select(f.id);
+    var ring = f.geometry.coordinates[0];
+    if (map && ring) map.flyTo({ center: ring[0], zoom: 17 });
+    startFlow(false);
+    var answers = {};
+    Object.keys(x.answers).forEach(function (k) { answers[k] = x.answers[k]; });
+    flow.answers = answers;
+    flow.concern.description = x.description[lang];
+    flow.concern.afterDisaster = x.after;
+    send();
+    document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /** The note over the map: until the buildings are drawn, or the load failed (the status line says why). */
@@ -213,12 +318,12 @@
 
   var THIS_YEAR = new Date().getFullYear();
 
-  function startFlow() {
+  function startFlow(scroll) {
     if (!selected) return;
     var p = selected.feature.properties;
     flow = { step: 2, building: selected.feature, answers: {}, concern: { description: '', photos: [] }, known: { year: p.yearOfConstruction !== null, structure: !!(p.structure && STRUCTURE[p.structure]), storeys: p.storeys !== null } };
     showFlow();
-    document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (scroll !== false) document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function stepTo(n) { flow.step = n; showFlow(); }
@@ -344,13 +449,10 @@
 
   function showFlow() {
     var section = document.getElementById('flow');
+    showStepper();
+    showExamples();
     if (!flow) { section.hidden = true; return; }
     section.hidden = false;
-    section.querySelectorAll('.steps li').forEach(function (li) {
-      var n = Number(li.dataset.step);
-      li.className = n < flow.step ? 'done' : n === flow.step ? 'current' : '';
-      if (n === flow.step) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
-    });
     var title = document.getElementById('flow-title');
     var body = document.getElementById('flow-body');
     if (flow.step === 2) {
@@ -469,7 +571,7 @@
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
     if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')])];
-    if (flow.withConcern) return concernView(again);
+    if (flow.withConcern) return [el('blockquote', { class: 'quote' }, [flow.concern.description.trim()])].concat(concernView(again), [sentView()]);
     var check = flow.request.check;
     var action = check.value;
     // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
@@ -481,7 +583,15 @@
       el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
       el('p', { class: 'note' }, [t('care')]),
       again,
+      sentView(),
     ]);
+  }
+
+  /** What was sent, folded: the building's values and the answers, each with where it came from. */
+  function sentView() {
+    var dl = el('dl');
+    summaryRows().forEach(function (r) { dl.append(el('dt', {}, [r[0]]), el('dd', {}, r[1])); });
+    return el('details', { class: 'sent' }, [el('summary', {}, [t('sentTitle')]), dl]);
   }
 
   /** The answers of a Decision entity as stored (full IRIs, a JSON property): by question name. */
@@ -648,19 +758,84 @@
     if (map) map.setStyle(style(), { diff: false });
     if (map) map.once('styledata', function () { addBuildings(map); });
   });
+  function setHow(open) {
+    document.getElementById('how').hidden = !open;
+    document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
+    if (open) document.getElementById('how').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.getElementById('how-toggle').addEventListener('click', function () { setHow(document.getElementById('how').hidden); });
+  document.getElementById('how-close').addEventListener('click', function () { setHow(false); document.getElementById('how-toggle').focus(); });
+
+  // The developer view: a panel at the right on wide screens, a drawer at the bottom on narrow ones (as in the roads demo).
   var devButton = document.getElementById('dev-toggle');
-  function setDev(on) {
+  function setDev(on, remember) {
+    if (remember !== false) try { localStorage.setItem('dev', on ? '1' : '0'); } catch (e) {}
     document.getElementById('dev').hidden = !on;
-    document.querySelector('.layout').classList.toggle('with-dev', on);
+    document.body.classList.toggle('dev-open', on);
     devButton.setAttribute('aria-pressed', on ? 'true' : 'false');
     if (map) setTimeout(function () { map.resize(); }, 0);
   }
-  devButton.addEventListener('click', function () {
-    var on = devButton.getAttribute('aria-pressed') !== 'true';
-    try { localStorage.setItem('dev', on ? '1' : '0'); } catch (e) {}
-    setDev(on);
-  });
-  try { setDev(localStorage.getItem('dev') === '1'); } catch (e) {}
+  devButton.addEventListener('click', function () { setDev(devButton.getAttribute('aria-pressed') !== 'true'); });
+  document.getElementById('dev-close').addEventListener('click', function () { setDev(false); devButton.focus(); });
+
+  // The panel's left edge makes it wider or narrower (wide screens). Remembered.
+  var SIDE_MIN = 320;
+  var sideWanted = 440;
+  var grip = document.querySelector('.side-grip');
+  function sideWidth() { return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side-w'), 10) || 440; }
+  function setSideWidth(w) {
+    // At least 480 px left for the page, after its margins (16 px on each side, style.css).
+    var max = Math.max(SIDE_MIN, Math.min(900, document.documentElement.clientWidth - 480 - 32));
+    w = Math.round(Math.min(max, Math.max(SIDE_MIN, w)));
+    document.documentElement.style.setProperty('--side-w', w + 'px');
+    grip.setAttribute('aria-valuenow', String(w));
+    grip.setAttribute('aria-valuetext', w + ' px');
+    grip.setAttribute('aria-valuemin', String(SIDE_MIN));
+    grip.setAttribute('aria-valuemax', String(max));
+    return w;
+  }
+  (function () {
+    var saved = 0;
+    try { saved = Number(localStorage.getItem('sideW')) || 0; } catch (e) {}
+    sideWanted = saved || 440;
+    setSideWidth(sideWanted);
+    var save = function (w) { sideWanted = w; try { localStorage.setItem('sideW', String(w)); } catch (e) {} if (map) map.resize(); };
+    // A smaller window narrows the panel; a larger one gives back the chosen width.
+    window.addEventListener('resize', function () { setSideWidth(sideWanted); });
+    grip.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      document.body.classList.add('resizing');
+      var move = function (ev) { setSideWidth(document.documentElement.clientWidth - ev.clientX); };
+      var up = function () {
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        grip.removeEventListener('pointercancel', up);
+        document.body.classList.remove('resizing');
+        save(sideWidth());
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
+      grip.addEventListener('pointercancel', up);
+    });
+    grip.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      save(setSideWidth(sideWidth() + (e.key === 'ArrowLeft' ? 24 : -24)));
+    });
+  })();
+
+  // The panel starts below the sticky header, whatever its height.
+  function headerHeight() { document.documentElement.style.setProperty('--top-h', document.querySelector('.top').offsetHeight + 'px'); }
+  window.addEventListener('resize', headerHeight);
+  if (window.ResizeObserver) new ResizeObserver(headerHeight).observe(document.querySelector('.top'));
+  headerHeight();
+  // On narrow screens the drawer covers the page: it opens only when asked.
+  (function () {
+    var on = false;
+    try { on = localStorage.getItem('dev') === '1'; } catch (e) {}
+    setDev(on && window.matchMedia('(min-width: 1100px)').matches, false);
+  })();
 
   // The area, also when /api/config does not answer (as in src/index.ts).
   var AREA = [141.4370, 42.9745, 141.4630, 42.9840];
@@ -677,6 +852,7 @@
     return r.json();
   }).then(function (j) {
     data = j;
+    showExamples();
     document.getElementById('dev-list').textContent = 'GET /ngsi-ld/v1' + j.query + '&limit=1000&offset=0\n\n→ ' + j.features.length + ' Building entities';
     showStatus();
     // A map whose style never finishes (lost WebGL, a broken style) would keep

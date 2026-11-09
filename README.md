@@ -24,7 +24,9 @@ This is the first step: the buildings.
 - They are `Building` entities in GeonicDB, an NGSI-LD context broker
   ([scripts/load-buildings.mjs](scripts/load-buildings.mjs)).
 - The page shows them on a map, coloured by year built, with each building's
-  data and a "For developers" panel with the NGSI-LD requests.
+  data and a "Developer view" panel with the NGSI-LD requests. Four prepared
+  examples (real buildings, made-up descriptions) send a request in one
+  click; any other building can be picked on the map.
 
 Next steps:
 

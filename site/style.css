@@ -18,6 +18,8 @@
   --panel-2: #242424;
   --line: #2e2e2e;
   --code-bg: #101010;
+  --t-publish: #16382a; --i-publish: #8ed6b2;
+  --i-map: #9fc6ee;
 }
 :root[data-theme="light"] {
   color-scheme: light;
@@ -29,12 +31,15 @@
   --panel-2: #F1EEE7;
   --line: #DCD6CA;
   --code-bg: #F1EEE7;
+  --t-publish: #DDF0E6; --i-publish: #1E6B48;
+  --i-map: #1F4F80;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
     --bg: var(--cream); --fg: var(--ink); --fg-2: #3d3a34; --muted: #6b665e;
     --panel: #FBFAF7; --panel-2: #F1EEE7; --line: #DCD6CA; --code-bg: #F1EEE7;
+    --t-publish: #DDF0E6; --i-publish: #1E6B48; --i-map: #1F4F80;
   }
 }
 
@@ -50,6 +55,7 @@ h2 { font-size: 1.15rem; margin: 0 0 8px; }
 h3 { font-size: 0.95rem; margin: 18px 0 6px; }
 p { margin: 0 0 10px; }
 .muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
 .kicker { display: block; font: 500 0.8rem var(--mono); color: var(--muted); letter-spacing: 0.01em; }
 
 .top { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -63,11 +69,63 @@ nav { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { font: 14px var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 0 14px; min-height: 40px; cursor: pointer; }
 .chip:hover { border-color: var(--muted); }
 .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip.strong { border-color: var(--fg); font-weight: 500; }
+.chip.strong[aria-expanded="true"] { background: var(--fg); color: var(--bg); }
+/* The header button: a short label on phones, so the header does not wrap. */
+.short { display: none; }
+@media (max-width: 600px) { .long { display: none; } .short { display: inline; } }
 
-.layout { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
-.layout.with-dev { grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); }
-main { padding: 24px; display: grid; gap: 16px; align-content: start; min-width: 0; }
-.intro { max-width: 70ch; }
+main { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.intro { display: grid; gap: 4px; }
+.intro p { max-width: 70ch; }
+
+/* The steps, as in the roads demo: numbered circles, the current one dark. */
+.stepper { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; scroll-margin-top: 80px; }
+.stepper li { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-weight: 500; font-size: 0.95rem; }
+.stepper .num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 14px var(--mono); background: var(--panel-2); }
+.stepper li.done { color: var(--fg); }
+.stepper li.done .num { background: var(--t-publish); color: var(--i-publish); }
+.stepper li.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.stepper li.active .num { background: #1E6B48; color: #fff; }
+
+/* Prepared examples, like the roads demo's report cards. */
+.examples { display: grid; gap: 12px; }
+.examples h2, .map-wrap h2 { font-size: 1.35rem; margin: 0; }
+.examples .sub { margin: -6px 0 0; color: var(--fg-2); }
+.examples p { margin: 0; }
+.examples { container-type: inline-size; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* Four in a row when there is room, one on phones: never three and one. */
+@container (min-width: 880px) { .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@container (max-width: 520px) { .cards { grid-template-columns: 1fr; } .ex-card { min-height: 0; } }
+.ex-card { width: 100%; height: 100%; min-height: 160px; text-align: left; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: inherit; cursor: pointer; }
+.ex-card:hover:not(:disabled) { border-color: var(--fg); }
+.ex-card:disabled { opacity: 0.55; cursor: wait; }
+.ex-card .label { align-self: flex-start; font: 500 0.8rem var(--mono); padding: 3px 10px; border-radius: 999px; background: var(--panel-2); color: var(--fg-2); }
+.ex-card .what { font-size: 1.05rem; }
+.ex-card .text { color: var(--muted); font-size: 0.9rem; }
+.ex-card .hint { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); font: 0.75rem var(--mono); color: var(--muted); }
+.map-wrap h2 { margin-bottom: 10px; }
+
+/* How it works */
+.how { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: grid; gap: 20px; scroll-margin-top: 80px; }
+.how-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.how-head p { margin: 6px 0 0; max-width: 72ch; color: var(--fg-2); }
+.how-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.how-steps li { background: var(--panel-2); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; font-size: 0.92rem; color: var(--fg-2); }
+.how-steps li strong { color: var(--fg); font-size: 1rem; }
+.how-steps li.accent { background: var(--t-publish); }
+.how-steps li.accent .kicker { color: var(--i-publish); }
+.how .links { align-items: center; gap: 8px 20px; margin: 0; font-size: 0.92rem; }
+.how .btn { margin-top: 0; }
+@media (max-width: 900px) { .how-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .how-steps { grid-template-columns: 1fr; } .how { padding: 16px; } }
+
+/* The quoted description in the result. */
+.quote { margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 3px solid var(--fg); }
+.sent { margin-top: 16px; }
+.sent summary { cursor: pointer; font: 0.85rem var(--mono); color: var(--muted); min-height: 28px; }
 .note { color: var(--fg-2); border-left: 3px solid var(--amber); padding-left: 10px; }
 
 .map-wrap { position: relative; }
@@ -98,19 +156,37 @@ main { padding: 24px; display: grid; gap: 16px; align-content: start; min-width:
 .card.next { border-style: dashed; }
 .card.next strong { display: block; margin: 2px 0 6px; }
 
-.dev { border-left: 1px solid var(--line); padding: 24px; background: var(--panel); min-width: 0; }
+/* Developer view: a panel at the right on wide screens (resizable by its left
+   edge), a drawer at the bottom on narrow ones, as in the roads demo. */
+.dev { position: fixed; z-index: 4; top: var(--top-h, 62px); right: 0; bottom: 0; width: var(--side-w, 440px); overflow: auto;
+  padding: 16px 18px 24px; background: var(--panel); border-left: 1px solid var(--line); }
+.dev-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.dev-head h2 { margin: 0; }
+.side-grip { position: fixed; z-index: 5; top: var(--top-h, 62px); bottom: 0; right: calc(var(--side-w, 440px) - 5px); width: 10px; cursor: col-resize; touch-action: none; }
+.side-grip::after { content: ""; position: absolute; top: 50%; left: 3px; width: 4px; height: 44px; margin-top: -22px; border-radius: 4px; background: var(--line); }
+.side-grip:hover::after, .side-grip:focus-visible::after, body.resizing .side-grip::after { background: var(--muted); }
+.side-grip:focus-visible { outline: 2px solid var(--i-map); outline-offset: -2px; }
+body.resizing { cursor: col-resize; user-select: none; }
+@media (min-width: 1100px) {
+  /* The page takes all the width the panel leaves. */
+  body.dev-open main, body.dev-open footer { max-width: none; margin-left: 16px; margin-right: calc(var(--side-w, 440px) + 16px); padding-left: 0; padding-right: 0; }
+}
+@media (max-width: 1099px) {
+  .side-grip { display: none; }
+  .dev { top: auto; left: 0; width: auto; height: 42vh; height: 42dvh; padding: 12px 16px 24px; border-left: 0; border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18); }
+  body.dev-open { padding-bottom: 43vh; padding-bottom: 43dvh; }
+}
 .dev pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow: auto; max-height: 50vh; white-space: pre-wrap; word-break: break-all; }
 .links { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 
 footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-width: 1280px; margin: 0 auto; }
 
 @media (max-width: 860px) {
-  .layout.with-dev { grid-template-columns: minmax(0, 1fr); }
-  .dev { border-left: 0; border-top: 1px solid var(--line); }
-  main, .dev { padding: 16px; }
+  main { padding: 16px; }
   .top { padding: 8px 16px; }
   #map { height: 55vh; }
 }
+@media (max-width: 640px) { .stepper li { padding-right: 12px; font-size: 0.88rem; } }
 @media (max-width: 420px) { nav { gap: 6px; } .chip { font-size: 13px; padding: 0 10px; } }
 
 .btn { font: 500 15px var(--sans); color: var(--bg); background: var(--fg); border: 1px solid var(--fg); border-radius: 999px; padding: 0 18px; min-height: 44px; cursor: pointer; }
@@ -120,12 +196,6 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .actions .btn { margin-top: 0; }
 
-.steps { list-style: none; display: flex; gap: 6px; flex-wrap: wrap; padding: 0; margin: 0 0 14px; counter-reset: step; font-size: 13px; }
-.steps li { counter-increment: step; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
-.steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel-2); font: 500 12px var(--mono); }
-.steps li.current { color: var(--fg); border-color: var(--fg); }
-.steps li.current::before { background: var(--fg); color: var(--bg); }
-.steps li.done::before { background: var(--green); color: #fff; }
 
 .field { display: grid; gap: 6px; margin: 0 0 14px; border: 0; padding: 0; }
 .field label, .field legend { font-weight: 500; }
