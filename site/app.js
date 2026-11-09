@@ -153,10 +153,18 @@
       description: { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' } },
   ];
 
-  // The visitor's choice, else the browser's language.
-  var stored = null;
-  try { stored = localStorage.getItem('lang'); } catch (e) {}
-  var lang = stored === 'ja' || stored === 'en' ? stored : (navigator.language || '').indexOf('ja') === 0 ? 'ja' : 'en';
+  // ?lang= (the demos page links with it, as for the roads demo), else the
+  // visitor's choice, else the browser's language.
+  function pickLang() {
+    var q = null;
+    try { q = new URLSearchParams(location.search).get('lang'); } catch (e) {}
+    if (q === 'ja' || q === 'en') return q;
+    var stored = null;
+    try { stored = localStorage.getItem('lang'); } catch (e) {}
+    if (stored === 'ja' || stored === 'en') return stored;
+    return (navigator.language || '').indexOf('ja') === 0 ? 'ja' : 'en';
+  }
+  var lang = pickLang();
   var data = null;
   var PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
   var zoomTo = null;
@@ -196,6 +204,8 @@
     document.documentElement.lang = lang;
     document.querySelectorAll('[data-i18n]').forEach(function (n) { n.textContent = t(n.dataset.i18n); });
     document.querySelectorAll('[data-i18n-label]').forEach(function (n) { n.setAttribute('aria-label', t(n.dataset.i18nLabel)); });
+    // Back to the demos page in the same language.
+    document.getElementById('brand').href = lang === 'ja' ? 'https://pointsman.net/ja/demos/' : 'https://pointsman.net/demos/';
     var b = document.getElementById('lang');
     b.textContent = lang === 'ja' ? 'English' : '日本語';
     b.lang = lang === 'ja' ? 'en' : 'ja';
