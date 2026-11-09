@@ -194,4 +194,5 @@ is served with a Content-Security-Policy ([site/_headers](site/_headers));
 ## Licence
 
 Code: MIT ([LICENSE](LICENSE)). Building data: PLATEAU, see
-[data/plateau](data/plateau/README.md).
+[data/plateau](data/plateau/README.md). Example photos: Wikimedia Commons,
+each under its own licence, see [site/photos](site/photos/README.md).
