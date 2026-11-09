@@ -24,16 +24,16 @@
   "source": "https://commons.wikimedia.org/wiki/File:%E4%B8%AD%E8%B6%8A%E5%9C%B0%E9%9C%87_%283%29.jpg"
  },
  {
-  "id": "duzce-cracks",
-  "file": "photos/duzce-cracks.webp",
+  "id": "christchurch-cracks",
+  "file": "photos/christchurch-cracks.webp",
   "label": {
-   "en": "X-shaped cracks in a concrete wall (Düzce, 1999)",
-   "ja": "コンクリート壁のX字のひび（デュズジェ、1999年）"
+   "en": "X-shaped cracks in a masonry wall (Christchurch, 2011)",
+   "ja": "石造りの壁のX字のひび（クライストチャーチ、2011年）"
   },
-  "author": "Roger Bilham / NOAA NGDC",
-  "licence": "Public domain",
-  "licenceUrl": null,
-  "source": "https://commons.wikimedia.org/wiki/File:Duzce_1999_earthquake_damage_Bilham_889.jpg"
+  "author": "E. Smyrou & İhsan E. Bal",
+  "licence": "CC BY-SA 2.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:Kenton_Chambers_Building_79.jpg"
  },
  {
   "id": "cebu-paint-crack",

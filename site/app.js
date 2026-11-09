@@ -52,7 +52,7 @@
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
       worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers. This demo deletes your description after about a day; the AI service may keep it in its logs for longer.',
-      samplesQ: 'Not sure what to write? Start from an example and change it as you like:', photoSamplesQ: 'No photo at hand? Add an example photo:', photoBy: 'Photo: {a}, {l}', photoSource: 'source',
+      samplesQ: 'Not sure what to write? Start from an example and change it as you like:', photoSamplesQ: 'No photo at hand? Add an example photo:', photoBy: 'Photo: {a}, ', photoSource: 'source', photoAdded: 'added', exampleFailed: 'The example photo could not be loaded. Try again.', replaceText: 'Replace what you wrote with this example?',
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
@@ -110,7 +110,7 @@
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
       worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。このデモは説明を約1日で削除します（AI サービスの記録には、より長く残ることがあります）。',
-      samplesQ: '書き方に迷ったら、例から始めて自由に書き直せます：', photoSamplesQ: '手元に写真がなければ、例の写真を追加できます：', photoBy: '写真：{a}、{l}', photoSource: '出典',
+      samplesQ: '書き方に迷ったら、例から始めて自由に書き直せます：', photoSamplesQ: '手元に写真がなければ、例の写真を追加できます：', photoBy: '写真：{a}、', photoSource: '出典', photoAdded: '追加済み', exampleFailed: '例の写真を読み込めませんでした。もう一度お試しください。', replaceText: '書いた内容をこの例で置き換えますか？',
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
@@ -194,6 +194,20 @@
   ];
   /** Example photos with their credits (site/photos/photos.json), loaded when the photo field first shows. */
   var examplePhotos = null;
+  var examplePhotosLoading = null;
+  /** Loads the list once; a failed load is not kept, so the next time the field shows it tries again. */
+  function loadExamplePhotos() {
+    if (!examplePhotosLoading) {
+      examplePhotosLoading = fetch('photos/photos.json').then(function (r) {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      }).then(function (list) {
+        if (!Array.isArray(list)) throw new Error('not a list');
+        examplePhotos = list;
+      }).catch(function () { examplePhotosLoading = null; });
+    }
+    return examplePhotosLoading;
+  }
   var MAX_WORDS = 1000;
   /** The request flow: step 1 to 4, the answers, the sent request and its result. */
   var flow = null;
@@ -391,6 +405,7 @@
     area.addEventListener('input', function () { flow.concern.description = area.value; count.textContent = t('chars', { n: area.value.length, max: MAX_WORDS }); });
     var samples = el('ul', { class: 'samples', 'aria-labelledby': 'q-worry-samples' }, SAMPLES.map(function (x) {
       return el('li', {}, [button(x[lang], function () {
+        if (area.value.trim() && area.value !== x[lang] && !window.confirm(t('replaceText'))) return;
         area.value = x[lang];
         flow.concern.description = area.value;
         count.textContent = t('chars', { n: area.value.length, max: MAX_WORDS });
@@ -452,34 +467,45 @@
     function drawExamples() {
       if (!examplePhotos) return;
       examplesNote.hidden = examplePhotos.length === 0;
+      f.concern.adding = f.concern.adding || {};
       examples.replaceChildren.apply(examples, examplePhotos.map(function (x) {
         var added = (f.concern.from || []).indexOf(x.id) >= 0;
-        var b = el('button', { type: 'button', class: 'photo-example', 'aria-pressed': String(added) }, [el('img', { src: x.file, alt: '', loading: 'lazy' }), el('span', {}, [x.label[lang]])]);
+        var b = el('button', { type: 'button', class: 'photo-example' }, [el('img', { src: x.file, alt: '', loading: 'lazy' }), el('span', {}, [x.label[lang] + (added ? ' (' + t('photoAdded') + ')' : '')])]);
         b.disabled = added || f.concern.photos.length >= MAX_PHOTOS;
-        b.addEventListener('click', function () { addPhoto(fetch(x.file).then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.blob(); }), x.id); });
-        var credit = el('small', {}, [t('photoBy', { a: x.author, l: x.licence }) + ' · ', el('a', { href: x.source, target: '_blank', rel: 'noopener' }, [t('photoSource')])]);
+        b.addEventListener('click', function () {
+          // A second click while it loads adds nothing.
+          if (f.concern.adding[x.id]) return;
+          f.concern.adding[x.id] = true;
+          addPhoto(fetch(x.file).then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.blob(); }), x.id)
+            .then(function () { delete f.concern.adding[x.id]; });
+        });
+        var licence = x.licenceUrl ? el('a', { href: x.licenceUrl, target: '_blank', rel: 'noopener' }, [x.licence]) : x.licence;
+        var credit = el('small', {}, [t('photoBy', { a: x.author }), licence, ' · ', el('a', { href: x.source, target: '_blank', rel: 'noopener' }, [t('photoSource')])]);
         return el('li', {}, [b, credit]);
       }));
     }
     /** Shrinks a photo (an upload or an example) and adds it; counted while pending, so Next waits for it. */
     function addPhoto(blob, from) {
       f.concern.pending = (f.concern.pending || 0) + 1;
+      error.hidden = true;
       return Promise.resolve(blob).then(shrink).then(function (url) {
         if (flow === f && f.concern.photos.length < MAX_PHOTOS) {
           f.concern.from = f.concern.from || [];
           f.concern.photos.push(url);
           f.concern.from.push(from);
           // After a language switch this field is no longer shown: draw the step again.
-          if (box.isConnected) render(); else if (f.step === 2) showFlow();
+          if (box.isConnected) {
+            render();
+            // The clicked example is disabled now: keep keyboard focus on the photo just added.
+            if (from !== null) { var last = list.lastElementChild; if (last) last.querySelector('button').focus(); }
+          } else if (f.step === 2) showFlow();
         }
-      }).catch(function () { error.hidden = false; }).then(function () { f.concern.pending -= 1; });
+      }).catch(function () {
+        error.textContent = t(from === null ? 'photoFailed' : 'exampleFailed');
+        error.hidden = false;
+      }).then(function () { f.concern.pending -= 1; });
     }
-    if (!examplePhotos) {
-      fetch('photos/photos.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (list) {
-        examplePhotos = Array.isArray(list) ? list : [];
-        if (box.isConnected) drawExamples();
-      });
-    }
+    if (!examplePhotos) loadExamplePhotos().then(function () { if (box.isConnected) drawExamples(); });
     input.addEventListener('change', function () {
       var files = Array.prototype.slice.call(input.files || [], 0, MAX_PHOTOS - f.concern.photos.length);
       input.value = '';
