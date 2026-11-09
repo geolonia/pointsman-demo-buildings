@@ -205,7 +205,7 @@
     document.querySelectorAll('[data-i18n]').forEach(function (n) { n.textContent = t(n.dataset.i18n); });
     document.querySelectorAll('[data-i18n-label]').forEach(function (n) { n.setAttribute('aria-label', t(n.dataset.i18nLabel)); });
     // Back to the demos page in the same language.
-    document.getElementById('brand').href = lang === 'ja' ? 'https://pointsman.net/ja/demos/' : 'https://pointsman.net/demos/';
+    document.getElementById('brand').pathname = lang === 'ja' ? '/ja/demos/' : '/demos/';
     var b = document.getElementById('lang');
     b.textContent = lang === 'ja' ? 'English' : '日本語';
     b.lang = lang === 'ja' ? 'en' : 'ja';
