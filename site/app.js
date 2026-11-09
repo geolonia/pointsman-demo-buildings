@@ -573,7 +573,7 @@
   }
 
   function resultView() {
-    var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading('examples-title'); })]);
+    var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading(document.getElementById('examples').hidden ? 'map-title' : 'examples-title'); })]);
     if (flow.state === 'sending') return [el('p', { class: 'muted' }, [t('sending')])];
     if (flow.state === 'failed') {
       // Back to the answers, kept, unless the request was sent and is gone.
