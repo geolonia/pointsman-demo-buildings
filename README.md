@@ -117,8 +117,8 @@ out of the bridge, so the check from the building's data still runs).
 Before `"on"`, the `building-concern` profile must be published on
 `POINTSMAN_URL`. `PHOTOS` (`"on"` takes up to 3 photos with a description)
 needs `CONCERNS` on, the photos bucket, and a `building-concern` version
-that reads images (v2, engine 0.21.0 or later); `"off"` refuses photos with
-503.
+that reads images (v2, engine 0.21.0 or later); `"off"` refuses new photos
+with 503, and requests that already have photos still get them.
 Secrets (`wrangler secret put <NAME>`):
 
 | Secret | |

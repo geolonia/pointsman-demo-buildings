@@ -62,7 +62,9 @@ export function inlinePhotos(fetcher: typeof fetch, env: Pick<Env, 'PHOTOS_BUCKE
     } catch {
       return fetcher(input, init);
     }
-    const keys = body.state?.photos?.value;
+    // A broker may give back a one-item list as the item itself (JSON-LD compaction).
+    const raw = body.state?.photos?.value;
+    const keys = typeof raw === 'string' ? [raw] : raw;
     if (!Array.isArray(keys) || keys.length === 0) return fetcher(input, init);
     const wanted = keys.filter(isPhotoKey);
     const urls = await Promise.all(wanted.map((k) => dataUrl(env.PHOTOS_BUCKET!, k)));

@@ -38,7 +38,7 @@
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
       worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers. This demo deletes your description after about a day; the AI service may keep it in its logs for longer.',
-      photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos',
+      photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
       checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
@@ -81,7 +81,7 @@
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
       worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。このデモは説明を約1日で削除します（AI サービスの記録には、より長く残ることがあります）。',
-      photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真',
+      photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
       checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
@@ -297,10 +297,12 @@
       var files = Array.prototype.slice.call(input.files || [], 0, MAX_PHOTOS - f.concern.photos.length);
       input.value = '';
       error.hidden = true;
+      // Counted while they are shrunk, so Next waits for them.
+      f.concern.pending = (f.concern.pending || 0) + files.length;
       files.reduce(function (done, file) {
         return done.then(function () { return shrink(file); }).then(function (url) {
           if (flow === f && f.concern.photos.length < MAX_PHOTOS) { f.concern.photos.push(url); render(); }
-        }).catch(function () { error.hidden = false; });
+        }).catch(function () { error.hidden = false; }).then(function () { f.concern.pending -= 1; });
       }, Promise.resolve());
     });
     render();
@@ -355,8 +357,17 @@
       if (!flow.known.structure) fields.push(woodField());
       if (!flow.known.storeys) fields.push(numberField('storeysAboveGround', t('storeysQ'), 1, 99));
       if (!concernsOpen && fields.length === 0) fields.push(el('p', {}, [t('allKnown')]));
+      var photoMsg = el('p', { class: 'field-error', role: 'alert', hidden: '' });
       body.replaceChildren.apply(body, fields.concat([
-        el('div', { class: 'actions' }, [button(t('next'), function () { var bad = body.querySelector('[aria-invalid="true"]'); if (bad) { bad.focus(); return; } stepTo(3); }, 'btn')]),
+        photoMsg,
+        el('div', { class: 'actions' }, [button(t('next'), function () {
+          var bad = body.querySelector('[aria-invalid="true"]'); if (bad) { bad.focus(); return; }
+          // Photos go only with a description, and only once they are ready.
+          var c = flow.concern;
+          var problem = photosOpen && (c.pending ? 'photosBusy' : c.photos.length && !c.description.trim() ? 'photosNeedWords' : '');
+          if (problem) { photoMsg.textContent = t(problem); photoMsg.hidden = false; return; }
+          stepTo(3);
+        }, 'btn')]),
       ]));
     } else if (flow.step === 3) {
       title.textContent = t('t3');

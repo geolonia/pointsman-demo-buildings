@@ -90,8 +90,8 @@ let calls: Call[] = [];
 let stored: Map<string, Entity>;
 let pointsmanAction = 'high';
 let pointsmanStatus = 200;
-/** How the broker answers a create: 'ok', 'fail' (nothing stored) or 'lost' (stored, then the answer is lost). */
-let createMode: 'ok' | 'fail' | 'lost' = 'ok';
+/** How the broker answers a create: 'ok', 'fail' (nothing stored), 'lost' (stored, then the answer is lost), or 'lost-unreadable' (lost, and reading one entity fails). */
+let createMode: 'ok' | 'fail' | 'lost' | 'lost-unreadable' = 'ok';
 /** NGSILD-Results-Count for count=true; null: none (a broker that does not count). */
 let countHeader: (n: number) => string | null = (n) => String(n);
 
@@ -120,7 +120,7 @@ beforeEach(() => {
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'POST') {
       if (createMode === 'fail') return new Response('down', { status: 503 });
       stored.set(body.id, body);
-      if (createMode === 'lost') return new Response('timeout', { status: 504 });
+      if (createMode === 'lost' || createMode === 'lost-unreadable') return new Response('timeout', { status: 504 });
       return new Response(null, { status: 201 });
     }
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') {
@@ -128,6 +128,7 @@ beforeEach(() => {
       const header = url.searchParams.get('count') === 'true' ? countHeader(all.length) : null;
       return Response.json(all.slice(0, Number(url.searchParams.get('limit') ?? 1000)), { headers: header === null ? {} : { 'NGSILD-Results-Count': header } });
     }
+    if (createMode === 'lost-unreadable' && req.method === 'GET' && url.pathname.startsWith('/ngsi-ld/v1/entities/') && decodeURIComponent(url.pathname).includes('BuildingCheckRequest')) return new Response('down', { status: 500 });
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)(\/attrs(?:\/([^/]+))?)?$/);
     if (m) {
       const id = decodeURIComponent(m[1]!);
@@ -475,6 +476,22 @@ describe('scene B: photos', () => {
     createMode = 'lost';
     expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
     expect(await photoCount()).toBe(before + 1);
+    // Lost, and the read to check fails too: the photos stay (the request may exist).
+    createMode = 'lost-unreadable';
+    expect((await post(body, {}, withPhotos(true))).status).toBeGreaterThanOrEqual(500);
+    expect(await photoCount()).toBe(before + 2);
+  });
+
+  it('a single photo key given back as a string (JSON-LD compaction) is inlined too', async () => {
+    const uuid = '77777777-7777-4777-8777-777777777777';
+    await storePhotos(env.PHOTOS_BUCKET!, uuid, [jpeg]);
+    const sent: string[] = [];
+    const fetcher = (async (_u: RequestInfo | URL, init?: RequestInit) => { sent.push(String(init?.body)); return new Response('{}'); }) as typeof fetch;
+    const f = inlinePhotos(fetcher, { PHOTOS_BUCKET: env.PHOTOS_BUCKET!, POINTSMAN_URL: 'https://pointsman.test' }, 'building-concern');
+    const state = { description: { value: 'x' }, photos: { value: `photos/${uuid}/1.jpg` } };
+    await f('https://pointsman.test/v1/decide/building-concern', { method: 'POST', body: JSON.stringify({ state }) });
+    expect(JSON.parse(sent[0]!).state.photos.value).toEqual([jpeg]);
+    await deletePhotos(env.PHOTOS_BUCKET!, uuid);
   });
 
   it('a photo missing in R2: Pointsman is not called, the bridge gets a 503 to retry', async () => {

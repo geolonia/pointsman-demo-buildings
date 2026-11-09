@@ -80,7 +80,8 @@ export function bridgeConfig(env: Env): BridgeConfig {
     pointsman: { url: trimUrl(env.POINTSMAN_URL), token: env.POINTSMAN_TOKEN ?? '' },
     broker: { url: trimUrl(env.BROKER_URL), apiKey: env.BROKER_API_KEY, tenant: env.BROKER_TENANT },
     // Scene B's photos are in R2: the call to Pointsman gets them in place of their keys.
-    fetch: photosReady(env) ? inlinePhotos(fetchWithAgent, env, CONCERN_ROUTE.profile) : fetchWithAgent,
+    // Also with PHOTOS off: requests sent earlier still carry keys, and must get their photos.
+    fetch: env.PHOTOS_BUCKET ? inlinePhotos(fetchWithAgent, env, CONCERN_ROUTE.profile) : fetchWithAgent,
   };
 }
 
@@ -202,7 +203,17 @@ async function createRequest(env: Env, request: Request): Promise<Response> {
     } catch (err) {
       // Delete the photos unless the entity was created after all (a create that
       // timed out after the broker committed): then they are still needed.
-      if (concern?.photos && !(id && await broker.get(id).catch(() => null))) await deletePhotos(env.PHOTOS_BUCKET!, uuid).catch(() => {});
+      // A failed read is not "not created": then the photos stay (the bucket's
+      // 1-day rule removes them if the entity was never created).
+      if (concern?.photos) {
+        let created = true;
+        try {
+          created = !!(id && await broker.get(id));
+        } catch {
+          /* unknown: keep the photos */
+        }
+        if (!created) await deletePhotos(env.PHOTOS_BUCKET!, uuid).catch(() => {});
+      }
       throw err;
     }
   } catch (err) {
