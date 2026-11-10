@@ -56,10 +56,10 @@
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       resultLabel: 'Pointsman\u2019s answer', dangerChance: 'chance of danger: {n} %',
-      pathFacts: 'Facts, from data', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', nOf4: '{n} of 4', chance: 'chance of yes',
+      pathFacts: 'Facts, from data', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', pathAiMissing: 'The AI answered fixed questions, but its answers cannot be shown just now', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', nOf4: '{n} of 4', chance: 'chance of yes',
       graphKicker: 'How Pointsman decides', graphText: 'A request goes from left to right. Each box is a profile with its own questions and rules; the second one also reads the first one\u2019s decision.', graphDmn: 'Download for DMN tools (.dmn)',
       tc: 'How urgent is your concern?',
-      checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
+      notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
       ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
       cn_now: 'In a real service, staff would be asked to act today; this demo sends it to no one. If anyone is in danger, call 119 or leave the building now.', cn_high: 'In a real service, staff would check this soon and confirm the priority; this demo sends it to no one.', cn_medium: 'A check is worth planning.', cn_low: 'Nothing in the description points to an early check.', cn_person: 'The AI was not sure. In a real service, a person would read the description before anything else; this demo sends it to no one.', 'cn_more-evidence': 'Say what you see, where on the building and since when, and send it again.',
       c0: 'The description does not seem to be about a building.', c1: 'The words point to danger to people now, or to a part that has collapsed.', c2: 'The words point to serious damage, to parts that lean, sink or may fall, or to the foundation or ground.', c3: 'Cracks in load-bearing parts, in a building whose check is already high.', c4: 'The AI sees some danger to people, but not enough to act today.', c5: 'Cracks in load-bearing parts, or water or fire damage.', c6: 'The AI is not sure what the damage is, or sees some sign of danger.', c7: 'The description does not say clearly what is damaged.', c8: 'Only surface damage, but the building\u2019s check is high anyway.', cd: 'Only small surface damage is described.',
@@ -117,10 +117,10 @@
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       resultLabel: 'Pointsman の判定', dangerChance: '危険の可能性：{n} %',
-      pathFacts: 'データからの事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', nOf4: '4段階の{n}', chance: '「はい」の確率',
+      pathFacts: 'データからの事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', pathAiMissing: 'AI は決まった質問に答えましたが、今はその答えを表示できません', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', nOf4: '4段階の{n}', chance: '「はい」の確率',
       graphKicker: 'Pointsman の判定の流れ', graphText: '依頼は左から右へ進みます。箱 1 つが、それぞれの質問と規則をもつ 1 つのプロファイルです。2 つ目は 1 つ目の判定も読みます。', graphDmn: 'DMN ツール用にダウンロード（.dmn）',
       tc: 'この心配はどれだけ急ぎか',
-      checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
+      notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
       ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
       cn_now: '実際のサービスでは、職員に今日中の対応を求めます（このデモではどこにも届きません）。危険な人がいるときは、119 番に電話するか、すぐに建物から離れてください。', cn_high: '実際のサービスでは、職員が早めに確認し、優先度を確定します（このデモではどこにも届きません）。', cn_medium: '確認を計画する価値があります。', cn_low: '説明からは、早めの確認が必要な理由は見つかりませんでした。', cn_person: 'AI が判断しきれませんでした。実際のサービスでは、まず人が説明を読みます（このデモではどこにも届きません）。', 'cn_more-evidence': '何が見えるか、建物のどこか、いつからかを書いて、もう一度送ってください。',
       c0: '説明が建物についてのものではないようです。', c1: '今、人に危険がある、または一部が崩れたことを示す言葉があります。', c2: '深刻な被害、傾き・沈み・落下のおそれ、または基礎や地盤の被害を示す言葉があります。', c3: '構造部分のひびで、建物の確認の優先度もすでに高です。', c4: 'AI が人への危険を読み取りましたが、今日中の対応が必要なほどではありません。', c5: '構造部分のひび、または水や火による被害です。', c6: 'AI が被害の種類を判断しきれないか、危険のきざしを読み取りました。', c7: '何が壊れているかが説明からはっきりしません。', c8: '表面の被害だけですが、建物の確認の優先度がもともと高です。', cd: '表面の小さな被害だけが説明されています。',
@@ -783,8 +783,16 @@
       if (y1 !== null) rows.push(row('danger_now', t('qDanger'), a.danger_now.value ? t('yes') : t('no'), y1, t('dangerChance', { n: Math.round(y1 * 100) }), 'danger'));
     }
     if (a.severity && typeof a.severity.value === 'number') {
-      var sv = Math.max(0, Math.min(4, Math.round(a.severity.value)));
-      rows.push(row('severity', t('qSeverity'), t('sev' + sv), sv / 4, t('nOf4', { n: sv }), 'scale'));
+      // The rules read the expected score (sum of level x probability), not the most likely level.
+      var lv = a.severity.probabilities && typeof a.severity.probabilities === 'object' ? a.severity.probabilities : null;
+      var score = a.severity.value;
+      if (lv) {
+        var sum = 0, tot = 0;
+        Object.keys(lv).forEach(function (k) { if (/^[0-4]$/.test(k) && typeof lv[k] === 'number') { sum += Number(k) * lv[k]; tot += lv[k]; } });
+        if (tot > 0) score = sum / tot;
+      }
+      score = Math.max(0, Math.min(4, score));
+      rows.push(row('severity', t('qSeverity'), t('sev' + Math.round(score)), score / 4, t('nOf4', { n: (Math.round(score * 10) / 10).toString() }), 'scale'));
     }
     return rows;
   }
@@ -808,7 +816,8 @@
       parts.push(arrow(t('pathAi')), el('ul', { class: 'path-box q-rows' }, o.questions));
       parts.push(arrow(t('pathRule')));
     } else {
-      parts.push(arrow(t('pathNoAi')));
+      // The description was read by the AI, but its answers are not in hand: say so, not "no AI".
+      parts.push(arrow(t(o.ai ? 'pathAiMissing' : 'pathNoAi')));
     }
     parts.push(el('p', { class: 'path-box path-rule' }, [o.rule, ' ', el('span', { class: 'path-then' }, ['\u2192 ' + o.short])]));
     parts.push(arrow(t('pathDecision')), answerCard(o.action, o.short, null, o.next));
@@ -845,7 +854,7 @@
     var input = [el('blockquote', { class: 'quote' }, [flow.concern.description.trim()])];
     if (flow.concern.photos && flow.concern.photos.length) input.push(el('div', { class: 'photos' }, flow.concern.photos.map(function (src) { return el('img', { src: src, alt: '' }); })));
     return [
-      pathView({ facts: facts, input: el('div', {}, input), questions: questionRows(answersOf(flow.concernDecision), uses), uses: uses, rule: t(rule), action: action, short: t('ca_' + action), next: t('cn_' + action) }),
+      pathView({ facts: facts, input: el('div', {}, input), questions: questionRows(answersOf(flow.concernDecision), uses), ai: true, uses: uses, rule: t(rule), action: action, short: t('ca_' + action), next: t('cn_' + action) }),
       el('p', { class: 'note' }, [t('care')]),
       again,
     ];
@@ -997,6 +1006,8 @@
     [svg].concat(Array.prototype.slice.call(svg.getElementsByTagName('*'))).forEach(function (n) {
       Array.prototype.slice.call(n.attributes).forEach(function (a) {
         var ok = SVG_ATTRS.indexOf(a.localName) >= 0 && !a.namespaceURI
+          // Pointsman's own ids only (pm-…), so none can shadow an id of the page.
+          && !(a.localName === 'id' && !/^pm-[A-Za-z0-9_.-]+$/.test(a.value))
           // A marker is referenced only within the diagram.
           && !(a.localName === 'marker-end' && !/^url\(#[A-Za-z0-9_.-]+\)$/.test(a.value));
         if (!ok && !(n === svg && a.name === 'xmlns')) n.removeAttribute(a.name);
@@ -1034,14 +1045,24 @@
 
   function setHow(open) {
     var d = document.getElementById('how');
-    if (open && !d.open) { renderHowGraph(); d.showModal(); }
-    if (!open && d.open) d.close();
+    // Browsers without <dialog> (Safari before 15.4): shown in place, without the modal.
+    if (open && !d.open) { renderHowGraph(); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+    if (!open && d.open) { if (d.close) d.close(); else d.removeAttribute('open'); }
     document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
   }
   document.getElementById('how-toggle').addEventListener('click', function () { setHow(!document.getElementById('how').open); });
   // Escape closes the dialog by itself; so does a click on the dark area around it.
-  document.getElementById('how').addEventListener('close', function () { document.getElementById('how-toggle').setAttribute('aria-expanded', 'false'); });
-  document.getElementById('how').addEventListener('click', function (e) { if (e.target === e.currentTarget) setHow(false); });
+  document.getElementById('how').addEventListener('close', function () {
+    document.getElementById('how-toggle').setAttribute('aria-expanded', 'false');
+    // The diagram's own style element goes with it.
+    document.getElementById('how-graph').replaceChildren();
+  });
+  document.getElementById('how').addEventListener('click', function (e) {
+    // Only a click on the dark area: the dialog itself (its padding too) is the target as well.
+    if (e.target !== e.currentTarget) return;
+    var b = e.currentTarget.getBoundingClientRect();
+    if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) setHow(false);
+  });
   document.getElementById('how-close').addEventListener('click', function () { setHow(false); document.getElementById('how-toggle').focus(); });
 
   // The developer view: a panel at the right on wide screens, a drawer at the bottom on narrow ones (as in the roads demo).

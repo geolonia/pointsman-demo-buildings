@@ -145,7 +145,11 @@ async function graph(env: Env, url: URL, ctx: ExecutionContext): Promise<Respons
   const cached = await caches.default.match(key);
   if (cached) return cached;
   const pm = await fetchWithAgent(`${trimUrl(env.POINTSMAN_URL ?? '')}/v1/profiles/${profile}/graph?format=${format}&lang=${lang}`, { headers: { authorization: `Bearer ${env.POINTSMAN_TOKEN}` } });
-  if (!pm.ok) return json({ error: `Pointsman ${pm.status}` }, 502);
+  if (!pm.ok) {
+    // For example 403 when the token may not read this profile: visible in the Worker's logs.
+    console.error(`graph: Pointsman ${pm.status} for ${profile}`);
+    return json({ error: `Pointsman ${pm.status}` }, 502);
+  }
   const res = new Response(await pm.text(), {
     headers: {
       ...SECURITY,

@@ -107,6 +107,18 @@ describe('GET /api/graph', () => {
     expect(calls[0]!.headers.get('authorization')).toBe('Bearer pm-test');
   });
 
+  it('asks for building-concern when scene B is on, and sends DMN as a download', async () => {
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = new Request(input, init);
+      calls.push({ url: req.url, headers: req.headers });
+      return new Response('<definitions/>');
+    });
+    const res = await graph('?format=dmn&lang=en', { ...ready, CONCERNS: 'on', BRIDGE_QUEUE: {} } as unknown as Env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="building-concern.dmn"');
+    expect(calls[0]!.url).toBe('https://pointsman.test/v1/profiles/building-concern/graph?format=dmn&lang=en');
+  });
+
   it('says only that Pointsman failed, without its answer', async () => {
     status = 500;
     const res = await graph('?format=dmn&lang=en');
