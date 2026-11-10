@@ -38,7 +38,7 @@
       dontKnow: 'I do not know', woodQ: 'Is it a wooden building?', yes: 'Yes', no: 'No', yearQ: 'Year built', storeysQ: 'Storeys above ground',
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
       fromModel: 'city model', fromYou: 'you', afterShort: 'After a disaster', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
-      sending: 'Sending…', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', steps: 'Steps', emptyIsUnknown: 'leave it empty', outOfRange: 'Enter a whole number from {min} to {max}, or leave it empty.',
+      sending: 'Sending…', ready: 'Pointsman has answered. The result is below.', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', steps: 'Steps', emptyIsUnknown: 'leave it empty', outOfRange: 'Enter a whole number from {min} to {max}, or leave it empty.',
       e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
       e_lost: 'The request is no longer there (requests are deleted after a day).', gaveUp: 'No result yet. The demo tries again every hour; you can also look again later.', lookAgain: 'Look again',
       wood: 'Wood', notWood: 'Not wood',
@@ -100,7 +100,7 @@
       dontKnow: 'わからない', woodQ: '木造の建物ですか', yes: 'はい', no: 'いいえ', yearQ: '建築年', storeysQ: '地上階数',
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
       fromModel: '3D都市モデル', fromYou: 'あなた', afterShort: '災害のあと', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
-      sending: '送信しています…', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', steps: '手順', emptyIsUnknown: '空欄のまま', outOfRange: '{min}から{max}までの整数を入れるか、空欄のままにしてください。',
+      sending: '送信しています…', ready: 'Pointsman が答えました。結果は下にあります。', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', steps: '手順', emptyIsUnknown: '空欄のまま', outOfRange: '{min}から{max}までの整数を入れるか、空欄のままにしてください。',
       e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
       e_lost: '依頼はもうありません（依頼は1日で削除されます）。', gaveUp: 'まだ結果がありません。デモは1時間ごとにやり直します。あとでもう一度ご覧ください。', lookAgain: 'もう一度見る',
       wood: '木造', notWood: '非木造',
@@ -605,6 +605,28 @@
       title.textContent = t(flow.withConcern ? 'tc' : 't4');
       body.replaceChildren.apply(body, resultView());
     }
+    // Screen readers: the waiting text and how the wait ended go into a status line that stays on the
+    // page (a new element with role=status is not always read out); only changed text is written.
+    var live = document.getElementById('flow-status');
+    var said = statusText();
+    if (live.textContent !== said) live.textContent = said;
+  }
+
+  /** For the status line: the waiting text, then how the wait ended; empty before sending. */
+  function statusText() {
+    if (!flow || flow.step !== 4) return '';
+    if (flow.state === 'done') return t('ready');
+    if (flow.state === 'failed') return t(flow.error);
+    if (flow.state === 'gaveUp') return t('gaveUp');
+    return busyText() || '';
+  }
+
+  /** While the request is sent or sorted: the text to show; otherwise null. */
+  function busyText() {
+    if (!flow || flow.step !== 4) return null;
+    if (flow.state === 'sending') return t('sending');
+    if (flow.state === 'waiting' || flow.state === 'slow') return t(flow.state);
+    return null;
   }
 
   /** The page's own words for a failed send (the server's are English only). */
@@ -679,9 +701,18 @@
       });
   }
 
+  // While Pointsman works: a spinner and a moving bar, so the page does not look stuck. It shows no
+  // progress, as nothing tells the page how far the check is. Screen readers get the text from #flow-status.
+  function busyView(text) {
+    return el('div', { class: 'busy' }, [
+      el('p', { class: 'busy-text', 'aria-hidden': 'true' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
+      el('div', { class: 'busy-bar', 'aria-hidden': 'true' }, [el('i')]),
+    ]);
+  }
+
   function resultView() {
     var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading(document.getElementById('examples').hidden ? 'map-title' : 'examples-title'); })]);
-    if (flow.state === 'sending') return [el('p', { class: 'muted' }, [t('sending')])];
+    if (flow.state === 'sending') return [busyView(busyText())];
     if (flow.state === 'failed') {
       // Back to the answers, kept, unless the request was sent and is gone.
       var back = flow.error === 'e_lost' ? [] : [button(t('back'), function () { stepTo(3); })];
@@ -692,7 +723,7 @@
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
     // While waiting, the visitor may leave: the request is decided anyway.
-    if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')]), again];
+    if (flow.state !== 'done') return [busyView(busyText() || t('waiting')), again];
     if (flow.withConcern) return concernView(again).concat([sentView()]);
     var check = flow.request.check;
     var action = check.value;
