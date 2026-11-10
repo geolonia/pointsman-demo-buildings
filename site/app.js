@@ -37,7 +37,7 @@
       t2: 'What the city model does not know', t3: 'Check and send', t4: 'How urgently should someone look at it?',
       dontKnow: 'I do not know', woodQ: 'Is it a wooden building?', yes: 'Yes', no: 'No', yearQ: 'Year built', storeysQ: 'Storeys above ground',
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
-      fromModel: 'city model', fromYou: 'you', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
+      fromModel: 'city model', fromYou: 'you', afterShort: 'After a disaster', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
       sending: 'Sending…', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', steps: 'Steps', emptyIsUnknown: 'leave it empty', outOfRange: 'Enter a whole number from {min} to {max}, or leave it empty.',
       e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
       e_lost: 'The request is no longer there (requests are deleted after a day).', gaveUp: 'No result yet. The demo tries again every hour; you can also look again later.', lookAgain: 'Look again',
@@ -98,7 +98,7 @@
       t2: '3D都市モデルにない情報', t3: '確認して送信', t4: 'どれだけ急いで見に行くべきか',
       dontKnow: 'わからない', woodQ: '木造の建物ですか', yes: 'はい', no: 'いいえ', yearQ: '建築年', storeysQ: '地上階数',
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
-      fromModel: '3D都市モデル', fromYou: 'あなた', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
+      fromModel: '3D都市モデル', fromYou: 'あなた', afterShort: '災害のあと', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
       sending: '送信しています…', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', steps: '手順', emptyIsUnknown: '空欄のまま', outOfRange: '{min}から{max}までの整数を入れるか、空欄のままにしてください。',
       e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
       e_lost: '依頼はもうありません（依頼は1日で削除されます）。', gaveUp: 'まだ結果がありません。デモは1時間ごとにやり直します。あとでもう一度ご覧ください。', lookAgain: 'もう一度見る',
@@ -561,7 +561,7 @@
       row(t('storeys'), flow.known.storeys, String(p.storeys), flow.answers.storeysAboveGround),
     ].concat(concernsOpen && flow.concern.description.trim() ? [
       [t('yourWords'), [flow.concern.description.trim(), ' ', origin(false)]],
-    ].concat(photosOpen && flow.concern.photos.length ? [[t('photos'), [t('photoCount', { n: flow.concern.photos.length }), ' ', origin(false)]]] : []).concat(flow.concern.afterDisaster ? [[t('afterQ'), [t(flow.concern.afterDisaster === 'unsure' ? 'unsure' : flow.concern.afterDisaster), ' ', origin(false)]]] : []) : []);
+    ].concat(photosOpen && flow.concern.photos.length ? [[t('photos'), [t('photoCount', { n: flow.concern.photos.length }), ' ', origin(false)]]] : []).concat(flow.concern.afterDisaster ? [[t('afterShort'), [t(flow.concern.afterDisaster === 'unsure' ? 'unsure' : flow.concern.afterDisaster), ' ', origin(false)]]] : []) : []);
   }
 
   function showFlow() {
@@ -596,7 +596,8 @@
       title.textContent = t('t3');
       var dl = el('dl');
       summaryRows().forEach(function (r) { dl.append(el('dt', {}, [r[0]]), el('dd', {}, r[1])); });
-      body.replaceChildren(dl, el('p', { class: 'note' }, [t('sendNote')]), el('div', { class: 'actions' }, [button(t('back'), function () { stepTo(2); }), button(t('send'), send, 'btn')]));
+      // The demo note is a quiet line under the buttons, not a callout above them.
+      body.replaceChildren(dl, el('div', { class: 'actions' }, [button(t('back'), function () { stepTo(2); }), button(t('send'), send, 'btn')]), el('p', { class: 'muted small send-note' }, [t('sendNote')]));
     } else {
       title.textContent = t(flow.withConcern ? 'tc' : 't4');
       body.replaceChildren.apply(body, resultView());

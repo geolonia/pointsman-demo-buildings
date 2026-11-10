@@ -297,3 +297,6 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
   .q-row, .q-row.choice { grid-template-columns: 1fr; }
   .q-choices li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+
+/* The demo note under the Send button of step 3. */
+.send-note { margin: 10px 0 0; }
