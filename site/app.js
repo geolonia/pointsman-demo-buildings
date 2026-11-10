@@ -152,7 +152,7 @@
   var EXAMPLES = [
     { id: '01100-bldg-596155', label: { en: 'The house leans', ja: '家が傾いた' }, after: 'yes',
       answers: { yearOfConstruction: 1976, wood: true, storeysAboveGround: 2 },
-      description: { en: 'Since this morning\u2019s earthquake the house leans towards the street and the front door no longer closes.', ja: '地震のあと、家が道路側に傾いて、玄関のドアが閉まらなくなりました。' } },
+      description: { en: 'Since this morning\u2019s earthquake the house leans a little towards the street, and the front door no longer closes. We are all outside and safe.', ja: '今朝の地震のあと、家が道路側に少し傾き、玄関のドアが閉まらなくなりました。家族は全員外にいて無事です。' } },
     { id: '01100-bldg-595855', label: { en: 'Part of it came down', ja: '一部が落ちた' }, after: 'unsure', answers: {},
       description: { en: 'Part of the balcony on the second floor came down an hour ago. Nobody was hurt, but more pieces are hanging.', ja: '2階のベランダの一部が1時間前に落ちました。けが人はいませんが、まだ破片がぶら下がっています。' } },
     { id: '01100-bldg-597856', label: { en: 'Old, thin cracks', ja: '前からある細いひび' }, after: 'no', answers: {},
@@ -189,12 +189,18 @@
   /** Photos with the description (/api/config photos). */
   var photosOpen = false;
   var MAX_PHOTOS = 3;
-  /** Descriptions to start from (checked against the model, plan 8.6): people find it hard to write their own. */
+  /**
+   * Descriptions to start from: people find it hard to write their own. Worded so
+   * each gives one clear outcome in both languages (real Clef answers, 2026-11-10,
+   * building-concern v5): leans high, balcony now, cracks medium (high when the
+   * building's own priority is high), tiles over a school route now, old thin
+   * cracks low, the vague one asks for more.
+   */
   var SAMPLES = [
-    { en: 'Since this morning\u2019s earthquake the house leans towards the street and the front door no longer closes.', ja: '地震のあと、家が道路側に傾いて、玄関のドアが閉まらなくなりました。' },
+    { en: 'Since this morning\u2019s earthquake the house leans a little towards the street, and the front door no longer closes. We are all outside and safe.', ja: '今朝の地震のあと、家が道路側に少し傾き、玄関のドアが閉まらなくなりました。家族は全員外にいて無事です。' },
     { en: 'Part of the balcony on the second floor came down an hour ago. Nobody was hurt, but more pieces are hanging.', ja: '2階のベランダの一部が1時間前に落ちました。けが人はいませんが、まだ破片がぶら下がっています。' },
-    { en: 'There are diagonal cracks running from the corners of the living room windows. They were not there before the quake.', ja: '居間の窓の角から斜めのひびが入っています。地震の前にはありませんでした。' },
-    { en: 'Some roof tiles slipped and hang over the entrance where children walk to school.', ja: '瓦が何枚かずれて、通学路の入口の上にぶら下がっています。' },
+    { en: 'Since the earthquake a load-bearing wall in the living room has diagonal cracks, a few millimetres wide. The house stands straight and nobody is in danger.', ja: '地震のあと、居間の柱と壁に数ミリ幅の斜めのひび割れが入りました。家は傾いておらず、誰も危険な状態ではありません。' },
+    { en: 'Roof tiles slipped and hang over the entrance. Children walk under these tiles every morning on their way to school, and pieces could fall on them.', ja: '瓦がずれて玄関の上にぶら下がっています。毎朝、子どもたちがその下を通って登校し、破片が落ちてくるおそれがあります。' },
     { en: 'Thin cracks in the paint of the hallway ceiling. They have been there for years.', ja: '廊下の天井の塗装に細いひびがあります。何年も前からです。' },
     { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' },
   ];
