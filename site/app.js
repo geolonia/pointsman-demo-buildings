@@ -1056,7 +1056,7 @@
     // Browsers without <dialog> (Safari before 15.4): shown in place, without the modal.
     // The attribute, not .open: without <dialog> support (Safari before 15.4) there is no .open.
     var shown = d.hasAttribute('open');
-    if (open && !shown) { renderHowGraph(); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+    if (open && !shown) { renderHowGraph(); if (d.showModal) d.showModal(); else { d.setAttribute('open', ''); d.scrollIntoView({ block: 'start' }); document.getElementById('how-close').focus(); } }
     if (!open && shown) { if (d.close) d.close(); else d.removeAttribute('open'); }
     document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
   }
