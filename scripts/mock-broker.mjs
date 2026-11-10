@@ -81,6 +81,32 @@ const MOCK_FACTS = [
   { name: 'flood', missing: false, values: { rank: 0 }, source: 'mock' },
 ];
 
+/** What a person checks first (the profiles' people_check), as the bridge marks it: reviewStatus pending. */
+const CHECKED = { check: ['high'], concern: ['now', 'high', 'person'] };
+
+/**
+ * A person's answer on a Decision (the staff view): written there, and, as the
+ * bridge would after the broker's notification (/reviews), on the request's result.
+ */
+function resolve(decisionId, attrs) {
+  const d = entities.get(decisionId);
+  if (!d) return 404;
+  const value = (a) => (a && typeof a === 'object' && 'value' in a ? a.value : undefined);
+  const updated = { ...d };
+  for (const [k, v] of Object.entries(attrs)) if (k !== '@context') updated[k] = v;
+  entities.set(decisionId, updated);
+  const target = d.refersTo?.object;
+  const attribute = value(d.attribute);
+  const final = value(attrs.finalAction);
+  if (target && attribute && value(attrs.reviewStatus) === 'resolved' && typeof final === 'string') {
+    setTimeout(() => {
+      const now = entities.get(target);
+      if (now?.[attribute]) entities.set(target, { ...now, [attribute]: { ...now[attribute], reviewStatus: P('resolved'), finalAction: P(final), reviewedAt: P(new Date().toISOString()) } });
+    }, 1000);
+  }
+  return 204;
+}
+
 /** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
 function decideLater(id, gen) {
   setTimeout(() => {
@@ -89,8 +115,9 @@ function decideLater(id, gen) {
     const [rule, action] = decide(e);
     const decisionId = crypto.randomUUID();
     const decision = `urn:ngsi-ld:Decision:${decisionId}`;
-    entities.set(decision, { id: decision, type: 'Decision', note: P('made by scripts/mock-broker.mjs, not by Pointsman'), 'https://datamodels.jp/ns/decision/facts': { type: 'JsonProperty', json: MOCK_FACTS } });
-    entities.set(id, { ...e, check: { type: 'Property', value: action, decisionId: P(decisionId), decision: { type: 'Relationship', object: decision }, profile: P('building-check-priority'), policyRule: P(rule), model: P('none') } });
+    const checked = CHECKED.check.includes(action);
+    entities.set(decision, { id: decision, type: 'Decision', note: P('made by scripts/mock-broker.mjs, not by Pointsman'), 'https://datamodels.jp/ns/decision/facts': { type: 'JsonProperty', json: MOCK_FACTS }, ...(checked && { reviewStatus: P('pending'), refersTo: { type: 'Relationship', object: id }, attribute: P('check') }) });
+    entities.set(id, { ...e, check: { type: 'Property', value: action, decisionId: P(decisionId), decision: { type: 'Relationship', object: decision }, profile: P('building-check-priority'), policyRule: P(rule), model: P('none'), ...(checked && { reviewStatus: P('pending') }) } });
     // Scene B: a second decision on the description, a moment later (as the chained route would).
     if (e.description) {
       setTimeout(() => {
@@ -99,8 +126,9 @@ function decideLater(id, gen) {
         const c = mockConcern(now, action);
         const cid = crypto.randomUUID();
         const cdecision = `urn:ngsi-ld:Decision:${cid}`;
-        entities.set(cdecision, { id: cdecision, type: 'Decision', note: P('made by scripts/mock-broker.mjs with keywords, not by an AI'), 'https://datamodels.jp/ns/decision/answers': { type: 'JsonProperty', json: c.answers } });
-        entities.set(id, { ...now, concern: { type: 'Property', value: c.action, decisionId: P(cid), decision: { type: 'Relationship', object: cdecision }, profile: P('building-concern'), policyRule: P(c.rule), model: P('mock') } });
+        const cchecked = CHECKED.concern.includes(c.action);
+        entities.set(cdecision, { id: cdecision, type: 'Decision', note: P('made by scripts/mock-broker.mjs with keywords, not by an AI'), 'https://datamodels.jp/ns/decision/answers': { type: 'JsonProperty', json: c.answers }, ...(cchecked && { reviewStatus: P('pending'), refersTo: { type: 'Relationship', object: id }, attribute: P('concern') }) });
+        entities.set(id, { ...now, concern: { type: 'Property', value: c.action, decisionId: P(cid), decision: { type: 'Relationship', object: cdecision }, profile: P('building-concern'), policyRule: P(c.rule), model: P('mock'), ...(cchecked && { reviewStatus: P('pending') }) } });
       }, 2000);
     }
   }, 2000);
@@ -132,6 +160,14 @@ createServer((req, res) => {
       const offset = Number(url.searchParams.get('offset') ?? 0);
       const limit = Math.min(Number(url.searchParams.get('limit') ?? 20), 1000);
       return send(200, all.slice(offset, offset + limit), url.searchParams.get('count') === 'true' ? { 'NGSILD-Results-Count': String(all.length) } : {});
+    }
+    const attrs = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)\/attrs$/);
+    if (attrs && req.method === 'POST') {
+      let body;
+      try { body = JSON.parse(text); } catch { return send(400, { title: 'not JSON' }); }
+      let target;
+      try { target = decodeURIComponent(attrs[1]); } catch { return send(400, { title: 'bad id' }); }
+      return send(resolve(target, body));
     }
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)$/);
     let id;

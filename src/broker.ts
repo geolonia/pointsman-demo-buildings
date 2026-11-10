@@ -4,6 +4,9 @@ import type { Entity } from './buildings';
 import { type Env, trimUrl } from './env';
 import { fetchWithAgent } from './http';
 
+/** The Decision model's context (datamodels.jp), as the bridge writes Decision entities. */
+export const DECISION_CONTEXT = 'https://datamodels.jp/context/decision/v1.jsonld';
+
 /** Building has no datamodels.jp context yet: its terms are in the core context (default vocabulary). */
 export const CORE_CONTEXT = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld';
 /** A broker that hangs must not hold the page's request open. */
@@ -37,12 +40,15 @@ export class Broker {
     this.base = `${trimUrl(env.BROKER_URL)}/ngsi-ld/v1`;
   }
 
+  private headers(): Record<string, string> {
+    return { 'x-api-key': this.env.BROKER_API_KEY, 'NGSILD-Tenant': this.env.BROKER_TENANT };
+  }
+
   private call(path: string, init: { method?: string; body?: unknown } = {}): Promise<Response> {
     return this.fetchFn(`${this.base}${path}`, {
       method: init.method ?? 'GET',
       headers: {
-        'x-api-key': this.env.BROKER_API_KEY,
-        'NGSILD-Tenant': this.env.BROKER_TENANT,
+        ...this.headers(),
         accept: 'application/json',
         link: link(CORE_CONTEXT),
         ...(init.body !== undefined && { 'content-type': 'application/json' }),
@@ -88,6 +94,43 @@ export class Broker {
     await res.body?.cancel();
     const n = Number(res.headers.get('NGSILD-Results-Count') ?? NaN);
     return Number.isInteger(n) && n >= 0 ? n : null;
+  }
+
+  /**
+   * A Decision entity read with its model's context (datamodels.jp), so its
+   * terms come back short (reviewStatus, finalAction); null when missing.
+   */
+  async getDecision(id: string): Promise<Entity | null> {
+    const res = await this.fetchFn(`${this.base}/entities/${encodeURIComponent(id)}`, {
+      headers: { ...this.headers(), accept: 'application/json', link: link(DECISION_CONTEXT) },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new BrokerError('get decision', res.status);
+    return (await res.json()) as Entity;
+  }
+
+  /**
+   * A person's answer on a Decision entity, as the bridge's work orders write
+   * it: the broker then notifies the bridge (/reviews), which resolves the
+   * review in Pointsman, writes the final action on the request and completes
+   * its Task.
+   */
+  async resolveDecision(id: string, finalAction: string, by: string, at: string): Promise<void> {
+    const res = await this.fetchFn(`${this.base}/entities/${encodeURIComponent(id)}/attrs`, {
+      method: 'POST',
+      headers: { ...this.headers(), 'content-type': 'application/ld+json' },
+      body: JSON.stringify({
+        '@context': [DECISION_CONTEXT, CORE_CONTEXT],
+        reviewStatus: { type: 'Property', value: 'resolved' },
+        finalAction: { type: 'Property', value: finalAction },
+        reviewedBy: { type: 'Property', value: by },
+        reviewedAt: { type: 'Property', value: { '@type': 'DateTime', '@value': at } },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // 204: all attributes written; 207 would mean some were refused.
+    if (res.status !== 204) throw new BrokerError('resolve decision', res.status);
   }
 
   /** Deletes an entity; a missing one is fine. */

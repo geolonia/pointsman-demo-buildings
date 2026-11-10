@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Creates (or updates in place) the broker subscription that sends new and
-// changed check requests to the Worker's bridge (/notify). Run once, and again
+// Creates (or updates in place) the broker subscriptions that send new and
+// changed check requests to the Worker's bridge (/notify), and Decisions a
+// person resolved (/reviews). Run once, and again
 // after the inputs change.
 //
 //   BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs
@@ -57,13 +58,30 @@ const subscriptions = {
       endpoint: { uri: `${WORKER_URL}/notify?route=concern`, accept: 'application/json', receiverInfo: [{ key: 'x-bridge-secret', value: NOTIFY_SECRET }] },
     },
   },
+  // Staff view: Decisions a person resolved (the page's Confirm / Change), to
+  // the bridge, which resolves the review in Pointsman, writes the final action
+  // on the request and completes its Task.
+  'urn:ngsi-ld:Subscription:pointsman-demo-buildings-reviews': {
+    description: 'Pointsman buildings demo: decisions a person resolved, to the bridge',
+    entities: [{ type: 'Decision' }],
+    watchedAttributes: ['reviewStatus'],
+    q: 'reviewStatus=="resolved"',
+    notification: {
+      format: 'normalized',
+      endpoint: { uri: `${WORKER_URL}/reviews`, accept: 'application/json', receiverInfo: [{ key: 'x-bridge-secret', value: NOTIFY_SECRET }] },
+    },
+    context: 'https://datamodels.jp/context/decision/v1.jsonld',
+  },
 };
 
-for (const [id, subscription] of Object.entries(subscriptions)) {
+for (const [id, { context = CORE_CONTEXT, ...subscription }] of Object.entries(subscriptions)) {
+  // The context gives the short names in the subscription and its notifications
+  // (the Decision model's terms for the reviews; the core context for the requests).
+  const withContext = { ...headers, link: `<${context}>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"` };
   // Update in place, so notifications never stop; create it when missing.
-  let res = await fetch(`${base}/subscriptions/${encodeURIComponent(id)}`, { method: 'PATCH', headers, body: JSON.stringify(subscription) });
+  let res = await fetch(`${base}/subscriptions/${encodeURIComponent(id)}`, { method: 'PATCH', headers: withContext, body: JSON.stringify(subscription) });
   if (res.status === 404) {
-    res = await fetch(`${base}/subscriptions`, { method: 'POST', headers, body: JSON.stringify({ id, type: 'Subscription', ...subscription }) });
+    res = await fetch(`${base}/subscriptions`, { method: 'POST', headers: withContext, body: JSON.stringify({ id, type: 'Subscription', ...subscription }) });
   }
   // Only the status: the body may echo the request, secret included.
   console.log(`subscription ${id}: ${res.status}`);

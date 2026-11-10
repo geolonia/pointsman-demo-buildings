@@ -349,3 +349,29 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 
 /* The demo note under the Send button of step 3. */
 .send-note { margin: 10px 0 0; }
+
+/* The staff view: the requests of the last day, most serious first. */
+.reqs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.req { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.req.waits { border-left: 4px solid var(--amber); }
+.req-head { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 10px 12px; text-align: left;
+  font: inherit; color: var(--fg); background: none; border: 0; border-radius: 10px; cursor: pointer; min-height: 44px; }
+.req-head:hover { background: var(--panel-2); }
+.req-what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+.req-age { font: 0.8rem var(--mono); color: var(--muted); }
+.req-flag { grid-column: 2 / -1; font-size: 0.8rem; color: var(--amber); font-weight: 600; }
+.req-flag.done { color: var(--green); }
+.badge.v-none { background: var(--panel-2); color: var(--fg-2); }
+.badge.v-more-evidence { background: var(--amber); color: #1a1a1a; }
+.req-head .badge { font-size: 0.78rem; padding: 2px 10px; white-space: nowrap; }
+.req-body { display: grid; gap: 8px; padding: 0 12px 12px; }
+.req-body p { margin: 0; }
+.req-words { margin: 0; padding: 2px 0 2px 12px; border-left: 3px solid var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.req-results { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 0.92rem; }
+.req-results dt { color: var(--muted); }
+.req-results dd { margin: 0; display: grid; gap: 2px; }
+.req-answer { display: grid; gap: 8px; padding: 10px; border-radius: 8px; background: var(--panel-2); }
+.req-answer .actions, .req-body .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.req-change { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92rem; }
+.req-change select { font: 15px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 40px; }
+.btn.small { min-height: 36px; padding: 0 14px; font-size: 14px; }

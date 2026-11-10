@@ -38,6 +38,12 @@ describe('the subscription', () => {
     expect(setupScript).toContain("q: 'description'");
     expect(setupScript).toContain('/notify?route=concern');
   });
+
+  it('sends Decisions a person resolved to /reviews, with the Decision model context', () => {
+    expect(setupScript).toContain(`q: 'reviewStatus=="resolved"'`);
+    expect(setupScript).toContain('${WORKER_URL}/reviews');
+    expect(setupScript).toContain("context: 'https://datamodels.jp/context/decision/v1.jsonld'");
+  });
 });
 
 describe('answers', () => {
