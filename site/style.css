@@ -203,17 +203,10 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .field .choice { font-weight: 400; display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; min-height: 36px; }
 .tag { font: 12px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
 
-.verdict { font-size: 1.25rem; font-weight: 700; margin: 0 0 8px; padding: 10px 14px; border-radius: 8px; border-left: 5px solid var(--grey); background: var(--panel-2); }
-.verdict.v-high { border-left-color: var(--red); }
-.verdict.v-medium { border-left-color: var(--amber); }
-.verdict.v-low { border-left-color: var(--green); }
-.verdict.v-more-evidence { border-left-color: var(--grey); }
 .field-error { margin: 4px 0 0; font-size: 14px; color: #C8463A; }
 .field input[aria-invalid="true"] { border-color: #C8463A; }
 
 .field textarea { font: 16px var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; max-width: 40rem; box-sizing: border-box; resize: vertical; }
-.verdict.v-now { border-left-color: var(--red); border-left-width: 8px; }
-.verdict.v-person { border-left-color: var(--amber); }
 
 .photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .photos figure { position: relative; margin: 0; }
@@ -248,3 +241,21 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
   body.dev-open main > .map-wrap { grid-column: 2; grid-row: 1 / span 5; align-self: start; position: sticky; top: calc(var(--top-h, 62px) + 16px); }
   body.dev-open main > .map-wrap #map { height: calc(100vh - var(--top-h, 62px) - 220px); }
 }
+
+/* The result: the answer first and large; its edge shows the urgency. */
+.answer { margin: 0 0 18px; padding: 14px 18px 16px; border-radius: 10px; border-left: 6px solid var(--grey); background: var(--panel-2); }
+.answer.v-now, .answer.v-high { border-left-color: var(--red); }
+.answer.v-now { border-left-width: 10px; }
+.answer.v-medium, .answer.v-person { border-left-color: var(--amber); }
+.answer.v-low { border-left-color: var(--green); }
+.answer p { margin: 0; }
+.answer-label { font: 0.8rem var(--mono); color: var(--muted); }
+.answer .answer-title { font-size: 1.6rem; font-weight: 700; line-height: 1.25; margin: 2px 0 10px; }
+.answer-why { font-size: 1.05rem; }
+.answer .answer-next { margin-top: 6px; color: var(--fg-2); }
+.facts { list-style: none; padding: 0; margin: 8px 0 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 8px; }
+.fact { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.fact-label { font-size: 0.85rem; color: var(--muted); }
+.fact-value { font-size: 1.1rem; }
+.fact-sure { font-size: 0.82rem; color: var(--muted); }
+.context { margin: 0 0 14px; }
