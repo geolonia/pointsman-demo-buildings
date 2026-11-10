@@ -109,7 +109,17 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; gap: 16p
 .map-wrap h2 { margin-bottom: 10px; }
 
 /* How it works */
-.how { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: grid; gap: 20px; scroll-margin-top: 80px; }
+.how { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; padding: 24px; gap: 20px;
+  width: min(1000px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; box-sizing: border-box; }
+.how[open] { display: grid; }
+/* Hidden when closed also where <dialog> is not supported. */
+.how:not([open]) { display: none; }
+.how::backdrop { background: rgba(0, 0, 0, 0.5); }
+.graph p { margin: 0 0 6px; color: var(--fg-2); }
+/* The diagram reads these (with its own fallbacks): from the page's colours, so it follows the page's theme switch. */
+.graph { --vp-c-bg-soft: var(--panel-2); --vp-c-divider: var(--line); --vp-c-brand-1: var(--red); --vp-c-text-1: var(--fg); --vp-c-text-2: var(--fg-2); --vp-c-text-3: var(--muted); }
+.graph .graph-svg { overflow-x: auto; }
+.graph .graph-svg svg { display: block; width: 100%; min-width: 600px; max-width: 900px; margin: 8px auto; }
 .how-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .how-head p { margin: 6px 0 0; max-width: 72ch; color: var(--fg-2); }
 .how-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -253,9 +263,34 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .answer .answer-title { font-size: 1.6rem; font-weight: 700; line-height: 1.25; margin: 2px 0 10px; }
 .answer-why { font-size: 1.05rem; }
 .answer .answer-next { margin-top: 6px; color: var(--fg-2); }
-.facts { list-style: none; padding: 0; margin: 8px 0 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 8px; }
-.fact { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .fact-label { font-size: 0.85rem; color: var(--muted); }
-.fact-value { font-size: 1.1rem; }
-.fact-sure { font-size: 0.82rem; color: var(--muted); }
-.context { margin: 0 0 14px; }
+
+/* The decision as a path: what Pointsman got, the AI's answers with probabilities, the rule, the decision. */
+.path { display: grid; gap: 0; margin-bottom: 14px; }
+.path-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 10px; }
+.path-box { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.path-label { margin: 0 0 6px; font: 0.8rem var(--mono); color: var(--muted); }
+.path-arrow { margin: 6px 0 6px 14px; font-size: 0.9rem; color: var(--fg-2); }
+.path-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.path-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 6px; border-radius: 6px; }
+.path-facts li.used, .q-row.used { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--i-map); }
+.path-box .quote { margin: 0 0 6px; }
+.path-box .photos img { width: 72px; height: 72px; }
+.q-rows { list-style: none; display: grid; gap: 8px; }
+.q-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px 12px; align-items: center; padding: 4px 6px; border-radius: 6px; }
+.q-row.choice { grid-template-columns: minmax(0, 1.2fr) minmax(0, 2.2fr); align-items: start; }
+.q-choices { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.q-choices li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; align-items: center; color: var(--fg-2); }
+.q-choices li.top { color: var(--fg); font-weight: 700; }
+.q-p { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--fg-2); }
+.pbar { flex: 1 1 60px; min-width: 50px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--i-map); }
+.pbar.danger i { background: var(--red); }
+.pbar.scale i { background: var(--amber); }
+.use-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; font: 0.72rem var(--mono); color: var(--fg-2); border: 1px solid var(--line); }
+.path-rule { font-size: 1rem; }
+.path-then { font-weight: 700; }
+@media (max-width: 640px) {
+  .q-row, .q-row.choice { grid-template-columns: 1fr; }
+  .q-choices li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}

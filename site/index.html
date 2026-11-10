@@ -27,29 +27,6 @@
 </header>
 
 <main>
-  <section id="how" class="how" hidden aria-labelledby="how-title">
-    <div class="how-head">
-      <div>
-        <h2 id="how-title" data-i18n="howTitle">How it works</h2>
-        <p data-i18n="howLead">What happens to a request, step by step. GeonicDB, a FIWARE data platform, keeps the data and starts each step. A small connector passes the step to Pointsman, and Pointsman answers. The AI only answers fixed questions about your words; the building’s data and the city’s rules do the rest.</p>
-      </div>
-      <button class="btn ghost" id="how-close" type="button" data-i18n="close">Close</button>
-    </div>
-    <ol class="how-steps">
-      <li><span class="kicker" data-i18n="h1k">1 · Saved</span><strong data-i18n="h1t">The page saves the request in GeonicDB</strong><span data-i18n="h1d"></span></li>
-      <li><span class="kicker" data-i18n="h2k">2 · Notified</span><strong data-i18n="h2t">GeonicDB tells the connector</strong><span data-i18n="h2d"></span></li>
-      <li class="accent"><span class="kicker" data-i18n="h3k">3 · First check</span><strong data-i18n="h3t">Pointsman sorts the building</strong><span data-i18n="h3d"></span></li>
-      <li class="accent"><span class="kicker" data-i18n="h4k">4 · Your description</span><strong data-i18n="h4t">Pointsman reads your words</strong><span data-i18n="h4d"></span></li>
-      <li><span class="kicker" data-i18n="h5k">5 · Written back</span><strong data-i18n="h5t">The results go back into GeonicDB</strong><span data-i18n="h5d"></span></li>
-      <li><span class="kicker" data-i18n="h6k">6 · Used</span><strong data-i18n="h6t">Any app can read the results</strong><span data-i18n="h6d"></span></li>
-    </ol>
-    <p class="links"><span class="kicker" data-i18n="forDevs">For developers</span>
-      <a href="https://github.com/geolonia/pointsman/blob/main/bridge/README.md" data-i18n="lBridge">The connector (FIWARE bridge)</a>
-      <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
-      <a href="https://github.com/geolonia/pointsman" data-i18n="lPointsman">Pointsman</a>
-    </p>
-  </section>
-
   <section class="intro">
     <h1 data-i18n="title">Every building, the same checks</h1>
     <p data-i18n="lead">These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, ask how urgent a seismic check is, and watch Pointsman sort the request: what to check first, and why.</p>
@@ -97,6 +74,31 @@
     <div id="flow-body"></div>
   </section>
 </main>
+
+  <!-- How it works: a modal window (opened with showModal), the same in both demos. -->
+  <dialog id="how" class="how" aria-labelledby="how-title">
+    <div class="how-head">
+      <div>
+        <h2 id="how-title" data-i18n="howTitle">How it works</h2>
+        <p data-i18n="howLead">What happens to a request, step by step. GeonicDB, a FIWARE data platform, keeps the data and starts each step. A small connector passes the step to Pointsman, and Pointsman answers. The AI only answers fixed questions about your words; the building’s data and the city’s rules do the rest.</p>
+      </div>
+      <button class="btn ghost" id="how-close" type="button" data-i18n="close">Close</button>
+    </div>
+    <ol class="how-steps">
+      <li><span class="kicker" data-i18n="h1k">1 · Saved</span><strong data-i18n="h1t">The page saves the request in GeonicDB</strong><span data-i18n="h1d"></span></li>
+      <li><span class="kicker" data-i18n="h2k">2 · Notified</span><strong data-i18n="h2t">GeonicDB tells the connector</strong><span data-i18n="h2d"></span></li>
+      <li class="accent"><span class="kicker" data-i18n="h3k">3 · First check</span><strong data-i18n="h3t">Pointsman sorts the building</strong><span data-i18n="h3d"></span></li>
+      <li class="accent"><span class="kicker" data-i18n="h4k">4 · Your description</span><strong data-i18n="h4t">Pointsman reads your words</strong><span data-i18n="h4d"></span></li>
+      <li><span class="kicker" data-i18n="h5k">5 · Written back</span><strong data-i18n="h5t">The results go back into GeonicDB</strong><span data-i18n="h5d"></span></li>
+      <li><span class="kicker" data-i18n="h6k">6 · Used</span><strong data-i18n="h6t">Any app can read the results</strong><span data-i18n="h6d"></span></li>
+    </ol>
+    <p class="links"><span class="kicker" data-i18n="forDevs">For developers</span>
+      <a href="https://github.com/geolonia/pointsman/blob/main/bridge/README.md" data-i18n="lBridge">The connector (FIWARE bridge)</a>
+      <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
+      <a href="https://github.com/geolonia/pointsman" data-i18n="lPointsman">Pointsman</a>
+    </p>
+    <div id="how-graph"></div>
+  </dialog>
 
 <aside class="dev" id="dev" hidden aria-labelledby="dev-title">
   <div class="side-grip" role="separator" aria-orientation="vertical" aria-controls="dev" tabindex="0" data-i18n-label="resize"></div>

@@ -71,6 +71,68 @@ describe('GET /api/config', () => {
   });
 });
 
+describe('GET /api/graph', () => {
+  // The bridge set up; concerns off, so the chain ends with building-check-priority.
+  const ready = { ...env, POINTSMAN_TOKEN: 'pm-test', NOTIFY_SECRET: 'notify-test', POINTSMAN_URL: 'https://pointsman.test', CONCERNS: 'off' } as Env;
+  const graph = (q: string, e: Env = ready) => demo.fetch(new Request(`https://buildings.test/api/graph${q}`), e, ctx);
+  beforeEach(async () => {
+    for (const f of ['svg', 'dmn']) for (const l of ['en', 'ja']) for (const p of ['building-check-priority', 'building-concern']) {
+      await caches.default.delete(new Request(`https://buildings.test/api/graph?format=${f}&lang=${l}&profile=${p}`));
+    }
+  });
+
+  it('answers also without the broker\'s settings (it needs only Pointsman)', async () => {
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async () => new Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>'));
+    const res = await graph('?format=svg&lang=en', { ...ready, BROKER_API_KEY: '' } as Env);
+    expect(res.status).toBe(200);
+  });
+
+  it('is not there without the bridge', async () => {
+    const res = await graph('?format=svg&lang=en', { ...ready, POINTSMAN_TOKEN: '' } as Env);
+    expect(res.status).toBe(503);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('takes only svg or dmn, en or ja', async () => {
+    expect((await graph('?format=png&lang=en')).status).toBe(400);
+    expect((await graph('?format=svg&lang=de')).status).toBe(400);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('asks Pointsman for the last profile of the chain, with the token, and answers the SVG', async () => {
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = new Request(input, init);
+      calls.push({ url: req.url, headers: req.headers });
+      return new Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    });
+    const res = await graph('?format=svg&lang=ja');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/^image\/svg\+xml/);
+    expect(await res.text()).toContain('<svg');
+    expect(calls[0]!.url).toBe('https://pointsman.test/v1/profiles/building-check-priority/graph?format=svg&lang=ja');
+    expect(calls[0]!.headers.get('authorization')).toBe('Bearer pm-test');
+  });
+
+  it('asks for building-concern when scene B is on, and sends DMN as a download', async () => {
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = new Request(input, init);
+      calls.push({ url: req.url, headers: req.headers });
+      return new Response('<definitions/>');
+    });
+    const res = await graph('?format=dmn&lang=en', { ...ready, CONCERNS: 'on', BRIDGE_QUEUE: {} } as unknown as Env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="building-concern.dmn"');
+    expect(calls[0]!.url).toBe('https://pointsman.test/v1/profiles/building-concern/graph?format=dmn&lang=en');
+  });
+
+  it('says only that Pointsman failed, without its answer', async () => {
+    status = 500;
+    const res = await graph('?format=dmn&lang=en');
+    expect(res.status).toBe(502);
+    expect(await res.text()).not.toContain('secret echo');
+  });
+});
+
 describe('GET /api/buildings', () => {
   it('asks the broker for the area\'s buildings, with key, tenant and a User-Agent, and answers GeoJSON', async () => {
     const res = await get('/api/buildings');
