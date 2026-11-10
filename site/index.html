@@ -102,7 +102,7 @@
       <strong class="box-title" data-i18n="whyTitle">Why cities use it this way</strong>
       <ul class="why">
         <li data-i18n="why1">The AI only answers fixed questions. It never decides alone.</li>
-        <li data-i18n="why2">Facts come from public data (the 3D city model, J-SHIS, GSI maps), so anyone can check them.</li>
+        <li data-i18n="why2">Facts come from public data (the 3D city model, J-SHIS, GSI maps), so anyone can check them; where the data has a gap, your own answers fill it, marked as yours.</li>
         <li data-i18n="why3">The city writes the rules, and can read every decision later.</li>
         <li data-i18n="why4">Whether a building is safe is always a person's decision.</li>
       </ul>
@@ -117,7 +117,7 @@
     <button class="chip" id="dev-close" type="button" data-i18n="close">Close</button>
   </div>
   <p class="muted small" data-i18n="devLead">What the page asks the data platform (NGSI-LD), and what it gets back.</p>
-  <ol class="dev-steps">
+  <ol class="dev-steps" role="list">
     <li class="dev-step"><span class="kicker">1 · <span data-i18n="kPage">page → GeonicDB</span></span><strong data-i18n="devList">All buildings in the area</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-list"></pre></details></li>
     <li class="dev-step"><span class="kicker">2 · <span data-i18n="kPage">page → GeonicDB</span></span><strong data-i18n="devEntity">The selected building</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-entity" class="muted"></pre></details></li>
     <li class="dev-step"><span class="kicker">3 · <span data-i18n="kPage">page → GeonicDB</span></span><strong data-i18n="devRequest">The check request</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-request" class="muted"></pre></details></li>
