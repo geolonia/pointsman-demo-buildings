@@ -94,7 +94,9 @@ export function toBoardRow(e: Entity): BoardRow | null {
     building: String((e.refBuilding as { object?: unknown } | undefined)?.object ?? ''),
     photos: Array.isArray(photos) ? photos.length : 0,
   };
-  if (point?.type === 'Point' && Array.isArray(point.coordinates) && point.coordinates.length === 2) row.point = point.coordinates as [number, number];
+  const c = point?.type === 'Point' && Array.isArray(point.coordinates) ? point.coordinates : [];
+  // Numbers only: anything else would break the page's map layer.
+  if (c.length === 2 && c.every((n) => typeof n === 'number' && Number.isFinite(n))) row.point = [c[0] as number, c[1] as number];
   const year = valueOf(e, 'yearOfConstruction');
   if (typeof year === 'number') row.year = year;
   const structure = valueOf(e, 'buildingStructureType');

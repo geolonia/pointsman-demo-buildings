@@ -52,6 +52,11 @@ describe('the board rows', () => {
     expect(row.waiting).toBeUndefined();
   });
 
+  it('leaves out a point that is not two numbers', () => {
+    const bad = request(1, { location: { type: 'GeoProperty', value: { type: 'Point', coordinates: ['141', null] } } });
+    expect(toBoardRow(bad)!.point).toBeUndefined();
+  });
+
   it('skips anything that is not one of the demo requests', () => {
     expect(toBoardRow({ id: 'urn:ngsi-ld:BuildingCheckRequest:other', type: 'BuildingCheckRequest' } as Entity)).toBeNull();
     expect(toBoardRow({ ...request(1), type: 'Building' } as Entity)).toBeNull();

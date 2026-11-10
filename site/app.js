@@ -1227,7 +1227,7 @@
   // serious first; where Pointsman asks a person, any visitor confirms or
   // changes the result (logged as a demo visitor). A side panel, as the roads
   // demo's reports. Photos only as a count.
-  var board = { open: false, rows: null, failed: false, timer: null, openId: null, note: {} };
+  var board = { open: false, rows: null, failed: false, timer: null, openId: null, note: {}, sending: {} };
   var PRIORITY_COLOUR = { now: '#C8463A', high: '#C8463A', person: '#C98A1B', 'more-evidence': '#C98A1B', medium: '#C98A1B', low: '#2E9E6B' };
   // What a person may choose, per result (the profiles' people_answers, as src/board.ts).
   var PEOPLE_ANSWERS = { check: ['high', 'medium', 'low'], concern: ['now', 'high', 'medium', 'low', 'more-evidence'] };
@@ -1369,11 +1369,16 @@
     change.setAttribute('data-req', row.id);
     change.setAttribute('data-role', 'change');
     buttons.push(change);
+    // While the answer is on its way, the buttons wait.
+    if (board.sending[row.id]) buttons.forEach(function (b) { if (b.tagName === 'BUTTON') b.disabled = true; });
     items.push(el('div', { class: 'actions' }, buttons));
     return el('div', { class: 'req-answer' }, items);
   }
 
   function sendAnswer(row, action) {
+    // One answer at a time: a double click sends it once.
+    if (board.sending[row.id]) return;
+    board.sending[row.id] = true;
     board.note[row.id] = t('sending');
     renderBoard();
     fetch('/api/requests/' + encodeURIComponent(row.id) + '/resolve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: action }) }).then(function (r) {
@@ -1382,6 +1387,7 @@
     }).catch(function () {
       board.note[row.id] = t('reqFailedSend');
     }).then(function () {
+      delete board.sending[row.id];
       renderBoard();
       // The bridge needs a moment; the list's cache a few seconds.
       setTimeout(function () { if (board.open) loadBoard(); }, 6000);
