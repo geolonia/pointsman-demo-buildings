@@ -1045,14 +1045,22 @@
     });
   }
 
+  var howPressOutside = false;
+  function outsideDialog(e) {
+    var b = document.getElementById('how').getBoundingClientRect();
+    return e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom;
+  }
+
   function setHow(open) {
     var d = document.getElementById('how');
     // Browsers without <dialog> (Safari before 15.4): shown in place, without the modal.
-    if (open && !d.open) { renderHowGraph(); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
-    if (!open && d.open) { if (d.close) d.close(); else d.removeAttribute('open'); }
+    // The attribute, not .open: without <dialog> support (Safari before 15.4) there is no .open.
+    var shown = d.hasAttribute('open');
+    if (open && !shown) { renderHowGraph(); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+    if (!open && shown) { if (d.close) d.close(); else d.removeAttribute('open'); }
     document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
   }
-  document.getElementById('how-toggle').addEventListener('click', function () { setHow(!document.getElementById('how').open); });
+  document.getElementById('how-toggle').addEventListener('click', function () { setHow(!document.getElementById('how').hasAttribute('open')); });
   // Escape closes the dialog by itself; so does a click on the dark area around it.
   document.getElementById('how').addEventListener('close', function () {
     document.getElementById('how-toggle').setAttribute('aria-expanded', 'false');
@@ -1060,11 +1068,12 @@
     document.getElementById('how-graph').replaceChildren();
   });
   document.getElementById('how').addEventListener('click', function (e) {
-    // Only a click on the dark area: the dialog itself (its padding too) is the target as well.
-    if (e.target !== e.currentTarget) return;
-    var b = e.currentTarget.getBoundingClientRect();
-    if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) setHow(false);
+    // Only a click on the dark area: the dialog itself (its padding too) is the target as well,
+    // and a text selection that ends outside must not close it (the press started inside).
+    if (e.target !== e.currentTarget || !howPressOutside) return;
+    if (outsideDialog(e)) setHow(false);
   });
+  document.getElementById('how').addEventListener('pointerdown', function (e) { howPressOutside = e.target === e.currentTarget && outsideDialog(e); });
   document.getElementById('how-close').addEventListener('click', function () { setHow(false); document.getElementById('how-toggle').focus(); });
 
   // The developer view: a panel at the right on wide screens, a drawer at the bottom on narrow ones (as in the roads demo).

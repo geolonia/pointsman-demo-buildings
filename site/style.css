@@ -112,6 +112,8 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; gap: 16p
 .how { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; padding: 24px; gap: 20px;
   width: min(1000px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto; box-sizing: border-box; }
 .how[open] { display: grid; }
+/* Hidden when closed also where <dialog> is not supported. */
+.how:not([open]) { display: none; }
 .how::backdrop { background: rgba(0, 0, 0, 0.5); }
 .graph p { margin: 0 0 6px; color: var(--fg-2); }
 /* The diagram reads these (with its own fallbacks): from the page's colours, so it follows the page's theme switch. */
