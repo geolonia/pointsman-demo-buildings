@@ -679,9 +679,18 @@
       });
   }
 
+  // While Pointsman works: a spinner and a moving bar, so the page does not look stuck. It shows no
+  // progress, as nothing tells the page how far the check is.
+  function busyView(text) {
+    return el('div', { class: 'busy' }, [
+      el('p', { class: 'busy-text' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
+      el('div', { class: 'busy-bar', 'aria-hidden': 'true' }, [el('i')]),
+    ]);
+  }
+
   function resultView() {
     var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading(document.getElementById('examples').hidden ? 'map-title' : 'examples-title'); })]);
-    if (flow.state === 'sending') return [el('p', { class: 'muted' }, [t('sending')])];
+    if (flow.state === 'sending') return [busyView(t('sending'))];
     if (flow.state === 'failed') {
       // Back to the answers, kept, unless the request was sent and is gone.
       var back = flow.error === 'e_lost' ? [] : [button(t('back'), function () { stepTo(3); })];
@@ -692,7 +701,7 @@
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
     // While waiting, the visitor may leave: the request is decided anyway.
-    if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')]), again];
+    if (flow.state !== 'done') return [busyView(t(flow.state === 'slow' ? 'slow' : 'waiting')), again];
     if (flow.withConcern) return concernView(again).concat([sentView()]);
     var check = flow.request.check;
     var action = check.value;
