@@ -20,6 +20,7 @@
   <a class="brand" id="brand" href="https://pointsman.net/demos/"><img class="mark light" src="favicon.svg" alt="" width="22" height="22"><img class="mark dark" src="mark-on-dark.svg" alt="" width="22" height="22"><span>Pointsman</span><span class="tag" data-i18n="demo">buildings demo</span></a>
   <nav>
     <button class="chip strong" id="how-toggle" type="button" aria-expanded="false" aria-controls="how" data-i18n="howTitle">How it works</button>
+    <button class="chip" id="board-toggle" type="button" aria-expanded="false" aria-controls="board" data-i18n="reqTitle">Requests</button>
     <button class="chip" id="dev-toggle" type="button" aria-pressed="false" aria-controls="dev"><span class="long" data-i18n="devTitle">Developer view</span><span class="short" data-i18n="devShort">Dev</span></button>
     <button class="chip" id="lang" type="button" lang="ja">日本語</button>
     <button class="chip" id="theme" type="button" aria-label="Switch theme" data-i18n-label="aTheme">◐</button>
@@ -129,6 +130,18 @@
     <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
     <a href="https://github.com/geolonia/pointsman/blob/main/bridge/README.md" data-i18n="lBridge">The connector (FIWARE bridge)</a>
   </p>
+</aside>
+
+<!-- The staff view (plan section 10): what city staff see, most serious first. -->
+<aside class="dev side-board" id="board" hidden aria-labelledby="board-title">
+  <div class="side-grip" role="separator" aria-orientation="vertical" aria-controls="board" tabindex="0" data-i18n-label="resize"></div>
+  <div class="dev-head">
+    <h2 id="board-title" tabindex="-1" data-i18n="reqTitle">Requests</h2>
+    <button class="chip" id="board-close" type="button" data-i18n="close">Close</button>
+  </div>
+  <p class="muted small" data-i18n="reqLead">What city staff see: every request of the last day, the most serious first. Where Pointsman asks a person, anyone in the demo can confirm or change the result.</p>
+  <p class="muted small" id="board-status" role="status"></p>
+  <ul id="board-list" class="reqs" role="list"></ul>
 </aside>
 
 <footer>

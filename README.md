@@ -74,7 +74,10 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 | `GET /api/buildings/{id}` | One `Building` entity as stored, the request, and the same as a GeoJSON feature. Cached 1 minute |
 | `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang", "concern": {"description", "afterDisaster", "photos"}}`: a check request for one building; `concern` is optional, and refused (503) while descriptions are off. `photos` is optional: up to 3 base64 data URLs of JPEG, PNG or WebP images, each at most about 500 KB, refused (503) while photos are off. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
 | `GET /api/requests/{id}` | The request entity with Pointsman's results (`check`, and `concern` for a description), their `Decision` entities (`decision`, `concernDecision`), and whether descriptions are on (`concerns`) |
+| `GET /api/board` | The staff view: the requests of the last day in short (building, description, number of photos, results, which result waits for a person), most serious first. Cached 5 seconds |
+| `POST /api/requests/{id}/resolve` | `{"action": "<action>"}`: a person's answer on the result that waits for one (`check`: high, medium or low; `concern`: now, high, medium, low or more-evidence). Written on its `Decision` entity, as `resolved` by `demo visitor`; the broker then notifies `/reviews`. From the page itself, 5 a minute per visitor. Answers 202, or 409 when nobody waits or someone answered first |
 | `POST /notify` | The broker's subscriptions (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back; `?route=concern` is the description route (`building-concern`) |
+| `POST /reviews` | The broker's subscription for Decisions a person resolved (secret in `x-bridge-secret`): the bridge resolves the review in Pointsman, writes the final action on the request (`finalAction`) and completes its Task |
 
 ## Check requests and the bridge
 
@@ -133,8 +136,10 @@ Without `POINTSMAN_TOKEN` and `NOTIFY_SECRET` the page still shows the
 buildings, and new check requests are refused (503).
 
 Then, once: `BROKER_API_KEY=… NOTIFY_SECRET=… node scripts/setup.mjs` creates
-the two subscriptions, one for the check and one for descriptions (run it
-again after the inputs change). Run it before a deploy that turns
+the three subscriptions, one for the check, one for descriptions and one for
+Decisions a person resolved in the staff view (run it again after the inputs
+change). Without the third, an answer in the staff view stays on the Decision
+entity and never reaches Pointsman or the request. Run it before a deploy that turns
 `CONCERNS` on: without the second subscription, descriptions wait for the
 hourly retry. The broker sends notifications to
 `WORKER_URL`, by default the public demo (`https://buildings.demo.pointsman.net`):

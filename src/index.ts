@@ -6,11 +6,15 @@
 //   GET  /api/buildings/{id}  one Building entity as stored, with the NGSI-LD request
 //   POST /api/requests        a check request for one building (BuildingCheckRequest)
 //   GET  /api/requests/{id}   the request with Pointsman's result and its Decision entity
+//   GET  /api/board           the staff view: the requests of the last day, most serious first
+//   POST /api/requests/{id}/resolve  a person's answer on a request that waits for one
 //   POST /notify              the broker's subscription: the bridge asks Pointsman
+//   POST /reviews             the broker's subscription: Decisions a person resolved, to the bridge
 //
 // See README.md.
 
 import { type BridgeConfig, type BridgeMessage, decisionEntityId, handleQueueBatch, handleRequest, type Route, taskEntityId } from '../engine/packages/fiware/src/bridge';
+import { checkAnswer, DEMO_REVIEWER, sortBoard, toBoardRow } from './board';
 import { PLATEAU_SOURCE, toFeature } from './buildings';
 import { type Bbox, Broker, BrokerError } from './broker';
 import { bridgeReady, checkEnv, concernsReady, type Env, photosReady, trimUrl } from './env';
@@ -270,6 +274,60 @@ async function getRequest(env: Env, id: string): Promise<Response> {
   return json({ entity, decision, concernDecision, concerns: concernsReady(env), query: `/entities/${encodeURIComponent(id)}` });
 }
 
+/** The staff view polls every few seconds: a short cache keeps that off the broker. */
+const BOARD_CACHE_S = 5;
+
+async function board(env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
+  const key = new Request(`${url.origin}/api/board`);
+  const cached = await caches.default.match(key);
+  if (cached) return cached;
+  const rows = (await new Broker(env).listType(REQUEST_TYPE)).map(toBoardRow).filter((r) => r !== null);
+  const res = json({ requests: sortBoard(rows), query: `/entities?type=${REQUEST_TYPE}&options=sysAttrs` }, 200, { 'cache-control': `public, max-age=${BOARD_CACHE_S}` });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
+}
+
+/**
+ * A person's answer (staff view): written on the Decision entity of the result
+ * that waits, as any app would; the broker then notifies /reviews and the
+ * bridge does the rest (Pointsman, the request's result, the Task). Anyone in
+ * the demo may answer; Pointsman logs it as resolved by a demo visitor.
+ */
+async function resolveRequest(env: Env, request: Request, rawId: string): Promise<Response> {
+  if (!bridgeReady(env)) return json({ error: 'checks are not available yet' }, 503);
+  if (!sameOrigin(request)) return json({ error: 'origin not allowed' }, 403);
+  const visitor = request.headers.get('cf-connecting-ip') ?? 'unknown';
+  if (env.REQUEST_LIMIT && !(await env.REQUEST_LIMIT.limit({ key: visitor })).success) return json({ error: 'too many requests, try again in a minute' }, 429);
+  let id: string;
+  try {
+    id = decodeURIComponent(rawId);
+  } catch {
+    return json({ error: 'not a request id' }, 400);
+  }
+  if (!isRequestId(id)) return json({ error: 'not a request id' }, 400);
+  const text = await boundedText(request, 1000);
+  if (text === null) return json({ error: 'request too large' }, 413);
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return json({ error: 'not JSON' }, 400);
+  }
+  const broker = new Broker(env);
+  const entity = await broker.get(id, { sysAttrs: true });
+  const row = entity && toBoardRow(entity);
+  if (!row) return json({ error: 'not found' }, 404);
+  const answer = checkAnswer(row, body);
+  if (typeof answer === 'string') return json({ error: answer }, row.waiting ? 400 : 409);
+  // First writer wins: another visitor may have answered since the bridge wrote the result.
+  const decision = await broker.getDecision(answer.decision);
+  if (!decision) return json({ error: 'the decision is gone' }, 409);
+  const status = (decision.reviewStatus as { value?: unknown } | undefined)?.value;
+  if (status !== 'pending') return json({ error: 'someone answered this already' }, 409);
+  await broker.resolveDecision(answer.decision, answer.action, DEMO_REVIEWER, new Date().toISOString());
+  return json({ resolved: answer.attribute, action: answer.action, decision: answer.decision }, 202);
+}
+
 const dailyLimit = (env: Env) => {
   const n = Number(env.DAILY_LIMIT);
   return Number.isInteger(n) && n > 0 ? n : 300;
@@ -334,14 +392,15 @@ export async function cleanup(env: Env, now = Date.now()): Promise<{ deleted: nu
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/notify') {
-      // The broker's subscription; the bridge checks the shared secret.
+    if (url.pathname === '/notify' || url.pathname === '/reviews') {
+      // The broker's subscriptions (new requests; Decisions a person resolved); the bridge checks the shared secret.
       if (!bridgeReady(env)) return json({ error: 'the bridge is not configured' }, 503);
       return handleRequest(request, bridgeConfig(env));
     }
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     const posting = request.method === 'POST' && url.pathname === '/api/requests';
-    if (request.method !== 'GET' && !posting) return json({ error: 'method not allowed' }, 405, { allow: 'GET' });
+    const resolving = request.method === 'POST' ? url.pathname.match(/^\/api\/requests\/([^/]+)\/resolve$/) : null;
+    if (request.method !== 'GET' && !posting && !resolving) return json({ error: 'method not allowed' }, 405, { allow: 'GET' });
     // Static: answered also when the broker is not set up, so the page still has its map.
     if (url.pathname === '/api/config') {
       return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env), concerns: concernsReady(env), photos: photosReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
@@ -358,6 +417,8 @@ export default {
     try {
       checkEnv(env);
       if (posting) return await createRequest(env, request);
+      if (resolving) return await resolveRequest(env, request, resolving[1]!);
+      if (url.pathname === '/api/board') return await board(env, url, ctx);
       const rq = url.pathname.match(/^\/api\/requests\/([^/]+)$/);
       if (rq) {
         let id: string;
