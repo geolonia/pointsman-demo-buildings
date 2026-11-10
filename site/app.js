@@ -17,7 +17,7 @@
       h4k: '4 · Your description', h4t: 'Pointsman reads your words', h4d: 'With a description, a second check starts. The AI answers fixed questions: what kind of damage, how serious, is anyone in danger now. The city\u2019s rules turn the answers and the first result into one urgency.',
       h5k: '5 · Written back', h5t: 'The results go back into GeonicDB', h5d: 'The connector writes each result onto the request, with a Decision entity. A result that a person must check also gets a Task entity.',
       h6k: '6 · Used', h6t: 'Any app can read the results', h6d: 'A city dashboard or a ticket system can subscribe to them. This page reads them and shows you the result.',
-      exTitle: 'Pick an example', exNote: 'Each one is sent live to Pointsman. They show four different outcomes.',
+      exTitle: 'Pick an example', exNote: 'Each one fills in the form for you; you check it and send it to Pointsman. They show four different outcomes.',
       exFoot: 'Made-up descriptions of real buildings from the city model. Requests are deleted after a day.',
       exAfter: 'After a disaster: {v}', exAdds: 'You add: {v}', exBuilt: 'built {y}', exStoreys: '{n} storeys', exYearUnknown: 'year not known',
       mapTitle: 'Or pick any building on the map', sentTitle: 'What was sent',
@@ -78,7 +78,7 @@
       h4k: '4・あなたの説明', h4t: 'Pointsman があなたの言葉を読む', h4d: '説明があると、2つ目の確認が始まります。AI は決まった質問にだけ答えます（被害の種類、深刻さ、今、人に危険があるか）。市の規則が、その答えと最初の結果から急ぎの度合いを1つ決めます。',
       h5k: '5・書き戻し', h5t: '結果が GeonicDB に戻る', h5d: 'つなぎ役が、それぞれの結果を Decision エンティティと一緒に依頼に書き込みます。人が確認すべき結果には Task エンティティもできます。',
       h6k: '6・利用', h6t: 'どのアプリも結果を読める', h6d: '市のダッシュボードやチケットシステムは、結果をサブスクライブできます。このページも結果を読んで表示します。',
-      exTitle: '例を選ぶ', exNote: 'どれもその場で Pointsman に送られます。4 つとも結果が違います。',
+      exTitle: '例を選ぶ', exNote: 'どれもフォームに入力されます。内容を確かめて Pointsman に送ってください。4 つとも結果が違います。',
       exFoot: '説明は作り話で、建物は3D都市モデルにある実在のものです。依頼は1日で削除されます。',
       exAfter: '災害のあと：{v}', exAdds: 'あなたが補う：{v}', exBuilt: '{y}年築', exStoreys: '{n}階建て', exYearUnknown: '建築年不明',
       mapTitle: 'または、地図で好きな建物を選ぶ', sentTitle: '送った内容',
@@ -287,13 +287,18 @@
         el('span', { class: 'hint' }, [el('span', {}, [t('exAfter', { v: t(x.after) })])].concat(adds.length ? [el('span', {}, [t('exAdds', { v: adds.join(lang === 'ja' ? '、' : ', ') })])] : [])),
       ]);
       b.disabled = busy;
-      b.addEventListener('click', function () { sendExample(x); });
+      b.addEventListener('click', function () { useExample(x); });
       return el('li', {}, [b]);
     }));
   }
 
   /** An example as roads does it: the building picked, every field filled, sent at once. */
-  function sendExample(x) {
+  /**
+   * An example: the building picked and the whole form filled in (the
+   * description, after a disaster, and what the city model does not know),
+   * at the Details step; the visitor checks it and sends it, step by step.
+   */
+  function useExample(x) {
     var f = featureOf(x.id);
     if (!f || (flow && flow.state === 'sending')) return;
     select(f.id);
@@ -305,9 +310,9 @@
     flow.answers = answers;
     flow.concern.description = x.description[lang];
     flow.concern.afterDisaster = x.after;
-    send();
+    showFlow();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // The clicked card is hidden now: keep keyboard focus on the request.
+    // The clicked card is hidden now: keep keyboard focus on the form.
     focusHeading('flow-title');
   }
 
