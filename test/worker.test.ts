@@ -81,6 +81,12 @@ describe('GET /api/graph', () => {
     }
   });
 
+  it('answers also without the broker\'s settings (it needs only Pointsman)', async () => {
+    vi.mocked(globalThis.fetch).mockImplementationOnce(async () => new Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>'));
+    const res = await graph('?format=svg&lang=en', { ...ready, BROKER_API_KEY: '' } as Env);
+    expect(res.status).toBe(200);
+  });
+
   it('is not there without the bridge', async () => {
     const res = await graph('?format=svg&lang=en', { ...ready, POINTSMAN_TOKEN: '' } as Env);
     expect(res.status).toBe(503);

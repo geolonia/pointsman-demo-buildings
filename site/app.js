@@ -805,7 +805,8 @@
   function pathView(o) {
     var mark = function (rows) {
       return el('ul', { class: 'path-facts' }, rows.map(function (r) {
-        return el('li', { class: o.uses.indexOf(r[0]) >= 0 ? 'used' : '' }, [el('span', { class: 'fact-label' }, [r[1]]), el('strong', {}, [r[2]])]);
+        var used = o.uses.indexOf(r[0]) >= 0;
+        return el('li', { class: used ? 'used' : '' }, [el('span', { class: 'fact-label' }, [r[1]].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])), el('strong', {}, [r[2]])]);
       }));
     };
     var inputs = [el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathFacts')]), mark(o.facts)])];
@@ -1014,7 +1015,8 @@
       });
     });
     Array.prototype.slice.call(svg.getElementsByTagName('style')).forEach(function (st) {
-      if (/@import|url\(/i.test(st.textContent)) st.parentNode.removeChild(st);
+      // No outside resources; a backslash could hide @import or url( behind CSS escapes.
+      if (/@import|url\(|\\/i.test(st.textContent)) st.parentNode.removeChild(st);
     });
     return document.importNode(svg, true);
   }

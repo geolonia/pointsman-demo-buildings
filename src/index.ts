@@ -346,6 +346,15 @@ export default {
     if (url.pathname === '/api/config') {
       return json({ area: AREA, source: PLATEAU_SOURCE, checks: bridgeReady(env), concerns: concernsReady(env), photos: photosReady(env) }, 200, { 'cache-control': 'public, max-age=60' });
     }
+    // Needs only Pointsman (graph() checks it), not the broker's settings.
+    if (url.pathname === '/api/graph') {
+      try {
+        return await graph(env, url, ctx);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : err);
+        return json({ error: 'Pointsman did not answer' }, 502);
+      }
+    }
     try {
       checkEnv(env);
       if (posting) return await createRequest(env, request);
@@ -360,7 +369,6 @@ export default {
         return await getRequest(env, id);
       }
       if (url.pathname === '/api/buildings') return await buildings(env, request, ctx);
-      if (url.pathname === '/api/graph') return await graph(env, url, ctx);
       const m = url.pathname.match(/^\/api\/buildings\/([^/]+)$/);
       if (m) {
         let id: string;
