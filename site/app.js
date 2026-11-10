@@ -984,11 +984,16 @@
     // Fit again once the map has its final size (the first fit can come before the layout).
     m.on('load', function () {
       m.resize();
-      m.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: 20, animate: false });
-      // Two levels closer than the whole area: the first view is full of buildings.
-      m.jumpTo({ center: [(area[0] + area[2]) / 2, (area[1] + area[3]) / 2], zoom: m.getZoom() + 2 });
+      // Not when a building linked in the URL was already shown up close (the data can come first).
+      if (!selected) {
+        m.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: 20, animate: false });
+        // Two levels closer than the whole area: the first view is full of buildings.
+        m.setZoom(m.getZoom() + 2);
+      }
       // The credits start closed (the (i) button opens them), so they do not cover the map.
-      var attrib = document.querySelector('#map .maplibregl-ctrl-attrib');
+      // MapLibre 5.24's compact control: open is the class maplibregl-compact-show on a
+      // <details open>; check this when MapLibre is upgraded.
+      var attrib = m.getContainer().querySelector('.maplibregl-ctrl-attrib');
       if (attrib) { attrib.classList.remove('maplibregl-compact-show'); attrib.removeAttribute('open'); }
       addBuildings(m);
     });
