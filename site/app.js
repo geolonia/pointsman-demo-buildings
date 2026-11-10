@@ -52,6 +52,7 @@
       n_hazard: 'The earthquake data for this place could not be read just now. Try again later.', rd: 'None of the rules for an earlier check applied.',
       devRequest: 'The check request', devDecision: 'Pointsman\u2019s decision (Decision entity)', devConcern: 'Pointsman\u2019s decision on the description (Decision entity)',
       worryQ: 'What worries you about this building?', worryHint: 'In your own words: what you see, since when, where on the building. The AI reads it; leave it empty for the check from the building\u2019s data only. Do not write names or phone numbers. This demo deletes your description after about a day; the AI service may keep it in its logs for longer.',
+      samplesQ: 'Not sure what to write? Start from an example and change it as you like:', photoSamplesQ: 'No photo at hand? Add an example photo:', photoBy: 'Photo: {a}, ', photoSource: 'source', photoAdded: 'added', photoResized: ', resized', exampleFailed: 'The example photo could not be loaded. Try again.', replaceText: 'Replace what you wrote with this example?',
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
@@ -109,6 +110,7 @@
       n_hazard: 'この場所の地震のデータを今は読み取れませんでした。時間をおいてもう一度お試しください。', rd: '早めの確認につながる条件には当てはまりませんでした。',
       devRequest: '確認の依頼', devDecision: 'Pointsman の判断（Decision エンティティ）', devConcern: '説明についての Pointsman の判断（Decision エンティティ）',
       worryQ: 'この建物の何が心配ですか', worryHint: 'ご自身の言葉で：何が見えるか、いつからか、建物のどこか。AI が読みます。建物のデータだけで確認するときは空欄のままにしてください。名前や電話番号は書かないでください。このデモは説明を約1日で削除します（AI サービスの記録には、より長く残ることがあります）。',
+      samplesQ: '書き方に迷ったら、例から始めて自由に書き直せます：', photoSamplesQ: '手元に写真がなければ、例の写真を追加できます：', photoBy: '写真：{a}、', photoSource: '出典', photoAdded: '追加済み', photoResized: '、縮小して使用', exampleFailed: '例の写真を読み込めませんでした。もう一度お試しください。', replaceText: '書いた内容をこの例で置き換えますか？',
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
@@ -153,10 +155,18 @@
       description: { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' } },
   ];
 
-  // The visitor's choice, else the browser's language.
-  var stored = null;
-  try { stored = localStorage.getItem('lang'); } catch (e) {}
-  var lang = stored === 'ja' || stored === 'en' ? stored : (navigator.language || '').indexOf('ja') === 0 ? 'ja' : 'en';
+  // ?lang= (the demos page links with it, as for the roads demo), else the
+  // visitor's choice, else the browser's language.
+  function pickLang() {
+    var q = null;
+    try { q = new URLSearchParams(location.search).get('lang'); } catch (e) {}
+    if (q === 'ja' || q === 'en') return q;
+    var stored = null;
+    try { stored = localStorage.getItem('lang'); } catch (e) {}
+    if (stored === 'ja' || stored === 'en') return stored;
+    return (navigator.language || '').indexOf('ja') === 0 ? 'ja' : 'en';
+  }
+  var lang = pickLang();
   var data = null;
   var PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
   var zoomTo = null;
@@ -173,6 +183,31 @@
   /** Photos with the description (/api/config photos). */
   var photosOpen = false;
   var MAX_PHOTOS = 3;
+  /** Descriptions to start from (checked against the model, plan 8.6): people find it hard to write their own. */
+  var SAMPLES = [
+    { en: 'Since this morning\u2019s earthquake the house leans towards the street and the front door no longer closes.', ja: '地震のあと、家が道路側に傾いて、玄関のドアが閉まらなくなりました。' },
+    { en: 'Part of the balcony on the second floor came down an hour ago. Nobody was hurt, but more pieces are hanging.', ja: '2階のベランダの一部が1時間前に落ちました。けが人はいませんが、まだ破片がぶら下がっています。' },
+    { en: 'There are diagonal cracks running from the corners of the living room windows. They were not there before the quake.', ja: '居間の窓の角から斜めのひびが入っています。地震の前にはありませんでした。' },
+    { en: 'Some roof tiles slipped and hang over the entrance where children walk to school.', ja: '瓦が何枚かずれて、通学路の入口の上にぶら下がっています。' },
+    { en: 'Thin cracks in the paint of the hallway ceiling. They have been there for years.', ja: '廊下の天井の塗装に細いひびがあります。何年も前からです。' },
+    { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' },
+  ];
+  /** Example photos with their credits (site/photos/photos.json), loaded when the photo field first shows. */
+  var examplePhotos = null;
+  var examplePhotosLoading = null;
+  /** Loads the list once; a failed load is not kept, so the next time the field shows it tries again. */
+  function loadExamplePhotos() {
+    if (!examplePhotosLoading) {
+      examplePhotosLoading = fetch('photos/photos.json').then(function (r) {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      }).then(function (list) {
+        if (!Array.isArray(list)) throw new Error('not a list');
+        examplePhotos = list;
+      }).catch(function () { examplePhotosLoading = null; });
+    }
+    return examplePhotosLoading;
+  }
   var MAX_WORDS = 1000;
   /** The request flow: step 1 to 4, the answers, the sent request and its result. */
   var flow = null;
@@ -196,6 +231,8 @@
     document.documentElement.lang = lang;
     document.querySelectorAll('[data-i18n]').forEach(function (n) { n.textContent = t(n.dataset.i18n); });
     document.querySelectorAll('[data-i18n-label]').forEach(function (n) { n.setAttribute('aria-label', t(n.dataset.i18nLabel)); });
+    // Back to the demos page in the same language.
+    document.getElementById('brand').pathname = lang === 'ja' ? '/ja/demos/' : '/demos/';
     var b = document.getElementById('lang');
     b.textContent = lang === 'ja' ? 'English' : '日本語';
     b.lang = lang === 'ja' ? 'en' : 'ja';
@@ -366,7 +403,17 @@
     area.value = flow.concern.description;
     var count = el('p', { class: 'muted', id: 'q-worry-count' }, [t('chars', { n: area.value.length, max: MAX_WORDS })]);
     area.addEventListener('input', function () { flow.concern.description = area.value; count.textContent = t('chars', { n: area.value.length, max: MAX_WORDS }); });
-    var words = el('div', { class: 'field' }, [el('label', { for: 'q-worry' }, [t('worryQ')]), el('p', { class: 'muted', id: 'q-worry-hint' }, [t('worryHint')]), area, count]);
+    var samples = el('ul', { class: 'samples', 'aria-labelledby': 'q-worry-samples' }, SAMPLES.map(function (x) {
+      return el('li', {}, [button(x[lang], function () {
+        if (area.value.trim() && area.value !== x[lang] && !window.confirm(t('replaceText'))) return;
+        area.value = x[lang];
+        flow.concern.description = area.value;
+        count.textContent = t('chars', { n: area.value.length, max: MAX_WORDS });
+        area.focus();
+      }, 'sample')]);
+    }));
+    var words = el('div', { class: 'field' }, [el('label', { for: 'q-worry' }, [t('worryQ')]), el('p', { class: 'muted', id: 'q-worry-hint' }, [t('worryHint')]), area, count,
+      el('p', { class: 'muted', id: 'q-worry-samples' }, [t('samplesQ')]), samples]);
     var after = el('fieldset', { class: 'field' }, [el('legend', {}, [t('afterQ')])]);
     [['yes', t('yes')], ['no', t('no')], ['unsure', t('unsure')]].forEach(function (o) {
       var id = 'q-after-' + o[0];
@@ -405,31 +452,70 @@
     var error = el('p', { class: 'field-error', hidden: '' }, [t('photoFailed')]);
     var f = flow;
     function render() {
+      f.concern.from = f.concern.from || [];
       list.replaceChildren.apply(list, f.concern.photos.map(function (src, i) {
-        var remove = button('×', function () { f.concern.photos.splice(i, 1); render(); }, 'btn ghost small');
+        var remove = button('×', function () { f.concern.photos.splice(i, 1); f.concern.from.splice(i, 1); render(); }, 'btn ghost small');
         remove.setAttribute('aria-label', t('removePhoto', { n: i + 1 }));
         return el('figure', {}, [el('img', { src: src, alt: '' }), remove]);
       }));
       input.disabled = f.concern.photos.length >= MAX_PHOTOS;
+      drawExamples();
     }
+    // Example photos: picked like an upload (shrunk the same way), with the credit under each.
+    var examples = el('ul', { class: 'photo-examples', 'aria-labelledby': 'q-photos-examples' });
+    var examplesNote = el('p', { class: 'muted', id: 'q-photos-examples', hidden: '' }, [t('photoSamplesQ')]);
+    function drawExamples() {
+      if (!examplePhotos) return;
+      examplesNote.hidden = examplePhotos.length === 0;
+      f.concern.adding = f.concern.adding || {};
+      examples.replaceChildren.apply(examples, examplePhotos.map(function (x) {
+        var added = (f.concern.from || []).indexOf(x.id) >= 0;
+        var b = el('button', { type: 'button', class: 'photo-example' }, [el('img', { src: x.file, alt: '', loading: 'lazy' }), el('span', {}, [x.label[lang] + (added ? ' (' + t('photoAdded') + ')' : '')])]);
+        b.disabled = added || f.concern.photos.length >= MAX_PHOTOS;
+        b.addEventListener('click', function () {
+          // A second click while it loads adds nothing.
+          if (f.concern.adding[x.id]) return;
+          f.concern.adding[x.id] = true;
+          addPhoto(fetch(x.file).then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.blob(); }), x.id)
+            .then(function () { delete f.concern.adding[x.id]; });
+        });
+        var licence = x.licenceUrl ? el('a', { href: x.licenceUrl, target: '_blank', rel: 'noopener' }, [x.licence]) : x.licence;
+        var credit = el('small', {}, [t('photoBy', { a: x.author }), licence, t('photoResized') + ' · ', el('a', { href: x.source, target: '_blank', rel: 'noopener' }, [t('photoSource')])]);
+        return el('li', {}, [b, credit]);
+      }));
+    }
+    /** Shrinks a photo (an upload or an example) and adds it; counted while pending, so Next waits for it. */
+    function addPhoto(blob, from) {
+      f.concern.pending = (f.concern.pending || 0) + 1;
+      error.hidden = true;
+      return Promise.resolve(blob).then(shrink).then(function (url) {
+        if (flow === f && f.concern.photos.length < MAX_PHOTOS) {
+          f.concern.from = f.concern.from || [];
+          f.concern.photos.push(url);
+          f.concern.from.push(from);
+          // After a language switch this field is no longer shown: draw the step again.
+          if (box.isConnected) {
+            render();
+            // The clicked example is disabled now: keep keyboard focus on the photo just added.
+            if (from !== null) { var last = list.lastElementChild; if (last) last.querySelector('button').focus(); }
+          } else if (f.step === 2) showFlow();
+        }
+      }).catch(function () {
+        error.textContent = t(from === null ? 'photoFailed' : 'exampleFailed');
+        error.hidden = false;
+      }).then(function () { f.concern.pending -= 1; });
+    }
+    if (!examplePhotos) loadExamplePhotos().then(function () { if (box.isConnected) drawExamples(); });
     input.addEventListener('change', function () {
       var files = Array.prototype.slice.call(input.files || [], 0, MAX_PHOTOS - f.concern.photos.length);
       input.value = '';
       error.hidden = true;
-      // Counted while they are shrunk, so Next waits for them.
-      f.concern.pending = (f.concern.pending || 0) + files.length;
-      files.reduce(function (done, file) {
-        return done.then(function () { return shrink(file); }).then(function (url) {
-          if (flow === f && f.concern.photos.length < MAX_PHOTOS) {
-            f.concern.photos.push(url);
-            // After a language switch this field is no longer shown: draw the step again.
-            if (box.isConnected) render(); else if (f.step === 2) showFlow();
-          }
-        }).catch(function () { error.hidden = false; }).then(function () { f.concern.pending -= 1; });
-      }, Promise.resolve());
+      // All counted at once (Next waits for them), shrunk one after another so they keep their order.
+      var prev = Promise.resolve();
+      files.forEach(function (file) { var turn = prev.then(function () { return file; }); prev = addPhoto(turn, null); });
     });
     render();
-    box.append(input, list, error);
+    box.append(input, list, error, examplesNote, examples);
     return box;
   }
 

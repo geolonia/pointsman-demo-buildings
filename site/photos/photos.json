@@ -1,0 +1,62 @@
+[
+ {
+  "id": "noto-collapsed",
+  "file": "photos/noto-collapsed.webp",
+  "label": {
+   "en": "Houses collapsed (Noto, 2024)",
+   "ja": "倒壊した家（能登、2024年）"
+  },
+  "author": "Hurohukidaikon",
+  "licence": "CC BY 4.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:R6_noto_earthquake_wajima_kuroshima-area_kadoumi-house_2024-02-17_3.jpg"
+ },
+ {
+  "id": "chuetsu-roof",
+  "file": "photos/chuetsu-roof.webp",
+  "label": {
+   "en": "Part of a roof came down (Chuetsu, 2004)",
+   "ja": "屋根の一部が落ちた（中越、2004年）"
+  },
+  "author": "新潟地方気象台 (Niigata Local Meteorological Observatory)",
+  "licence": "CC BY 4.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:%E4%B8%AD%E8%B6%8A%E5%9C%B0%E9%9C%87_%283%29.jpg"
+ },
+ {
+  "id": "christchurch-cracks",
+  "file": "photos/christchurch-cracks.webp",
+  "label": {
+   "en": "X-shaped cracks in a masonry wall (Christchurch, 2011)",
+   "ja": "石造りの壁のX字のひび（クライストチャーチ、2011年）"
+  },
+  "author": "E. Smyrou & İhsan E. Bal",
+  "licence": "CC BY-SA 2.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:Kenton_Chambers_Building_79.jpg"
+ },
+ {
+  "id": "cebu-paint-crack",
+  "file": "photos/cebu-paint-crack.webp",
+  "label": {
+   "en": "A torn joint in an indoor wall (Cebu, 2025)",
+   "ja": "室内の壁の継ぎ目が裂けた（セブ、2025年）"
+  },
+  "author": "Martin Michlmayr",
+  "licence": "CC BY-SA 4.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:Earthquake_MPR_2025-10-02_010.jpg"
+ },
+ {
+  "id": "earthen-wall",
+  "file": "photos/earthen-wall.webp",
+  "label": {
+   "en": "An undamaged earthen wall",
+   "ja": "傷のない土壁"
+  },
+  "author": "タクナワン",
+  "licence": "CC0",
+  "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "https://commons.wikimedia.org/wiki/File:Earthen_walls_of_traditional_Japanese_houses.jpg"
+ }
+]

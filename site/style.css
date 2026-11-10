@@ -219,3 +219,32 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .photos figure { position: relative; margin: 0; }
 .photos img { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 .photos .small { position: absolute; top: 4px; right: 4px; min-width: 28px; padding: 2px 8px; }
+
+/* Descriptions and photos to start from: people find it hard to write their own, and harder to find a photo. */
+.samples { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px; max-width: 40rem; }
+.sample { font: 14px var(--sans); text-align: left; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.sample:hover { border-color: var(--fg); }
+.photo-examples { list-style: none; padding: 0; margin: 6px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 10px; min-width: 0; }
+.photo-example { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 0 0 8px; text-align: left; font: 13px var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer; }
+.photo-example img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photo-example span { padding: 0 8px; }
+.photo-example:hover:not(:disabled) { border-color: var(--fg); }
+.photo-example:disabled { opacity: 0.5; cursor: default; }
+.photo-examples small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
+
+/* Large screens: two columns, the map on the right and in view while scrolling, as in the roads demo.
+   With the developer view open the page needs more width for that. */
+@media (min-width: 1100px) {
+  body:not(.dev-open) main { grid-template-columns: minmax(0, 1fr) minmax(360px, 40%); grid-template-rows: auto auto auto auto 1fr; }
+  body:not(.dev-open) main > * { align-self: start; }
+  body:not(.dev-open) main > * { grid-column: 1; }
+  body:not(.dev-open) main > .map-wrap { grid-column: 2; grid-row: 1 / span 5; align-self: start; position: sticky; top: calc(var(--top-h, 62px) + 16px); }
+  body:not(.dev-open) main > .map-wrap #map { height: calc(100vh - var(--top-h, 62px) - 220px); }
+}
+@media (min-width: 1600px) {
+  body.dev-open main { grid-template-columns: minmax(0, 1fr) minmax(360px, 40%); grid-template-rows: auto auto auto auto 1fr; }
+  body.dev-open main > * { align-self: start; }
+  body.dev-open main > * { grid-column: 1; }
+  body.dev-open main > .map-wrap { grid-column: 2; grid-row: 1 / span 5; align-self: start; position: sticky; top: calc(var(--top-h, 62px) + 16px); }
+  body.dev-open main > .map-wrap #map { height: calc(100vh - var(--top-h, 62px) - 220px); }
+}
