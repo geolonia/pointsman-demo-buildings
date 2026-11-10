@@ -307,7 +307,7 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font: 600 0.88rem var(--sans); background: var(--panel-2); color: var(--fg); }
 .badge.v-now, .badge.v-high { background: var(--red); color: #fff; }
 .badge.v-medium, .badge.v-person { background: var(--amber); color: #1a1a1a; }
-.badge.v-low { background: var(--green); color: #fff; }
+.badge.v-low { background: var(--green); color: #171717; }
 .path .answer { margin: 0; }
 @media (max-width: 640px) {
   .path-step { grid-template-columns: 24px minmax(0, 1fr); gap: 0 10px; }
@@ -329,7 +329,8 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .dev-step .kicker { color: var(--i-map); }
 .dev-step:has(pre:empty) { opacity: 0.5; }
 .dev-step details { min-width: 0; }
-.dev-step summary { cursor: pointer; font: 0.75rem var(--mono); color: var(--i-map); }
+.dev-step summary { cursor: pointer; font: 0.75rem var(--mono); color: var(--i-map); min-height: 28px; display: flex; align-items: center; }
+.dev-step:has(pre:empty) details { display: none; }
 .dev-step pre { margin: 6px 0 0; max-height: 260px; font-size: 0.72rem; }
 
 /* The demo note under the Send button of step 3. */
