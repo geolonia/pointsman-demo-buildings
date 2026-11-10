@@ -55,8 +55,10 @@
       samplesQ: 'Not sure what to write? Start from an example and change it as you like:', photoSamplesQ: 'No photo at hand? Add an example photo:', photoBy: 'Photo: {a}, ', photoSource: 'source', photoAdded: 'added', photoResized: ', resized', exampleFailed: 'The example photo could not be loaded. Try again.', replaceText: 'Replace what you wrote with this example?',
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
-      resultLabel: 'Pointsman\u2019s answer', sureHigh: 'very sure', sureMid: 'fairly sure', sureLow: 'not sure', dangerChance: 'chance of danger: {n} %',
-      tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
+      resultLabel: 'Pointsman\u2019s answer', dangerChance: 'chance of danger: {n} %',
+      pathFacts: 'Facts, from data', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', nOf4: '{n} of 4', chance: 'chance of yes',
+      graphKicker: 'How Pointsman decides', graphText: 'A request goes from left to right. Each box is a profile with its own questions and rules; the second one also reads the first one\u2019s decision.', graphDmn: 'Download for DMN tools (.dmn)',
+      tc: 'How urgent is your concern?',
       checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
       ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
       cn_now: 'In a real service, staff would be asked to act today; this demo sends it to no one. If anyone is in danger, call 119 or leave the building now.', cn_high: 'In a real service, staff would check this soon and confirm the priority; this demo sends it to no one.', cn_medium: 'A check is worth planning.', cn_low: 'Nothing in the description points to an early check.', cn_person: 'The AI was not sure. In a real service, a person would read the description before anything else; this demo sends it to no one.', 'cn_more-evidence': 'Say what you see, where on the building and since when, and send it again.',
@@ -114,8 +116,10 @@
       samplesQ: '書き方に迷ったら、例から始めて自由に書き直せます：', photoSamplesQ: '手元に写真がなければ、例の写真を追加できます：', photoBy: '写真：{a}、', photoSource: '出典', photoAdded: '追加済み', photoResized: '、縮小して使用', exampleFailed: '例の写真を読み込めませんでした。もう一度お試しください。', replaceText: '書いた内容をこの例で置き換えますか？',
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
-      resultLabel: 'Pointsman の判定', sureHigh: 'ほぼ確実', sureMid: 'おそらく', sureLow: '自信は低い', dangerChance: '危険の可能性：{n} %',
-      tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
+      resultLabel: 'Pointsman の判定', dangerChance: '危険の可能性：{n} %',
+      pathFacts: 'データからの事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', nOf4: '4段階の{n}', chance: '「はい」の確率',
+      graphKicker: 'Pointsman の判定の流れ', graphText: '依頼は左から右へ進みます。箱 1 つが、それぞれの質問と規則をもつ 1 つのプロファイルです。2 つ目は 1 つ目の判定も読みます。', graphDmn: 'DMN ツール用にダウンロード（.dmn）',
+      tc: 'この心配はどれだけ急ぎか',
       checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
       ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
       cn_now: '実際のサービスでは、職員に今日中の対応を求めます（このデモではどこにも届きません）。危険な人がいるときは、119 番に電話するか、すぐに建物から離れてください。', cn_high: '実際のサービスでは、職員が早めに確認し、優先度を確定します（このデモではどこにも届きません）。', cn_medium: '確認を計画する価値があります。', cn_low: '説明からは、早めの確認が必要な理由は見つかりませんでした。', cn_person: 'AI が判断しきれませんでした。実際のサービスでは、まず人が説明を読みます（このデモではどこにも届きません）。', 'cn_more-evidence': '何が見えるか、建物のどこか、いつからかを書いて、もう一度送ってください。',
@@ -241,6 +245,7 @@
     showStatus();
     showBuilding();
     showFlow();
+    if (document.getElementById('how').open) renderHowGraph();
   }
 
   /** The stepper in the intro: step 1 until a request is started, then the flow's step. */
@@ -680,8 +685,9 @@
     // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
     var rule = check.policyRule && /^[0-5]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
     return (flow.notRead ? [el('p', { class: 'note' }, [t('notRead')])] : []).concat([
-      // Rule 5 asks again for the hazard data, not for papers.
-      answerCard(action, t('a_' + action), t(rule), t(rule === 'r5' ? 'n_hazard' : 'n_' + action)),
+      pathView({ facts: checkFacts(), uses: CHECK_USES[rule] || [], rule: t(rule), action: action, short: t('a_' + action),
+        // Rule 5 asks again for the hazard data, not for papers.
+        next: t(rule === 'r5' ? 'n_hazard' : 'n_' + action) }),
       el('p', { class: 'note' }, [t('care')]),
       again,
       sentView(),
@@ -693,9 +699,120 @@
     return el('div', { class: 'answer v-' + action }, [
       el('p', { class: 'answer-label' }, [t('resultLabel')]),
       el('h3', { class: 'answer-title' }, [answer]),
-      el('p', { class: 'answer-why' }, [el('strong', {}, [t('why') + ': ']), why]),
+      why ? el('p', { class: 'answer-why' }, [el('strong', {}, [t('why') + ': ']), why]) : null,
       el('p', { class: 'answer-next' }, [next]),
     ]);
+  }
+
+  // What each rule reads (pointsman-config profiles/building-check-priority.yaml and
+  // building-concern.yaml), to mark those facts and answers in the decision path.
+  var CHECK_USES = { r0: ['year', 'structure'], r1: ['year', 'structure'], r2: ['year'], r3: ['year', 'structure', 'ground', 'shaking'], r4: ['flood'], r5: ['year', 'structure', 'ground', 'shaking'], rd: [] };
+  var CONCERN_USES = { c0: ['about_building', 'danger_now'], c1: ['danger_now', 'damage'], c2: ['severity', 'damage'], c3: ['damage', 'priority'], c4: ['danger_now'], c5: ['damage'], c6: ['damage', 'danger_now'], c7: ['damage'], c8: ['priority'], cd: [] };
+
+  /** The facts of a Decision entity as stored (a JSON property, a list): by fact name. */
+  function factsOf(decision) {
+    if (!decision) return {};
+    var key = Object.keys(decision).find(function (k) { return /facts$/.test(k); });
+    var a = key && decision[key];
+    var v = a && (a.json !== undefined ? a.json : a.value !== undefined ? a.value : a['@value']);
+    var o = {};
+    if (Array.isArray(v)) v.forEach(function (x) { if (x && x.name) o[x.name] = x; });
+    return o;
+  }
+
+  /** The facts Pointsman had for the building: its data (or the visitor's answers) and the hazard layers. */
+  function checkFacts() {
+    var p = flow.building.properties;
+    var f = factsOf(flow.decision);
+    var rankOf = function (name) {
+      var x = f[name];
+      if (!x) return null;
+      // Rank 0 (or none): the place is outside the layer's areas.
+      return x.missing ? t('unknown') : x.values && x.values.rank ? t('rank', { n: x.values.rank }) : t('none');
+    };
+    var year = flow.known.year ? p.yearOfConstruction : flow.answers.yearOfConstruction;
+    var structure = flow.known.structure ? name(STRUCTURE, p.structure) : flow.answers.wood === undefined ? null : t(flow.answers.wood ? 'wood' : 'notWood');
+    var flood = rankOf('flood') || (p.flood ? t('floodValue', { depth: p.flood.depth.toFixed(1), rank: name(FLOOD_RANK, p.flood.rank) || p.flood.rank }) : t('none'));
+    return [
+      ['year', t('year'), year === undefined || year === null ? t('unknown') : String(year)],
+      ['structure', t('structure'), structure || t('unknown')],
+      ['ground', t('fGround'), rankOf('ground')],
+      ['shaking', t('fShaking'), rankOf('shaking')],
+      ['flood', t('flood'), flood],
+    ].filter(function (r) { return r[2] !== null; });
+  }
+
+  function bar(share, kind) {
+    var n = Math.max(0, Math.min(100, Math.round(share * 100)));
+    return el('span', { class: 'pbar' + (kind ? ' ' + kind : ''), 'aria-hidden': 'true' }, [el('i', { style: 'width:' + n + '%' })]);
+  }
+
+  /** The AI's answers as rows: the question, the answer, and its probability as a bar; a choice shows its top three. */
+  function questionRows(a, uses) {
+    var rows = [];
+    var row = function (name, q, answer, share, label, kind) {
+      var used = uses.indexOf(name) >= 0;
+      return el('li', { class: 'q-row' + (used ? ' used' : '') }, [
+        el('span', { class: 'q-q' }, [q].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])),
+        el('strong', { class: 'q-a' }, [answer]),
+        el('span', { class: 'q-p' }, [bar(share, kind), el('span', {}, [label])]),
+      ]);
+    };
+    var yesOf = function (x) { return typeof x.probability === 'number' ? (x.value ? x.probability : 1 - x.probability) : null; };
+    if (a.about_building && typeof a.about_building.value === 'boolean') {
+      var y0 = yesOf(a.about_building);
+      if (y0 !== null) rows.push(row('about_building', t('qAbout'), a.about_building.value ? t('yes') : t('no'), y0, t('chance') + ' ' + Math.round(y0 * 100) + ' %'));
+    }
+    if (a.damage && typeof a.damage.value === 'string') {
+      var probs = a.damage.probabilities && typeof a.damage.probabilities === 'object' ? a.damage.probabilities : null;
+      var top = probs ? Object.keys(probs).filter(function (k) { return typeof probs[k] === 'number'; }).sort(function (x, y) { return probs[y] - probs[x]; }).slice(0, 3) : [];
+      var used = uses.indexOf('damage') >= 0;
+      if (top.length) {
+        rows.push(el('li', { class: 'q-row choice' + (used ? ' used' : '') }, [
+          el('span', { class: 'q-q' }, [t('qDamage')].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])),
+          el('ul', { class: 'q-choices' }, top.map(function (k) {
+            return el('li', { class: k === a.damage.value ? 'top' : '' }, [el('span', { class: 'q-a' }, [t('d_' + k)]), el('span', { class: 'q-p' }, [bar(probs[k]), el('span', {}, [Math.round(probs[k] * 100) + ' %'])])]);
+          })),
+        ]));
+      } else if (typeof a.damage.probability === 'number') {
+        rows.push(row('damage', t('qDamage'), t('d_' + a.damage.value), a.damage.probability, Math.round(a.damage.probability * 100) + ' %'));
+      }
+    }
+    if (a.danger_now && typeof a.danger_now.value === 'boolean') {
+      var y1 = yesOf(a.danger_now);
+      if (y1 !== null) rows.push(row('danger_now', t('qDanger'), a.danger_now.value ? t('yes') : t('no'), y1, t('dangerChance', { n: Math.round(y1 * 100) }), 'danger'));
+    }
+    if (a.severity && typeof a.severity.value === 'number') {
+      var sv = Math.max(0, Math.min(4, Math.round(a.severity.value)));
+      rows.push(row('severity', t('qSeverity'), t('sev' + sv), sv / 4, t('nOf4', { n: sv }), 'scale'));
+    }
+    return rows;
+  }
+
+  /**
+   * The decision as a path, the same in both scenes: what Pointsman got (facts
+   * and the visitor's input), the AI's answers with their probabilities, the
+   * rule that decided (with what it read marked), and the decision.
+   */
+  function pathView(o) {
+    var mark = function (rows) {
+      return el('ul', { class: 'path-facts' }, rows.map(function (r) {
+        return el('li', { class: o.uses.indexOf(r[0]) >= 0 ? 'used' : '' }, [el('span', { class: 'fact-label' }, [r[1]]), el('strong', {}, [r[2]])]);
+      }));
+    };
+    var inputs = [el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathFacts')]), mark(o.facts)])];
+    if (o.input) inputs.push(el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathInput')]), o.input]));
+    var parts = [el('div', { class: 'path-inputs' }, inputs)];
+    var arrow = function (text) { return el('p', { class: 'path-arrow' }, [el('span', { 'aria-hidden': 'true' }, ['\u2193']), ' ', text]); };
+    if (o.questions && o.questions.length) {
+      parts.push(arrow(t('pathAi')), el('ul', { class: 'path-box q-rows' }, o.questions));
+      parts.push(arrow(t('pathRule')));
+    } else {
+      parts.push(arrow(t('pathNoAi')));
+    }
+    parts.push(el('p', { class: 'path-box path-rule' }, [o.rule, ' ', el('span', { class: 'path-then' }, ['\u2192 ' + o.short])]));
+    parts.push(arrow(t('pathDecision')), answerCard(o.action, o.short, null, o.next));
+    return el('div', { class: 'path' }, parts);
   }
 
   /** What was sent, folded: the building's values and the answers, each with where it came from. */
@@ -715,43 +832,23 @@
     return v && typeof v === 'object' ? v : {};
   }
 
-  /** Scene B: the urgency of the concern, why, what the AI read, and the building's check as context. */
+  /** Scene B: the concern's decision as a path, with the building's check priority as one of the facts. */
   function concernView(again) {
     var c = flow.request.concern;
     var action = c.value;
     // The rule's index as the bridge writes it ("0" to "8", building-concern v1), or "default".
     var rule = c.policyRule && /^[0-8]$/.test(String(c.policyRule.value)) ? 'c' + c.policyRule.value : 'cd';
-    var a = answersOf(flow.concernDecision);
-    // How sure the AI is, in words first: a bare percentage is hard to read.
-    var sure = function (x) {
-      if (typeof x !== 'number') return '';
-      var n = Math.round(x * 100);
-      return t(n >= 85 ? 'sureHigh' : n >= 65 ? 'sureMid' : 'sureLow') + ' \u00b7 ' + n + ' %';
-    };
-    var read = [];
-    // `probability` is the probability of `value` (the bridge's Decision entity).
-    if (a.damage && typeof a.damage.value === 'string') read.push([t('aiDamage'), t('d_' + a.damage.value), sure(a.damage.probability)]);
-    // Danger: the chance of danger itself, as the rules read it (a weak 'no' can still send it to a person).
-    if (a.danger_now && typeof a.danger_now.value === 'boolean') {
-      var p = a.danger_now.probability;
-      var yes = typeof p === 'number' ? (a.danger_now.value ? p : 1 - p) : null;
-      read.push([t('aiDanger'), a.danger_now.value ? t('yes') : t('no'), yes === null ? '' : t('dangerChance', { n: Math.round(yes * 100) })]);
-    }
-    if (a.severity && typeof a.severity.value === 'number') read.push([t('aiSeverity'), t('sev' + a.severity.value), '']);
-    var facts = el('ul', { class: 'facts' }, read.map(function (r) {
-      return el('li', { class: 'fact' }, [el('span', { class: 'fact-label' }, [r[0]]), el('strong', { class: 'fact-value' }, [r[1]])].concat(r[2] ? [el('span', { class: 'fact-sure' }, [r[2]])] : []));
-    }));
+    var uses = CONCERN_USES[rule] || [];
     var check = flow.request.check;
+    var facts = checkFacts();
+    if (check && typeof check.value === 'string') facts.push(['priority', t('fPriority'), t('a_' + check.value)]);
+    var input = [el('blockquote', { class: 'quote' }, [flow.concern.description.trim()])];
+    if (flow.concern.photos && flow.concern.photos.length) input.push(el('div', { class: 'photos' }, flow.concern.photos.map(function (src) { return el('img', { src: src, alt: '' }); })));
     return [
-      answerCard(action, t('ca_' + action), t(rule), t('cn_' + action)),
-      el('h3', {}, [t('yourWords')]),
-      el('blockquote', { class: 'quote' }, [flow.concern.description.trim()]),
-    ].concat(read.length ? [el('h3', {}, [t('aiRead')]), facts] : [], check && typeof check.value === 'string' ? [
-      el('p', { class: 'context' }, [el('span', { class: 'fact-label' }, [t('checkContext') + ': ']), el('strong', {}, [t('a_' + check.value)])]),
-    ] : [], [
+      pathView({ facts: facts, input: el('div', {}, input), questions: questionRows(answersOf(flow.concernDecision), uses), uses: uses, rule: t(rule), action: action, short: t('ca_' + action), next: t('cn_' + action) }),
       el('p', { class: 'note' }, [t('care')]),
       again,
-    ]);
+    ];
   }
 
   function showDev() {
@@ -880,12 +977,71 @@
     if (map) map.setStyle(style(), { diff: false });
     if (map) map.once('styledata', function () { addBuildings(map); });
   });
-  function setHow(open) {
-    document.getElementById('how').hidden = !open;
-    document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
-    if (open) document.getElementById('how').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // --- How it works: the chain of profiles as a diagram (as in the roads demo) ---------
+  // Pointsman's GET /v1/profiles/{id}/graph through the demo's server (/api/graph),
+  // fetched once per language when the dialog first opens; left out until it works.
+  var graphSvg = {};
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var SVG_ELEMENTS = ['svg', 'style', 'defs', 'marker', 'path', 'line', 'rect', 'text', 'tspan', 'title', 'g'];
+  var SVG_ATTRS = ['class', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'width', 'height', 'rx', 'd', 'viewBox', 'refX', 'refY', 'markerWidth',
+    'markerHeight', 'orient', 'marker-end', 'textLength', 'lengthAdjust', 'id', 'role', 'aria-label'];
+
+  /** The diagram with only plain drawing elements and attributes kept: no scripts, links or outside resources. */
+  function cleanSvg(text) {
+    if (!text) return null;
+    var doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    var svg = doc.documentElement;
+    if (!svg || svg.namespaceURI !== SVG_NS || svg.localName !== 'svg' || doc.getElementsByTagName('parsererror').length) return null;
+    var keep = function (n) { return n.namespaceURI === SVG_NS && SVG_ELEMENTS.indexOf(n.localName) >= 0; };
+    Array.prototype.slice.call(svg.getElementsByTagName('*')).forEach(function (n) { if (!keep(n) && n.parentNode) n.parentNode.removeChild(n); });
+    [svg].concat(Array.prototype.slice.call(svg.getElementsByTagName('*'))).forEach(function (n) {
+      Array.prototype.slice.call(n.attributes).forEach(function (a) {
+        var ok = SVG_ATTRS.indexOf(a.localName) >= 0 && !a.namespaceURI
+          // A marker is referenced only within the diagram.
+          && !(a.localName === 'marker-end' && !/^url\(#[A-Za-z0-9_.-]+\)$/.test(a.value));
+        if (!ok && !(n === svg && a.name === 'xmlns')) n.removeAttribute(a.name);
+      });
+    });
+    Array.prototype.slice.call(svg.getElementsByTagName('style')).forEach(function (st) {
+      if (/@import|url\(/i.test(st.textContent)) st.parentNode.removeChild(st);
+    });
+    return document.importNode(svg, true);
   }
-  document.getElementById('how-toggle').addEventListener('click', function () { setHow(document.getElementById('how').hidden); });
+
+  function renderHowGraph() {
+    var spot = document.getElementById('how-graph');
+    var l = lang;
+    var draw = function () {
+      if (!graphSvg[l] || lang !== l) return;
+      spot.replaceChildren(el('div', { class: 'graph' }, [
+        el('p', { class: 'kicker' }, [t('graphKicker')]),
+        el('p', {}, [t('graphText')]),
+        el('div', { class: 'graph-svg', tabindex: '0', role: 'region', 'aria-label': t('graphKicker') }, [graphSvg[l].cloneNode(true)]),
+        el('a', { href: '/api/graph?format=dmn&lang=' + l, download: '' }, [t('graphDmn')]),
+      ]));
+    };
+    spot.replaceChildren();
+    if (graphSvg[l]) { draw(); return; }
+    if (graphSvg[l] === null) return; // fetching
+    graphSvg[l] = null;
+    fetch('/api/graph?format=svg&lang=' + l).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }).then(function (text) {
+      var svg = cleanSvg(text);
+      if (!svg) { delete graphSvg[l]; return; } // tried again the next time the dialog opens
+      graphSvg[l] = svg;
+      if (document.getElementById('how').open) draw();
+    });
+  }
+
+  function setHow(open) {
+    var d = document.getElementById('how');
+    if (open && !d.open) { renderHowGraph(); d.showModal(); }
+    if (!open && d.open) d.close();
+    document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
+  }
+  document.getElementById('how-toggle').addEventListener('click', function () { setHow(!document.getElementById('how').open); });
+  // Escape closes the dialog by itself; so does a click on the dark area around it.
+  document.getElementById('how').addEventListener('close', function () { document.getElementById('how-toggle').setAttribute('aria-expanded', 'false'); });
+  document.getElementById('how').addEventListener('click', function (e) { if (e.target === e.currentTarget) setHow(false); });
   document.getElementById('how-close').addEventListener('click', function () { setHow(false); document.getElementById('how-toggle').focus(); });
 
   // The developer view: a panel at the right on wide screens, a drawer at the bottom on narrow ones (as in the roads demo).

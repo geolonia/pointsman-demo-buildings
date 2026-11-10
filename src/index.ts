@@ -129,6 +129,36 @@ async function building(env: Env, id: string, request: Request, ctx: ExecutionCo
 }
 
 /**
+ * How it works: the chain of decisions as a diagram, from Pointsman (GET
+ * /v1/profiles/{id}/graph), as in the roads demo. The last profile of the
+ * chain: building-concern (which reads building-check-priority) when scene B
+ * is on, else building-check-priority. SVG for the page or DMN 1.3 for DMN
+ * tools; cached 10 minutes.
+ */
+async function graph(env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
+  if (!bridgeReady(env)) return json({ error: 'Pointsman is not configured' }, 503);
+  const format = url.searchParams.get('format') ?? 'svg';
+  const lang = url.searchParams.get('lang') ?? 'en';
+  if (!['svg', 'dmn'].includes(format) || !['en', 'ja'].includes(lang)) return json({ error: 'format svg or dmn, lang en or ja' }, 400);
+  const profile = concernsReady(env) ? CONCERN_ROUTE.profile : ROUTE.profile;
+  const key = new Request(new URL(`/api/graph?format=${format}&lang=${lang}&profile=${profile}`, url).toString());
+  const cached = await caches.default.match(key);
+  if (cached) return cached;
+  const pm = await fetchWithAgent(`${trimUrl(env.POINTSMAN_URL ?? '')}/v1/profiles/${profile}/graph?format=${format}&lang=${lang}`, { headers: { authorization: `Bearer ${env.POINTSMAN_TOKEN}` } });
+  if (!pm.ok) return json({ error: `Pointsman ${pm.status}` }, 502);
+  const res = new Response(await pm.text(), {
+    headers: {
+      ...SECURITY,
+      'content-type': format === 'svg' ? 'image/svg+xml; charset=utf-8' : 'application/xml; charset=utf-8',
+      'cache-control': 'public, max-age=600',
+      ...(format === 'dmn' && { 'content-disposition': `attachment; filename="${profile}.dmn"` }),
+    },
+  });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
+}
+
+/**
  * Only the page itself may send requests (a browser sends its origin). This
  * stops other sites from sending requests in a visitor's name; scripts can
  * set any origin, so the rate and daily limits do the rest.
@@ -326,6 +356,7 @@ export default {
         return await getRequest(env, id);
       }
       if (url.pathname === '/api/buildings') return await buildings(env, request, ctx);
+      if (url.pathname === '/api/graph') return await graph(env, url, ctx);
       const m = url.pathname.match(/^\/api\/buildings\/([^/]+)$/);
       if (m) {
         let id: string;

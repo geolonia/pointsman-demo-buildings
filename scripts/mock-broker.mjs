@@ -59,12 +59,27 @@ function mockConcern(e, check) {
   else if (check === 'high') [rule, action] = ['8', 'medium'];
   const answers = [
     { name: 'about_building', type: 'noul', value: true, probability: 0.9 },
-    { name: 'damage', type: 'choice', value: damage, probability: 0.8 },
+    // Like Pointsman: a choice also carries the probability of every option.
+    { name: 'damage', type: 'choice', value: damage, probability: 0.8, probabilities: spread(damage) },
     { name: 'danger_now', type: 'noul', value: danger, probability: 0.8 },
     { name: 'severity', type: 'score', value: severity, probability: 0.7 },
   ];
   return { rule, action, answers };
 }
+
+/** A made-up spread over the kinds of damage: 0.8 for the one picked, the rest shared out. */
+function spread(picked) {
+  const kinds = ['partial_collapse', 'tilt_or_sinking', 'falling_parts', 'structural_cracks', 'foundation_or_ground', 'water_or_fire', 'cosmetic', 'nothing_clear'];
+  const rest = kinds.filter((k) => k !== picked);
+  return Object.fromEntries(kinds.map((k) => [k, k === picked ? 0.8 : k === rest[0] ? 0.12 : 0.08 / (rest.length - 1)]));
+}
+
+/** Made-up hazard facts, shaped like Pointsman's (decision:facts), so the page can show them. */
+const MOCK_FACTS = [
+  { name: 'ground', missing: false, values: { rank: 3 }, source: 'mock' },
+  { name: 'shaking', missing: false, values: { rank: 2 }, source: 'mock' },
+  { name: 'flood', missing: false, values: { rank: 0 }, source: 'mock' },
+];
 
 /** Writes a result about 2 s later, only to the request as created now (not one deleted and created again). */
 function decideLater(id, gen) {
@@ -74,7 +89,7 @@ function decideLater(id, gen) {
     const [rule, action] = decide(e);
     const decisionId = crypto.randomUUID();
     const decision = `urn:ngsi-ld:Decision:${decisionId}`;
-    entities.set(decision, { id: decision, type: 'Decision', note: P('made by scripts/mock-broker.mjs, not by Pointsman') });
+    entities.set(decision, { id: decision, type: 'Decision', note: P('made by scripts/mock-broker.mjs, not by Pointsman'), 'https://datamodels.jp/ns/decision/facts': { type: 'JsonProperty', json: MOCK_FACTS } });
     entities.set(id, { ...e, check: { type: 'Property', value: action, decisionId: P(decisionId), decision: { type: 'Relationship', object: decision }, profile: P('building-check-priority'), policyRule: P(rule), model: P('none') } });
     // Scene B: a second decision on the description, a moment later (as the chained route would).
     if (e.description) {
