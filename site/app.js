@@ -55,6 +55,7 @@
       samplesQ: 'Not sure what to write? Start from an example and change it as you like:', photoSamplesQ: 'No photo at hand? Add an example photo:', photoBy: 'Photo: {a}, ', photoSource: 'source', photoAdded: 'added', photoResized: ', resized', exampleFailed: 'The example photo could not be loaded. Try again.', replaceText: 'Replace what you wrote with this example?',
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
+      resultLabel: 'Pointsman\u2019s answer', sureHigh: 'very sure', sureMid: 'fairly sure', sureLow: 'not sure', fromData: 'From the building\u2019s data',
       tc: 'How urgent is your concern?', aiRead: 'What the AI read in your description', aiDamage: 'Kind of damage', aiDanger: 'Danger to people now', aiSeverity: 'How serious',
       checkContext: 'The building\u2019s check priority (from its data)', notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
       ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
@@ -113,6 +114,7 @@
       samplesQ: '書き方に迷ったら、例から始めて自由に書き直せます：', photoSamplesQ: '手元に写真がなければ、例の写真を追加できます：', photoBy: '写真：{a}、', photoSource: '出典', photoAdded: '追加済み', photoResized: '、縮小して使用', exampleFailed: '例の写真を読み込めませんでした。もう一度お試しください。', replaceText: '書いた内容をこの例で置き換えますか？',
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
+      resultLabel: 'Pointsman の判定', sureHigh: 'ほぼ確実', sureMid: 'おそらく', sureLow: 'はっきりしない', fromData: '建物のデータから',
       tc: 'この心配はどれだけ急ぎか', aiRead: 'AI が説明から読み取ったこと', aiDamage: '被害の種類', aiDanger: '今、人に危険があるか', aiSeverity: '深刻さ',
       checkContext: '建物の確認の優先度（建物のデータから）', notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
       ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
@@ -672,19 +674,27 @@
     }
     // While waiting, the visitor may leave: the request is decided anyway.
     if (flow.state !== 'done') return [el('p', { class: 'muted' }, [t(flow.state === 'slow' ? 'slow' : 'waiting')]), again];
-    if (flow.withConcern) return [el('blockquote', { class: 'quote' }, [flow.concern.description.trim()])].concat(concernView(again), [sentView()]);
+    if (flow.withConcern) return concernView(again).concat([sentView()]);
     var check = flow.request.check;
     var action = check.value;
     // The rule's index as the bridge writes it ("0" to "5"), or "default" (building-check-priority v1).
     var rule = check.policyRule && /^[0-5]$/.test(String(check.policyRule.value)) ? 'r' + check.policyRule.value : 'rd';
     return (flow.notRead ? [el('p', { class: 'note' }, [t('notRead')])] : []).concat([
-      el('p', { class: 'verdict v-' + action }, [t('a_' + action)]),
       // Rule 5 asks again for the hazard data, not for papers.
-      el('p', {}, [t(rule === 'r5' ? 'n_hazard' : 'n_' + action)]),
-      el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
+      answerCard(action, t('a_' + action), t(rule), t(rule === 'r5' ? 'n_hazard' : 'n_' + action)),
       el('p', { class: 'note' }, [t('care')]),
       again,
       sentView(),
+    ]);
+  }
+
+  /** The answer first, large, with why in plain words and what would happen next; its edge shows the urgency. */
+  function answerCard(action, answer, why, next) {
+    return el('div', { class: 'answer v-' + action }, [
+      el('p', { class: 'answer-label' }, [t('resultLabel')]),
+      el('p', { class: 'answer-title' }, [answer]),
+      el('p', { class: 'answer-why' }, [el('strong', {}, [t('why') + ': ']), why]),
+      el('p', { class: 'answer-next' }, [next]),
     ]);
   }
 
@@ -712,21 +722,26 @@
     // The rule's index as the bridge writes it ("0" to "8", building-concern v1), or "default".
     var rule = c.policyRule && /^[0-8]$/.test(String(c.policyRule.value)) ? 'c' + c.policyRule.value : 'cd';
     var a = answersOf(flow.concernDecision);
-    var pct = function (x) { return typeof x === 'number' ? Math.round(x * 100) + ' %' : '?'; };
+    // How sure the AI is, in words first: a bare percentage is hard to read.
+    var sure = function (x) {
+      if (typeof x !== 'number') return '';
+      return t(x >= 0.85 ? 'sureHigh' : x >= 0.65 ? 'sureMid' : 'sureLow') + ' \u00b7 ' + Math.round(x * 100) + ' %';
+    };
     var read = [];
     // `probability` is the probability of `value` (the bridge's Decision entity).
-    if (a.damage && typeof a.damage.value === 'string') read.push([t('aiDamage'), t('d_' + a.damage.value) + ' (' + pct(a.damage.probability) + ')']);
-    if (a.danger_now && typeof a.danger_now.value === 'boolean') read.push([t('aiDanger'), (a.danger_now.value ? t('yes') : t('no')) + ' (' + pct(a.danger_now.probability) + ')']);
-    if (a.severity && typeof a.severity.value === 'number') read.push([t('aiSeverity'), t('sev' + a.severity.value)]);
-    var dl = el('dl');
-    read.forEach(function (r) { dl.append(el('dt', {}, [r[0]]), el('dd', {}, [r[1]])); });
+    if (a.damage && typeof a.damage.value === 'string') read.push([t('aiDamage'), t('d_' + a.damage.value), sure(a.damage.probability)]);
+    if (a.danger_now && typeof a.danger_now.value === 'boolean') read.push([t('aiDanger'), a.danger_now.value ? t('yes') : t('no'), sure(a.danger_now.probability)]);
+    if (a.severity && typeof a.severity.value === 'number') read.push([t('aiSeverity'), t('sev' + a.severity.value), '']);
+    var facts = el('ul', { class: 'facts' }, read.map(function (r) {
+      return el('li', { class: 'fact' }, [el('span', { class: 'fact-label' }, [r[0]]), el('strong', { class: 'fact-value' }, [r[1]])].concat(r[2] ? [el('span', { class: 'fact-sure' }, [r[2]])] : []));
+    }));
     var check = flow.request.check;
     return [
-      el('p', { class: 'verdict v-' + action }, [t('ca_' + action)]),
-      el('p', {}, [t('cn_' + action)]),
-      el('p', {}, [el('strong', {}, [t('why') + ': ']), t(rule)]),
-    ].concat(read.length ? [el('h3', {}, [t('aiRead')]), dl] : [], check && typeof check.value === 'string' ? [
-      el('p', { class: 'muted' }, [t('checkContext') + ': ' + t('a_' + check.value)]),
+      answerCard(action, t('ca_' + action), t(rule), t('cn_' + action)),
+      el('h3', {}, [t('yourWords')]),
+      el('blockquote', { class: 'quote' }, [flow.concern.description.trim()]),
+    ].concat(read.length ? [el('h3', {}, [t('aiRead')]), facts] : [], check && typeof check.value === 'string' ? [
+      el('p', { class: 'context' }, [el('span', { class: 'fact-label' }, [t('fromData') + ': ']), el('strong', {}, [t('a_' + check.value)])]),
     ] : [], [
       el('p', { class: 'note' }, [t('care')]),
       again,
