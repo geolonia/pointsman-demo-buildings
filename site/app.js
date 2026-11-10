@@ -985,6 +985,11 @@
     m.on('load', function () {
       m.resize();
       m.fitBounds([[area[0], area[1]], [area[2], area[3]]], { padding: 20, animate: false });
+      // Two levels closer than the whole area: the first view is full of buildings.
+      m.jumpTo({ center: [(area[0] + area[2]) / 2, (area[1] + area[3]) / 2], zoom: m.getZoom() + 2 });
+      // The credits start closed (the (i) button opens them), so they do not cover the map.
+      var attrib = document.querySelector('#map .maplibregl-ctrl-attrib');
+      if (attrib) { attrib.classList.remove('maplibregl-compact-show'); attrib.removeAttribute('open'); }
       addBuildings(m);
     });
     return m;
