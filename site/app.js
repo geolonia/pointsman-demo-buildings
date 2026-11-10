@@ -56,7 +56,7 @@
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       resultLabel: 'Pointsman\u2019s answer', dangerChance: 'chance of danger: {n} %',
-      pathFacts: 'Facts, from data', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', pathAiMissing: 'The AI answered fixed questions, but its answers cannot be shown just now', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', scoreOf4: 'score {n} / 4', sureOf: '{n} % sure', chance: 'chance of yes',
+      pathFacts: 'Facts', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', pathAiMissing: 'The AI answered fixed questions, but its answers cannot be shown just now', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', scoreOf4: 'score {n} / 4', sureOf: '{n} % sure', chance: 'chance of yes',
       graphKicker: 'How Pointsman decides', graphText: 'A request goes from left to right. Each box is a profile with its own questions and rules; the second one also reads the first one\u2019s decision.', graphDmn: 'Download for DMN tools (.dmn)',
       tc: 'How urgent is your concern?',
       notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
@@ -117,7 +117,7 @@
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       resultLabel: 'Pointsman の判定', dangerChance: '危険の可能性：{n} %',
-      pathFacts: 'データからの事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', pathAiMissing: 'AI は決まった質問に答えましたが、今はその答えを表示できません', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', scoreOf4: 'スコア {n} / 4', sureOf: '確率 {n} %', chance: '「はい」の確率',
+      pathFacts: '事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', pathAiMissing: 'AI は決まった質問に答えましたが、今はその答えを表示できません', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', scoreOf4: 'スコア {n} / 4', sureOf: '確率 {n} %', chance: '「はい」の確率',
       graphKicker: 'Pointsman の判定の流れ', graphText: '依頼は左から右へ進みます。箱 1 つが、それぞれの質問と規則をもつ 1 つのプロファイルです。2 つ目は 1 つ目の判定も読みます。', graphDmn: 'DMN ツール用にダウンロード（.dmn）',
       tc: 'この心配はどれだけ急ぎか',
       notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
@@ -730,11 +730,13 @@
       // Rank 0 (or none): the place is outside the layer's areas.
       return x.missing ? t('unknown') : x.values && x.values.rank ? t('rank', { n: x.values.rank }) : t('none');
     };
-    var year = flow.known.year ? p.yearOfConstruction : flow.answers.yearOfConstruction;
-    var structure = flow.known.structure ? name(STRUCTURE, p.structure) : flow.answers.wood === undefined ? null : t(flow.answers.wood ? 'wood' : 'notWood');
+    // A value the visitor gave (the city model has none) is tagged as theirs, as in "What was sent".
+    var yours = function (v) { return [v, ' ', el('span', { class: 'tag' }, [t('fromYou')])]; };
+    var year = flow.known.year ? String(p.yearOfConstruction) : flow.answers.yearOfConstruction === undefined ? null : yours(String(flow.answers.yearOfConstruction));
+    var structure = flow.known.structure ? name(STRUCTURE, p.structure) : flow.answers.wood === undefined ? null : yours(t(flow.answers.wood ? 'wood' : 'notWood'));
     var flood = rankOf('flood') || (p.flood ? t('floodValue', { depth: p.flood.depth.toFixed(1), rank: name(FLOOD_RANK, p.flood.rank) || p.flood.rank }) : t('none'));
     return [
-      ['year', t('year'), year === undefined || year === null ? t('unknown') : String(year)],
+      ['year', t('year'), year === null ? t('unknown') : year],
       ['structure', t('structure'), structure || t('unknown')],
       ['ground', t('fGround'), rankOf('ground')],
       ['shaking', t('fShaking'), rankOf('shaking')],
@@ -810,7 +812,7 @@
     var mark = function (rows) {
       return el('ul', { class: 'path-facts' }, rows.map(function (r) {
         var used = o.uses.indexOf(r[0]) >= 0;
-        return el('li', { class: used ? 'used' : '' }, [el('span', { class: 'fact-label' }, [r[1]].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])), el('strong', {}, [r[2]])]);
+        return el('li', { class: used ? 'used' : '' }, [el('span', { class: 'fact-label' }, [r[1]].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])), el('strong', {}, [].concat(r[2]))]);
       }));
     };
     var inputs = [el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathFacts')]), mark(o.facts)])];
