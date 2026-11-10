@@ -1046,6 +1046,8 @@
   }
 
   var howPressOutside = false;
+  // Without <dialog>: the button that opened the panel, to give focus back on close (a dialog does that itself).
+  var howOpener = null;
   function outsideDialog(e) {
     var b = document.getElementById('how').getBoundingClientRect();
     return e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom;
@@ -1056,8 +1058,8 @@
     // Browsers without <dialog> (Safari before 15.4): shown in place, without the modal.
     // The attribute, not .open: without <dialog> support (Safari before 15.4) there is no .open.
     var shown = d.hasAttribute('open');
-    if (open && !shown) { renderHowGraph(); if (d.showModal) d.showModal(); else { d.setAttribute('open', ''); d.scrollIntoView({ block: 'start' }); document.getElementById('how-close').focus(); } }
-    if (!open && shown) { if (d.close) d.close(); else d.removeAttribute('open'); }
+    if (open && !shown) { renderHowGraph(); if (d.showModal) d.showModal(); else { howOpener = document.activeElement; d.setAttribute('open', ''); d.scrollIntoView({ block: 'start' }); document.getElementById('how-close').focus(); } }
+    if (!open && shown) { if (d.close) d.close(); else { d.removeAttribute('open'); if (howOpener && howOpener.focus) howOpener.focus(); } }
     document.getElementById('how-toggle').setAttribute('aria-expanded', String(open));
   }
   document.getElementById('how-toggle').addEventListener('click', function () { setHow(!document.getElementById('how').hasAttribute('open')); });
