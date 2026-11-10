@@ -13,16 +13,16 @@
       howLead: 'What happens to a request, step by step. GeonicDB, a FIWARE data platform, keeps the data and starts each step. A small connector passes the step to Pointsman, and Pointsman answers. The AI only answers fixed questions about your words and photos; the building\u2019s data and the city\u2019s rules do the rest.',
       h1k: '1 · Saved', h1t: 'The page saves the request in GeonicDB', h1d: 'A BuildingCheckRequest entity, linked to the Building entity. Your answers fill only what the city model does not know.',
       h2k: '2 · Notified', h2t: 'GeonicDB tells the connector', h2d: 'A subscription on new requests sends it a notification.',
-      h3k: '3 · First check', h3t: 'Pointsman sorts the building', h3d: 'Rules only, no AI: year built, structure, and the ground and earthquake data for the place give a priority for a seismic check.',
+      h3k: '3 · First check', h3t: 'Pointsman sorts the building', h3d: 'Rules only, no AI: year built, structure, and the ground and earthquake data for the place give a priority: how soon someone should look at it.',
       h4k: '4 · Your description', h4t: 'Pointsman reads your words', h4d: 'With a description, a second check starts. The AI answers fixed questions: what kind of damage, how serious, is anyone in danger now. The city\u2019s rules turn the answers and the first result into one urgency.',
       h5k: '5 · Written back', h5t: 'The results go back into GeonicDB', h5d: 'The connector writes each result onto the request, with a Decision entity. A result that a person must check also gets a Task entity.',
       h6k: '6 · Used', h6t: 'Any app can read the results', h6d: 'A city dashboard or a ticket system can subscribe to them. This page reads them and shows you the result.',
-      exTitle: 'Pick an example', exNote: 'Each one is sent live to Pointsman. They show four different outcomes.',
+      exTitle: 'Pick an example', exNote: 'Each one fills in the form for you; you check it and send it to Pointsman. They show four different outcomes.',
       exFoot: 'Made-up descriptions of real buildings from the city model. Requests are deleted after a day.',
       exAfter: 'After a disaster: {v}', exAdds: 'You add: {v}', exBuilt: 'built {y}', exStoreys: '{n} storeys', exYearUnknown: 'year not known',
       mapTitle: 'Or pick any building on the map', sentTitle: 'What was sent',
       title: 'Every building, the same checks',
-      lead: 'These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, ask how urgent a seismic check is, and watch Pointsman sort the request: what to check first, and why.',
+      lead: 'These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, say what worries you about it, and watch Pointsman sort the request: how urgently someone should look at it, and why. The result is a priority, not a decision on whether the building is safe.',
       care: 'Pointsman sorts and explains. It never decides that a building is safe: that is always a person’s decision.',
       legendTitle: 'Year built', eraBefore: '1981 or earlier', eraMiddle: '1982 to 2000', eraAfter: '2001 or later', eraUnknown: 'Not known',
       pick: 'Pick a building on the map.',
@@ -34,7 +34,7 @@
       unknownNote: 'Some values are not in the city model. In a request, Pointsman asks for them instead of guessing.',
       checkThis: 'Check this building', checksClosed: 'Checks are not open yet.',
       s1: 'Pick a building', s2: 'Details', s3: 'Check and send', s4: 'Result',
-      t2: 'What the city model does not know', t3: 'Check and send', t4: 'How urgent is a seismic check?',
+      t2: 'What the city model does not know', t3: 'Check and send', t4: 'How urgently should someone look at it?',
       dontKnow: 'I do not know', woodQ: 'Is it a wooden building?', yes: 'Yes', no: 'No', yearQ: 'Year built', storeysQ: 'Storeys above ground',
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
       fromModel: 'city model', fromYou: 'you', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
@@ -42,8 +42,8 @@
       e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
       e_lost: 'The request is no longer there (requests are deleted after a day).', gaveUp: 'No result yet. The demo tries again every hour; you can also look again later.', lookAgain: 'Look again',
       wood: 'Wood', notWood: 'Not wood',
-      a_high: 'High: a seismic check should come first', a_medium: 'Medium', a_low: 'Low', 'a_more-evidence': 'More information needed',
-      n_high: 'In a real service, staff would confirm this priority; this demo sends it to no one. A wooden house begun on or before 31 May 1981 may get Sapporo\u2019s free seismic check.',
+      a_high: 'High: this building should be looked at first', a_medium: 'Medium', a_low: 'Low', 'a_more-evidence': 'More information needed',
+      n_high: 'In a real service, staff would confirm this priority; this demo sends it to no one.',
       n_medium: 'A check is worth planning, but other buildings come first.',
       n_low: 'No reason for an early check was found in the data.',
       'n_more-evidence': 'The year built or the structure is missing. They are on the building certificate (登記事項証明書) or the building permit (確認済証).',
@@ -74,16 +74,16 @@
       howLead: '依頼に何が起きるかを、順に説明します。FIWARE のデータ基盤 GeonicDB がデータを持ち、各手順を始めます。小さなつなぎ役が手順を Pointsman に渡し、Pointsman が答えます。AI はあなたの説明と写真について決まった質問に答えるだけで、残りは建物のデータと市の規則が決めます。',
       h1k: '1・保存', h1t: 'ページが依頼を GeonicDB に保存する', h1d: '建物（Building エンティティ）にひもづいた BuildingCheckRequest エンティティです。あなたの回答は、3D都市モデルにない値だけを補います。',
       h2k: '2・通知', h2t: 'GeonicDB がつなぎ役に知らせる', h2d: '新しい依頼へのサブスクリプションが、通知を送ります。',
-      h3k: '3・最初の確認', h3t: 'Pointsman が建物を仕分ける', h3d: '規則だけで、AI は使いません。建築年、構造、その場所の地盤と地震のデータから、耐震の確認の優先度を決めます。',
+      h3k: '3・最初の確認', h3t: 'Pointsman が建物を仕分ける', h3d: '規則だけで、AI は使いません。建築年、構造、その場所の地盤と地震のデータから、どれだけ急いで見に行くべきか（優先度）を決めます。',
       h4k: '4・あなたの説明', h4t: 'Pointsman があなたの言葉を読む', h4d: '説明があると、2つ目の確認が始まります。AI は決まった質問にだけ答えます（被害の種類、深刻さ、今、人に危険があるか）。市の規則が、その答えと最初の結果から急ぎの度合いを1つ決めます。',
       h5k: '5・書き戻し', h5t: '結果が GeonicDB に戻る', h5d: 'つなぎ役が、それぞれの結果を Decision エンティティと一緒に依頼に書き込みます。人が確認すべき結果には Task エンティティもできます。',
       h6k: '6・利用', h6t: 'どのアプリも結果を読める', h6d: '市のダッシュボードやチケットシステムは、結果をサブスクライブできます。このページも結果を読んで表示します。',
-      exTitle: '例を選ぶ', exNote: 'どれもその場で Pointsman に送られます。4 つとも結果が違います。',
+      exTitle: '例を選ぶ', exNote: '選ぶとフォームに入力されます。内容を確かめて Pointsman に送ってください。4 つとも結果が違います。',
       exFoot: '説明は作り話で、建物は3D都市モデルにある実在のものです。依頼は1日で削除されます。',
       exAfter: '災害のあと：{v}', exAdds: 'あなたが補う：{v}', exBuilt: '{y}年築', exStoreys: '{n}階建て', exYearUnknown: '建築年不明',
       mapTitle: 'または、地図で好きな建物を選ぶ', sentTitle: '送った内容',
       title: 'すべての建物を、同じ基準で',
-      lead: '札幌市清田区の一地区の建物です。国の3D都市モデル（PLATEAU）のデータを、FIWARE のデータ基盤 GeonicDB に Building エンティティとして入れています。建物を選んで耐震の確認がどれだけ急ぎかを尋ね、Pointsman がその依頼をどう仕分けるか（何を先に確認するか、なぜか）を見てください。',
+      lead: '札幌市清田区の一地区の建物です。国の3D都市モデル（PLATEAU）のデータを、FIWARE のデータ基盤 GeonicDB に Building エンティティとして入れています。建物を選んで気になることを伝えると、Pointsman がその依頼を仕分けます（どれだけ急いで見に行くべきか、なぜか）。結果は優先順位で、安全かどうかの判定ではありません。',
       care: 'Pointsman は仕分けて理由を示します。建物が安全かどうかは判断しません。それは常に人が決めます。',
       legendTitle: '建築年', eraBefore: '1981年以前', eraMiddle: '1982〜2000年', eraAfter: '2001年以降', eraUnknown: '不明',
       pick: '地図で建物を選んでください。',
@@ -95,7 +95,7 @@
       unknownNote: '3D都市モデルにない値があります。依頼では、Pointsman は推測せずにそれを尋ねます。',
       checkThis: 'この建物を確認する', checksClosed: '確認はまだ受け付けていません。',
       s1: '建物を選ぶ', s2: '詳細', s3: '確認して送信', s4: '結果',
-      t2: '3D都市モデルにない情報', t3: '確認して送信', t4: '耐震の確認はどれだけ急ぎか',
+      t2: '3D都市モデルにない情報', t3: '確認して送信', t4: 'どれだけ急いで見に行くべきか',
       dontKnow: 'わからない', woodQ: '木造の建物ですか', yes: 'はい', no: 'いいえ', yearQ: '建築年', storeysQ: '地上階数',
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
       fromModel: '3D都市モデル', fromYou: 'あなた', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
@@ -103,8 +103,8 @@
       e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
       e_lost: '依頼はもうありません（依頼は1日で削除されます）。', gaveUp: 'まだ結果がありません。デモは1時間ごとにやり直します。あとでもう一度ご覧ください。', lookAgain: 'もう一度見る',
       wood: '木造', notWood: '非木造',
-      a_high: '高：耐震の確認を先に', a_medium: '中', a_low: '低', 'a_more-evidence': '情報が足りません',
-      n_high: '実際のサービスでは、職員がこの優先度を確認します（このデモではどこにも届きません）。1981年5月31日以前に着工した木造住宅は、札幌市の無料の耐震診断を受けられることがあります。',
+      a_high: '高：優先して見るべき建物', a_medium: '中', a_low: '低', 'a_more-evidence': '情報が足りません',
+      n_high: '実際のサービスでは、職員がこの優先度を確認します（このデモではどこにも届きません）。',
       n_medium: '確認を計画する価値はありますが、ほかの建物が先です。',
       n_low: 'データからは、早めの確認が必要な理由は見つかりませんでした。',
       'n_more-evidence': '建築年か構造が足りません。登記事項証明書や確認済証に書かれています。',
@@ -287,13 +287,17 @@
         el('span', { class: 'hint' }, [el('span', {}, [t('exAfter', { v: t(x.after) })])].concat(adds.length ? [el('span', {}, [t('exAdds', { v: adds.join(lang === 'ja' ? '、' : ', ') })])] : [])),
       ]);
       b.disabled = busy;
-      b.addEventListener('click', function () { sendExample(x); });
+      b.addEventListener('click', function () { useExample(x); });
       return el('li', {}, [b]);
     }));
   }
 
-  /** An example as roads does it: the building picked, every field filled, sent at once. */
-  function sendExample(x) {
+  /**
+   * An example: the building picked and the whole form filled in (the
+   * description, after a disaster, and what the city model does not know),
+   * at the Details step; the visitor checks it and sends it, step by step.
+   */
+  function useExample(x) {
     var f = featureOf(x.id);
     if (!f || (flow && flow.state === 'sending')) return;
     select(f.id);
@@ -305,9 +309,9 @@
     flow.answers = answers;
     flow.concern.description = x.description[lang];
     flow.concern.afterDisaster = x.after;
-    send();
+    showFlow();
     document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // The clicked card is hidden now: keep keyboard focus on the request.
+    // The clicked card is hidden now: keep keyboard focus on the form.
     focusHeading('flow-title');
   }
 
