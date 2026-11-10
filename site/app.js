@@ -605,6 +605,19 @@
       title.textContent = t(flow.withConcern ? 'tc' : 't4');
       body.replaceChildren.apply(body, resultView());
     }
+    // Screen readers: the waiting text goes into a status line that stays on the page (a new
+    // element with role=status is not always read out); only changed text is written.
+    var live = document.getElementById('flow-status');
+    var said = busyText() || '';
+    if (live.textContent !== said) live.textContent = said;
+  }
+
+  /** While the request is sent or sorted: the text to show; otherwise null. */
+  function busyText() {
+    if (!flow || flow.step !== 4) return null;
+    if (flow.state === 'sending') return t('sending');
+    if (flow.state === 'waiting' || flow.state === 'slow') return t(flow.state);
+    return null;
   }
 
   /** The page's own words for a failed send (the server's are English only). */
@@ -680,17 +693,17 @@
   }
 
   // While Pointsman works: a spinner and a moving bar, so the page does not look stuck. It shows no
-  // progress, as nothing tells the page how far the check is.
+  // progress, as nothing tells the page how far the check is. Screen readers get the text from #flow-status.
   function busyView(text) {
     return el('div', { class: 'busy' }, [
-      el('p', { class: 'busy-text', role: 'status' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
+      el('p', { class: 'busy-text', 'aria-hidden': 'true' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
       el('div', { class: 'busy-bar', 'aria-hidden': 'true' }, [el('i')]),
     ]);
   }
 
   function resultView() {
     var again = el('div', { class: 'actions' }, [button(t('again'), function () { flow = null; showFlow(); showDev(); window.scrollTo({ top: 0, behavior: 'smooth' }); focusHeading(document.getElementById('examples').hidden ? 'map-title' : 'examples-title'); })]);
-    if (flow.state === 'sending') return [busyView(t('sending'))];
+    if (flow.state === 'sending') return [busyView(busyText())];
     if (flow.state === 'failed') {
       // Back to the answers, kept, unless the request was sent and is gone.
       var back = flow.error === 'e_lost' ? [] : [button(t('back'), function () { stepTo(3); })];
@@ -701,7 +714,7 @@
       return [el('p', { class: 'note' }, [t('gaveUp')]), el('div', { class: 'actions' }, [button(t('lookAgain'), function () { f.sentAt = Date.now() - SLOW_MS - 1; f.state = 'slow'; showFlow(); poll(f, f.requestId); }), again.firstChild])];
     }
     // While waiting, the visitor may leave: the request is decided anyway.
-    if (flow.state !== 'done') return [busyView(t(flow.state === 'slow' ? 'slow' : 'waiting')), again];
+    if (flow.state !== 'done') return [busyView(busyText() || t('waiting')), again];
     if (flow.withConcern) return concernView(again).concat([sentView()]);
     var check = flow.request.check;
     var action = check.value;
