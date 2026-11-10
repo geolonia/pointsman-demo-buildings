@@ -56,8 +56,9 @@
       photosQ: 'Photos (up to 3, optional)', photosHint: 'Only of the building: no people, number plates or name plates. The AI looks at them; they are deleted with the request after about a day.', addPhotos: 'Add photos', removePhoto: 'Remove photo {n}', photoFailed: 'This photo could not be read. Try a JPEG or PNG.', photoCount: '{n} photo(s)', photos: 'Photos', photosNeedWords: 'Photos are sent only with a description: say in a few words what they show.', photosBusy: 'The photos are still being prepared. Try again in a moment.',
       afterQ: 'Did it start after an earthquake or another disaster?', unsure: 'Not sure', chars: '{n} of {max} characters', yourWords: 'Your description',
       resultLabel: 'Pointsman\u2019s answer', dangerChance: 'chance of danger: {n} %',
-      pathFacts: 'Facts', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', pathAiMissing: 'The AI answered fixed questions, but its answers cannot be shown just now', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', scoreOf4: 'score {n} / 4', sureOf: '{n} % sure', chance: 'chance of yes',
+      pathGot: 'What Pointsman got', pathFacts: 'Facts', pathInput: 'Your input', pathAi: 'The AI answers fixed questions, each with a probability', pathRule: 'A fixed rule decides', pathNoAi: 'No AI here: fixed rules decide from the facts alone', pathDecision: 'Decision', pathAiMissing: 'The AI answered fixed questions, but its answers cannot be shown just now', qAbout: 'About a building?', qDamage: 'What kind of damage?', qDanger: 'Danger to people now?', qSeverity: 'How serious?', usedTag: 'the rule used this', fGround: 'Ground amplification (J-SHIS)', fShaking: 'Strong shaking in 30 years (J-SHIS)', fPriority: 'The building\u2019s check priority', rank: 'rank {n}', scoreOf4: 'score {n} / 4', sureOf: '{n} % sure', chance: 'chance of yes',
       graphKicker: 'How Pointsman decides', graphText: 'A request goes from left to right. Each box is a profile with its own questions and rules; the second one also reads the first one\u2019s decision.', graphDmn: 'Download for DMN tools (.dmn)',
+      whyTitle: 'Why cities use it this way', why1: 'The AI only answers fixed questions. It never decides alone.', why2: 'Facts come from public data (the 3D city model, J-SHIS, GSI maps), so anyone can check them.', why3: 'The city writes the rules, and can read every decision later.', why4: 'Whether a building is safe is always a person\u2019s decision.', whyMore: 'More questions, with short answers:', whyFaq: 'FAQ on the Pointsman website', devData: 'Data',
       tc: 'How urgent is your concern?',
       notRead: 'Your description could not be read this time, so this is the check from the building\u2019s data only.',
       ca_now: 'Now: act today', ca_high: 'High: check soon', ca_medium: 'Medium', ca_low: 'Low', ca_person: 'A person reads it first', 'ca_more-evidence': 'Please describe it more clearly',
@@ -117,8 +118,9 @@
       photosQ: '写真(3 枚まで、任意)', photosHint: '建物だけを写してください。人、ナンバープレート、表札は写さないでください。AI が見ます。写真は約 1 日後に依頼と一緒に削除します。', addPhotos: '写真を追加', removePhoto: '写真 {n} を外す', photoFailed: 'この写真を読み込めませんでした。JPEG か PNG でお試しください。', photoCount: '写真 {n} 枚', photos: '写真', photosNeedWords: '写真は説明と一緒にだけ送ります。写真に何が写っているかを短く書いてください。', photosBusy: '写真を準備しています。少し待ってからもう一度お試しください。',
       afterQ: '地震などの災害のあとに起きましたか', unsure: 'わからない', chars: '{n} / {max} 文字', yourWords: 'あなたの説明',
       resultLabel: 'Pointsman の判定', dangerChance: '危険の可能性：{n} %',
-      pathFacts: '事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', pathAiMissing: 'AI は決まった質問に答えましたが、今はその答えを表示できません', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', scoreOf4: 'スコア {n} / 4', sureOf: '確率 {n} %', chance: '「はい」の確率',
+      pathGot: 'Pointsman が受け取ったもの', pathFacts: '事実', pathInput: 'あなたの入力', pathAi: 'AI が決まった質問に、確率つきで答えます', pathRule: '決まったルールで判定します', pathNoAi: 'ここでは AI を使いません。事実だけから決まったルールで判定します', pathDecision: '判定', pathAiMissing: 'AI は決まった質問に答えましたが、今はその答えを表示できません', qAbout: '建物についての話か', qDamage: '被害の種類は', qDanger: '今、人に危険があるか', qSeverity: 'どれだけ深刻か', usedTag: 'ルールが使った', fGround: '地盤の揺れやすさ（J-SHIS）', fShaking: '30年以内の強い揺れ（J-SHIS）', fPriority: '建物の確認の優先度', rank: 'ランク {n}', scoreOf4: 'スコア {n} / 4', sureOf: '確率 {n} %', chance: '「はい」の確率',
       graphKicker: 'Pointsman の判定の流れ', graphText: '依頼は左から右へ進みます。箱 1 つが、それぞれの質問と規則をもつ 1 つのプロファイルです。2 つ目は 1 つ目の判定も読みます。', graphDmn: 'DMN ツール用にダウンロード（.dmn）',
+      whyTitle: '市がこの仕組みを使う理由', why1: 'AI は決まった質問に答えるだけで、ひとりでは決めません。', why2: '事実は公開データ（3D都市モデル、J-SHIS、地理院地図）から調べるので、誰でも確かめられます。', why3: '規則は市が書き、どの判定も後から読めます。', why4: '建物が安全かどうかは、いつも人が決めます。', whyMore: 'ほかの質問と答えは：', whyFaq: 'Pointsman のサイトのよくある質問', devData: 'データ',
       tc: 'この心配はどれだけ急ぎか',
       notRead: '今回は説明を読み取れなかったため、建物のデータだけによる確認の結果です。',
       ca_now: '今すぐ：今日のうちに対応', ca_high: '高：早めに確認', ca_medium: '中', ca_low: '低', ca_person: 'まず人が読みます', 'ca_more-evidence': 'もう少し詳しく説明してください',
@@ -245,6 +247,7 @@
     document.querySelectorAll('[data-i18n-label]').forEach(function (n) { n.setAttribute('aria-label', t(n.dataset.i18nLabel)); });
     // Back to the demos page in the same language.
     document.getElementById('brand').pathname = lang === 'ja' ? '/ja/demos/' : '/demos/';
+    document.getElementById('faq-link').pathname = lang === 'ja' ? '/ja/' : '/';
     var b = document.getElementById('lang');
     b.textContent = lang === 'ja' ? 'English' : '日本語';
     b.lang = lang === 'ja' ? 'en' : 'ja';
@@ -784,7 +787,7 @@
         rows.push(el('li', { class: 'q-row choice' + (used ? ' used' : '') }, [
           el('span', { class: 'q-q' }, [t('qDamage')].concat(used ? [el('span', { class: 'use-tag' }, [t('usedTag')])] : [])),
           el('ul', { class: 'q-choices' }, top.map(function (k) {
-            return el('li', { class: k === a.damage.value ? 'top' : '' }, [el('span', { class: 'q-a' }, [t('d_' + k)]), el('span', { class: 'q-p' }, [bar(probs[k]), el('span', {}, [Math.round(probs[k] * 100) + ' %'])])]);
+            return el('li', { class: k === a.damage.value ? 'is-top' : '' }, [el('span', { class: 'q-a' }, [t('d_' + k)]), el('span', { class: 'q-p' }, [bar(probs[k]), el('span', {}, [Math.round(probs[k] * 100) + ' %'])])]);
           })),
         ]));
       } else if (typeof a.damage.probability === 'number') {
@@ -828,18 +831,18 @@
     };
     var inputs = [el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathFacts')]), mark(o.facts)])];
     if (o.input) inputs.push(el('div', { class: 'path-box' }, [el('p', { class: 'path-label' }, [t('pathInput')]), o.input]));
-    var parts = [el('div', { class: 'path-inputs' }, inputs)];
-    var arrow = function (text) { return el('p', { class: 'path-arrow' }, [el('span', { 'aria-hidden': 'true' }, ['\u2193']), ' ', text]); };
-    if (o.questions && o.questions.length) {
-      parts.push(arrow(t('pathAi')), el('ul', { class: 'path-box q-rows' }, o.questions));
-      parts.push(arrow(t('pathRule')));
-    } else {
+    var hasAi = o.questions && o.questions.length;
+    // Numbered steps on a line, top to bottom: what Pointsman got, the AI, the rule, the decision.
+    var step = function (n, head, body) {
+      return el('li', { class: 'path-step' }, [el('span', { class: 'path-num', 'aria-hidden': 'true' }, [String(n)]), el('div', { class: 'path-body' }, [el('h4', { class: 'path-head' }, [head])].concat(body))]);
+    };
+    return el('ol', { class: 'path' }, [
+      step(1, t('pathGot'), [el('div', { class: 'path-inputs' }, inputs)]),
       // The description was read by the AI, but its answers are not in hand: say so, not "no AI".
-      parts.push(arrow(t(o.ai ? 'pathAiMissing' : 'pathNoAi')));
-    }
-    parts.push(el('p', { class: 'path-box path-rule' }, [o.rule, ' ', el('span', { class: 'path-then' }, ['\u2192 ' + o.short])]));
-    parts.push(arrow(t('pathDecision')), answerCard(o.action, o.short, null, o.next));
-    return el('div', { class: 'path' }, parts);
+      step(2, t(hasAi ? 'pathAi' : o.ai ? 'pathAiMissing' : 'pathNoAi'), hasAi ? [el('ul', { class: 'path-box q-rows' }, o.questions)] : []),
+      step(3, t('pathRule'), [el('div', { class: 'path-box path-rule' }, [el('p', {}, [o.rule]), el('span', { class: 'badge v-' + o.action }, ['\u2192 ' + o.short])])]),
+      step(4, t('pathDecision'), [answerCard(o.action, o.short, null, o.next)]),
+    ]);
   }
 
   /** What was sent, folded: the building's values and the answers, each with where it came from. */
@@ -1053,7 +1056,7 @@
     var l = lang;
     var draw = function () {
       if (!graphSvg[l] || lang !== l) return;
-      spot.replaceChildren(el('div', { class: 'graph' }, [
+      spot.replaceChildren(el('div', { class: 'box graph' }, [
         el('p', { class: 'kicker' }, [t('graphKicker')]),
         el('p', {}, [t('graphText')]),
         el('div', { class: 'graph-svg', tabindex: '0', role: 'region', 'aria-label': t('graphKicker') }, [graphSvg[l].cloneNode(true)]),

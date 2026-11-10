@@ -98,6 +98,16 @@
       <a href="https://github.com/geolonia/pointsman" data-i18n="lPointsman">Pointsman</a>
     </p>
     <div id="how-graph"></div>
+    <div class="box why-box">
+      <strong class="box-title" data-i18n="whyTitle">Why cities use it this way</strong>
+      <ul class="why">
+        <li data-i18n="why1">The AI only answers fixed questions. It never decides alone.</li>
+        <li data-i18n="why2">Facts come from public data (the 3D city model, J-SHIS, GSI maps), so anyone can check them.</li>
+        <li data-i18n="why3">The city writes the rules, and can read every decision later.</li>
+        <li data-i18n="why4">Whether a building is safe is always a person's decision.</li>
+      </ul>
+      <p class="why-more"><span data-i18n="whyMore">More questions, with short answers:</span> <a id="faq-link" href="https://pointsman.net/#faq" data-i18n="whyFaq">FAQ on the Pointsman website</a></p>
+    </div>
   </dialog>
 
 <aside class="dev" id="dev" hidden aria-labelledby="dev-title">
@@ -107,16 +117,13 @@
     <button class="chip" id="dev-close" type="button" data-i18n="close">Close</button>
   </div>
   <p class="muted small" data-i18n="devLead">What the page asks the data platform (NGSI-LD), and what it gets back.</p>
-  <h3 data-i18n="devList">All buildings in the area</h3>
-  <pre id="dev-list"></pre>
-  <h3 data-i18n="devEntity">The selected building</h3>
-  <pre id="dev-entity" class="muted"></pre>
-  <h3 data-i18n="devRequest">The check request</h3>
-  <pre id="dev-request" class="muted"></pre>
-  <h3 data-i18n="devDecision">Pointsman's decision (Decision entity)</h3>
-  <pre id="dev-decision" class="muted"></pre>
-  <h3 data-i18n="devConcern">Pointsman's decision on the description (Decision entity)</h3>
-  <pre id="dev-concern" class="muted"></pre>
+  <ol class="dev-steps">
+    <li class="dev-step"><span class="kicker">1 · page → GeonicDB</span><strong data-i18n="devList">All buildings in the area</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-list"></pre></details></li>
+    <li class="dev-step"><span class="kicker">2 · page → GeonicDB</span><strong data-i18n="devEntity">The selected building</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-entity" class="muted"></pre></details></li>
+    <li class="dev-step"><span class="kicker">3 · page → GeonicDB</span><strong data-i18n="devRequest">The check request</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-request" class="muted"></pre></details></li>
+    <li class="dev-step"><span class="kicker">4 · Pointsman → GeonicDB</span><strong data-i18n="devDecision">Pointsman's decision (Decision entity)</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-decision" class="muted"></pre></details></li>
+    <li class="dev-step"><span class="kicker">5 · Pointsman → GeonicDB</span><strong data-i18n="devConcern">Pointsman's decision on the description (Decision entity)</strong><details><summary data-i18n="devData">Data</summary><pre id="dev-concern" class="muted"></pre></details></li>
+  </ol>
   <p class="links">
     <a href="https://github.com/geolonia/pointsman-demo-buildings" data-i18n="lSource">Source of this demo</a>
     <a href="https://github.com/geolonia/pointsman/blob/main/bridge/README.md" data-i18n="lBridge">The connector (FIWARE bridge)</a>

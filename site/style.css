@@ -117,9 +117,9 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; gap: 16p
 .how::backdrop { background: rgba(0, 0, 0, 0.5); }
 .graph p { margin: 0 0 6px; color: var(--fg-2); }
 /* The diagram reads these (with its own fallbacks): from the page's colours, so it follows the page's theme switch. */
-.graph { --vp-c-bg-soft: var(--panel-2); --vp-c-divider: var(--line); --vp-c-brand-1: var(--red); --vp-c-text-1: var(--fg); --vp-c-text-2: var(--fg-2); --vp-c-text-3: var(--muted); }
+.graph { --vp-c-bg-soft: var(--panel-2); --vp-c-divider: var(--line); --vp-c-brand-1: var(--green); --vp-c-text-1: var(--fg); --vp-c-text-2: var(--fg-2); --vp-c-text-3: var(--muted); }
 .graph .graph-svg { overflow-x: auto; }
-.graph .graph-svg svg { display: block; width: 100%; min-width: 600px; max-width: 900px; margin: 8px auto; }
+.graph .graph-svg svg { display: block; width: 100%; min-width: 480px; max-width: 680px; margin: 8px auto; }
 .how-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .how-head p { margin: 6px 0 0; max-width: 72ch; color: var(--fg-2); }
 .how-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -268,35 +268,69 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .answer .answer-next { margin-top: 6px; color: var(--fg-2); }
 .fact-label { font-size: 0.85rem; color: var(--muted); }
 
-/* The decision as a path: what Pointsman got, the AI's answers with probabilities, the rule, the decision. */
-.path { display: grid; gap: 0; margin-bottom: 14px; }
+/* The decision as numbered steps on a line: what Pointsman got, the AI's answers, the rule, the decision. */
+.path { list-style: none; margin: 0 0 14px; padding: 0; }
+.path-step { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 14px; padding-bottom: 20px; }
+.path-step:last-child { padding-bottom: 0; }
+.path-step:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 32px; bottom: 6px; width: 2px; border-radius: 2px; background: var(--line); }
+.path-num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 0.85rem var(--mono); background: var(--fg); color: var(--bg); }
+.path-body { min-width: 0; }
+.path-head { margin: 3px 0 10px; font-size: 1rem; }
 .path-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 10px; }
-.path-box { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.path-label { margin: 0 0 6px; font: 0.8rem var(--mono); color: var(--muted); }
-.path-arrow { margin: 6px 0 6px 14px; font-size: 0.9rem; color: var(--fg-2); }
-.path-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.path-facts li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 6px; border-radius: 6px; }
-.path-facts li.used, .q-row.used { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--i-map); }
-.path-box .quote { margin: 0 0 6px; }
+.path-box { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.path-label { margin: 0 0 8px; font: 0.78rem var(--mono); color: var(--muted); }
+.path-facts { list-style: none; margin: 0; padding: 0; display: grid; }
+.path-facts li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px 12px; align-items: baseline; padding: 6px 8px; border-top: 1px solid var(--line); font-size: 0.92rem; }
+.path-facts li:first-child { border-top: 0; }
+.path-facts strong { font-weight: 600; }
+/* What the rule read: a blue edge and its tag, no heavy background. */
+.path-facts li.used, .q-row.used { box-shadow: inset 3px 0 0 var(--i-map); }
+.path-box .quote { margin: 0 0 8px; }
 .path-box .photos img { width: 72px; height: 72px; }
-.q-rows { list-style: none; display: grid; gap: 8px; }
-.q-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px 12px; align-items: center; padding: 4px 6px; border-radius: 6px; }
-.q-row.choice { grid-template-columns: minmax(0, 1.2fr) minmax(0, 2.2fr); align-items: start; }
-.q-choices { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.q-choices li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; align-items: center; color: var(--fg-2); }
-.q-choices li.top { color: var(--fg); font-weight: 700; }
-.q-p { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--fg-2); }
-.pbar { flex: 1 1 60px; min-width: 50px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.q-rows { list-style: none; display: grid; padding: 4px 14px; }
+.q-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 4px 12px; align-items: center; padding: 10px 8px; border-top: 1px solid var(--line); }
+.q-rows > .q-row:first-child { border-top: 0; }
+.q-row.choice { grid-template-columns: minmax(0, 1.2fr) minmax(0, 2.3fr); align-items: start; }
+.q-q { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.q-choices { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.q-choices li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; align-items: center; color: var(--fg-2); }
+.q-choices li.is-top { color: var(--fg); font-weight: 700; }
+.q-p { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--fg-2); }
+.pbar { flex: 1 1 60px; min-width: 50px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .pbar i { display: block; height: 100%; background: var(--i-map); }
 .pbar.danger i { background: var(--red); }
 .pbar.scale i { background: var(--amber); }
-.use-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; font: 0.72rem var(--mono); color: var(--fg-2); border: 1px solid var(--line); }
-.path-rule { font-size: 1rem; }
-.path-then { font-weight: 700; }
+.use-tag { display: inline-block; padding: 0 6px; border-radius: 6px; font: 0.68rem var(--mono); color: var(--i-map); border: 1px solid var(--line); white-space: nowrap; }
+.path-rule { display: grid; gap: 8px; justify-items: start; }
+.path-rule p { margin: 0; }
+/* The action as a pill, coloured like the answer card's edge. */
+.badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font: 600 0.88rem var(--sans); background: var(--panel-2); color: var(--fg); }
+.badge.v-now, .badge.v-high { background: var(--red); color: #fff; }
+.badge.v-medium, .badge.v-person { background: var(--amber); color: #1a1a1a; }
+.badge.v-low { background: var(--green); color: #fff; }
+.path .answer { margin: 0; }
 @media (max-width: 640px) {
+  .path-step { grid-template-columns: 24px minmax(0, 1fr); gap: 0 10px; }
+  .path-num { width: 24px; height: 24px; font-size: 0.78rem; }
+  .path-step:not(:last-child)::before { left: 11px; top: 28px; }
   .q-row, .q-row.choice { grid-template-columns: 1fr; }
   .q-choices li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+
+/* How it works: the diagram in a box, its accent green as in the roads demo; why cities use it. */
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.box-title { font-size: 1.05rem; }
+.why { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; color: var(--fg-2); }
+.why-more { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/* Developer view: one card per part, its data folded. */
+.dev-steps { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
+.dev-step { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); min-width: 0; }
+.dev-step .kicker { color: var(--i-map); }
+.dev-step:has(pre:empty) { opacity: 0.5; }
+.dev-step details { min-width: 0; }
+.dev-step summary { cursor: pointer; font: 0.75rem var(--mono); color: var(--i-map); }
+.dev-step pre { margin: 6px 0 0; max-height: 260px; font-size: 0.72rem; }
 
 /* The demo note under the Send button of step 3. */
 .send-note { margin: 10px 0 0; }
