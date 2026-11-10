@@ -683,7 +683,7 @@
   // progress, as nothing tells the page how far the check is.
   function busyView(text) {
     return el('div', { class: 'busy' }, [
-      el('p', { class: 'busy-text' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
+      el('p', { class: 'busy-text', role: 'status' }, [el('span', { class: 'spin', 'aria-hidden': 'true' }), el('span', {}, [text])]),
       el('div', { class: 'busy-bar', 'aria-hidden': 'true' }, [el('i')]),
     ]);
   }

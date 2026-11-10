@@ -154,7 +154,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px 24px 12px; display: grid
 .busy-bar { position: relative; height: 4px; max-width: 420px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .busy-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 35%; border-radius: 2px; background: var(--i-map); animation: busy 1.4s ease-in-out infinite; }
 @keyframes busy { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
-@media (prefers-reduced-motion: reduce) { .spin, .busy-bar i { animation: none; } .busy-bar i { width: 100%; opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } .busy-bar { display: none; } }
 #map { height: clamp(320px, 55vh, 520px); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 /* A MapLibre control (bottom-left): MapLibre places it inside the map, beside the other controls. */
 .legend { display: grid; gap: 4px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
@@ -253,7 +253,7 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
   body:not(.dev-open) main > * { grid-column: 1; }
   /* The window's height, as the map card in the roads demo; the map takes what the heading and status line leave. */
   body:not(.dev-open) main > .map-wrap { grid-column: 2; grid-row: 1 / span 5; align-self: start; position: sticky; top: calc(var(--top-h, 62px) + 16px);
-    display: flex; flex-direction: column; height: calc(100vh - var(--top-h, 62px) - 32px); height: calc(100dvh - var(--top-h, 62px) - 32px); min-height: 520px; }
+    display: flex; flex-direction: column; height: calc(100vh - var(--top-h, 62px) - 32px); height: calc(100dvh - var(--top-h, 62px) - 32px); min-height: 420px; }
   body:not(.dev-open) main > .map-wrap .map-box { flex: 1 0 240px; display: flex; flex-direction: column; }
   body:not(.dev-open) main > .map-wrap #map { flex: 1 1 auto; height: auto; }
 }
@@ -263,7 +263,7 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
   body.dev-open main > * { grid-column: 1; }
   /* The window's height, as the map card in the roads demo; the map takes what the heading and status line leave. */
   body.dev-open main > .map-wrap { grid-column: 2; grid-row: 1 / span 5; align-self: start; position: sticky; top: calc(var(--top-h, 62px) + 16px);
-    display: flex; flex-direction: column; height: calc(100vh - var(--top-h, 62px) - 32px); height: calc(100dvh - var(--top-h, 62px) - 32px); min-height: 520px; }
+    display: flex; flex-direction: column; height: calc(100vh - var(--top-h, 62px) - 32px); height: calc(100dvh - var(--top-h, 62px) - 32px); min-height: 420px; }
   body.dev-open main > .map-wrap .map-box { flex: 1 0 240px; display: flex; flex-direction: column; }
   body.dev-open main > .map-wrap #map { flex: 1 1 auto; height: auto; }
 }
