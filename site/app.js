@@ -199,8 +199,8 @@
   var SAMPLES = [
     { en: 'Since this morning\u2019s earthquake the house leans a little towards the street, and the front door no longer closes. We are all outside and safe.', ja: '今朝の地震のあと、家が道路側に少し傾き、玄関のドアが閉まらなくなりました。家族は全員外にいて無事です。' },
     { en: 'Part of the balcony on the second floor came down an hour ago. Nobody was hurt, but more pieces are hanging.', ja: '2階のベランダの一部が1時間前に落ちました。けが人はいませんが、まだ破片がぶら下がっています。' },
-    { en: 'Since the earthquake a load-bearing wall in the living room has diagonal cracks, a few millimetres wide. The house stands straight and nobody is in danger.', ja: '地震のあと、居間の柱と壁に数ミリ幅の斜めのひび割れが入りました。家はまっすぐ立っていて、危険な人はいません。' },
-    { en: 'Roof tiles slipped and hang over the entrance. Children walk under it to school every morning, and pieces could fall on them.', ja: '瓦がずれて玄関の上にぶら下がっています。毎朝、子どもたちがその下を通って登校し、破片が落ちてくるおそれがあります。' },
+    { en: 'Since the earthquake a load-bearing wall in the living room has diagonal cracks, a few millimetres wide. The house stands straight and nobody is in danger.', ja: '地震のあと、居間の柱と壁に数ミリ幅の斜めのひび割れが入りました。家は傾いておらず、誰も危険な状態ではありません。' },
+    { en: 'Roof tiles slipped and hang over the entrance. Children walk under these tiles every morning on their way to school, and pieces could fall on them.', ja: '瓦がずれて玄関の上にぶら下がっています。毎朝、子どもたちがその下を通って登校し、破片が落ちてくるおそれがあります。' },
     { en: 'Thin cracks in the paint of the hallway ceiling. They have been there for years.', ja: '廊下の天井の塗装に細いひびがあります。何年も前からです。' },
     { en: 'Something is wrong with my house.', ja: '家がなんとなくおかしいです。' },
   ];
