@@ -75,7 +75,7 @@ Codes are PLATEAU's code lists (`buildingStructureType` 601 = wood,
 | `POST /api/requests` | `{"building": "<id>", "answers": {"yearOfConstruction", "wood", "storeysAboveGround"}, "lang", "concern": {"description", "afterDisaster", "photos"}}`: a check request for one building; `concern` is optional, and refused (503) while descriptions are off. `photos` is optional: up to 3 base64 data URLs of JPEG, PNG or WebP images, each at most about 500 KB, refused (503) while photos are off. From the page itself (same origin), 5 a minute per visitor and `DAILY_LIMIT` (300) for the whole demo, closed (503) until the bridge is configured. Answers `{"id"}` |
 | `GET /api/requests/{id}` | The request entity with Pointsman's results (`check`, and `concern` for a description), their `Decision` entities (`decision`, `concernDecision`), and whether descriptions are on (`concerns`) |
 | `GET /api/board` | The staff view: the requests of the last day in short (building, description, number of photos, results, which result waits for a person), most serious first. Cached 5 seconds |
-| `POST /api/requests/{id}/resolve` | `{"action": "<action>"}`: a person's answer on the result that waits for one (`check`: high, medium or low; `concern`: now, high, medium, low or more-evidence). Written on its `Decision` entity, as `resolved` by `demo visitor`; the broker then notifies `/reviews`. From the page itself, 5 a minute per visitor. Answers 202, or 409 when nobody waits or someone answered first |
+| `POST /api/requests/{id}/resolve` | `{"action": "<action>"}`: a person's answer on the result that waits for one (`check`: high, medium or low; `concern`: now, high, medium, low or more-evidence). Written on its `Decision` entity, as `resolved` by `demo visitor`; the broker then notifies `/reviews`. From the page itself; counts toward the same 5 a minute per visitor as `POST /api/requests`. Answers 202, or 409 when nobody waits or someone answered first |
 | `POST /notify` | The broker's subscriptions (secret in `x-bridge-secret`): the bridge asks Pointsman and writes the result back; `?route=concern` is the description route (`building-concern`) |
 | `POST /reviews` | The broker's subscription for Decisions a person resolved (secret in `x-bridge-secret`): the bridge resolves the review in Pointsman, writes the final action on the request (`finalAction`) and completes its Task |
 
@@ -109,8 +109,12 @@ are deleted with the request, and the bucket deletes anything left after a
 day.
 
 A high priority waits for a person in Pointsman (the profile's
-`people_check`). This demo does not answer those reviews yet: that comes with
-the staff view.
+`people_check`). In the staff view (the page's Requests panel), any visitor
+confirms or changes it: the answer goes on the Decision entity, and the
+broker's third subscription sends it to `/reviews`. Two visitors answering in
+the same second can both be accepted: Pointsman and the request keep the
+first answer, and the bridge reports the second as a mismatch (the broker has
+no conditional update). For a demo, that is accepted.
 
 ## Setup
 

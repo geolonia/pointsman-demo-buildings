@@ -85,11 +85,14 @@ type Call = { method: string; url: string; headers: Headers; body: any };
 let calls: Call[];
 let stored: Map<string, Entity>;
 let decision: Record<string, unknown>;
+/** How the broker answers the Decision write: 204 (all written) or 207 (some refused). */
+let writeStatus = 204;
 
 beforeEach(() => {
   calls = [];
   stored = new Map();
   decision = { id: DECISION, type: 'Decision', reviewStatus: P('pending') };
+  writeStatus = 204;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init);
     const text = await req.text();
@@ -99,7 +102,7 @@ beforeEach(() => {
     if (url.pathname === '/ngsi-ld/v1/entities' && req.method === 'GET') return Response.json([...stored.values()].filter((e) => e.type === url.searchParams.get('type')));
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)(\/attrs)?$/);
     if (m && decodeURIComponent(m[1]!) === DECISION) {
-      if (m[2] && req.method === 'POST') return new Response(null, { status: 204 });
+      if (m[2] && req.method === 'POST') return new Response(null, { status: writeStatus });
       return Response.json(decision);
     }
     if (m && req.method === 'GET') {
@@ -139,6 +142,20 @@ describe('POST /api/requests/{id}/resolve', () => {
       '@context': ['https://datamodels.jp/context/decision/v1.jsonld', expect.any(String)],
       reviewStatus: P('resolved'), finalAction: P('medium'), reviewedBy: P(DEMO_REVIEWER),
     });
+    // As the bridge's handleReview reads it: a DateTime.
+    expect(write.body.reviewedAt.value['@type']).toBe('DateTime');
+    expect(Number.isNaN(Date.parse(write.body.reviewedAt.value['@value']))).toBe(false);
+    // The Decision was read with its model's context, so reviewStatus comes back short.
+    const read = calls.find((c) => c.method === 'GET' && decodeURIComponent(c.url).endsWith(DECISION))!;
+    expect(read.headers.get('link')).toContain('https://datamodels.jp/context/decision/v1.jsonld');
+  });
+
+  it('answers 502 when the broker refuses part of the write, and 413 for a large body', async () => {
+    stored.set(id(1), request(1, { check: result('high', { reviewStatus: P('pending') }) }));
+    writeStatus = 207;
+    expect((await resolve(1, { action: 'low' })).status).toBe(502);
+    const big = await worker(`/api/requests/${encodeURIComponent(id(1))}/resolve`, { method: 'POST', headers: { origin: PAGE }, body: JSON.stringify({ action: 'low', pad: 'x'.repeat(2000) }) });
+    expect(big.status).toBe(413);
   });
 
   it('refuses other origins, unknown requests, wrong actions, and requests nobody waits on', async () => {

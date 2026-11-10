@@ -165,7 +165,9 @@ createServer((req, res) => {
     if (attrs && req.method === 'POST') {
       let body;
       try { body = JSON.parse(text); } catch { return send(400, { title: 'not JSON' }); }
-      return send(resolve(decodeURIComponent(attrs[1]), body));
+      let target;
+      try { target = decodeURIComponent(attrs[1]); } catch { return send(400, { title: 'bad id' }); }
+      return send(resolve(target, body));
     }
     const m = url.pathname.match(/^\/ngsi-ld\/v1\/entities\/([^/]+)$/);
     let id;

@@ -43,7 +43,7 @@
       p_now: 'Now', p_high: 'High', p_person: 'A person decides', 'p_more-evidence': 'More information', p_medium: 'Medium', p_low: 'Low', p_none: 'Being checked',
       reqWaits: 'Waits for a person', reqDecided: 'A person decided', reqNoWords: 'No description: the check uses the building data only.', reqPhotos: '{n} photo(s)', reqAfter: 'After a disaster: {a}',
       reqCheck: 'Building data', reqWords: 'Description', reqMinutes: '{n} min ago', reqHours: '{n} h ago', reqMap: 'Show on the map',
-      reqConfirm: 'Confirm: {a}', reqChange: 'Change to', reqChangeBtn: 'Change', reqSent: 'Sent as a demo visitor. Pointsman takes the answer; the list shows it in a few seconds.',
+      reqConfirm: 'Confirm: {a}', reqPick: 'Choose…', reqChange: 'Change to', reqChangeBtn: 'Change', reqSent: 'Sent as a demo visitor. Pointsman takes the answer; the list shows it in a few seconds.',
       reqTaken: 'Someone answered this already.', reqFailedSend: 'That did not work. Try again in a moment.', reqAsk: 'Pointsman asks a person: confirm this result, or change it.',
       sending: 'Sending…', ready: 'Pointsman has answered. The result is below.', waiting: 'Pointsman is sorting the request…', slow: 'This takes longer than usual. The result appears here as soon as it is there.', steps: 'Steps', emptyIsUnknown: 'leave it empty', outOfRange: 'Enter a whole number from {min} to {max}, or leave it empty.',
       e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
@@ -112,7 +112,7 @@
       p_now: '今すぐ', p_high: '高', p_person: '人が判断', 'p_more-evidence': '情報不足', p_medium: '中', p_low: '低', p_none: '確認中',
       reqWaits: '人の確認待ち', reqDecided: '人が決めました', reqNoWords: '説明なし：建物のデータだけで確認しています。', reqPhotos: '写真 {n} 枚', reqAfter: '災害の後：{a}',
       reqCheck: '建物のデータ', reqWords: '説明', reqMinutes: '{n} 分前', reqHours: '{n} 時間前', reqMap: '地図で見る',
-      reqConfirm: '確定：{a}', reqChange: '変更：', reqChangeBtn: '変更する', reqSent: 'デモの利用者として送りました。Pointsman が受け取り、数秒で一覧に表示されます。',
+      reqConfirm: '確定：{a}', reqPick: '選んでください', reqChange: '変更：', reqChangeBtn: '変更する', reqSent: 'デモの利用者として送りました。Pointsman が受け取り、数秒で一覧に表示されます。',
       reqTaken: 'ほかの人がすでに答えました。', reqFailedSend: 'うまくいきませんでした。少し待ってからもう一度お試しください。', reqAsk: 'Pointsman が人の確認を求めています。この結果を確定するか、変更してください。',
       sending: '送信しています…', ready: 'Pointsman が答えました。結果は下にあります。', waiting: 'Pointsman が依頼を仕分けています…', slow: 'いつもより時間がかかっています。結果が出しだい、ここに表示します。', steps: '手順', emptyIsUnknown: '空欄のまま', outOfRange: '{min}から{max}までの整数を入れるか、空欄のままにしてください。',
       e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
@@ -1232,6 +1232,7 @@
   // What a person may choose, per result (the profiles' people_answers, as src/board.ts).
   var PEOPLE_ANSWERS = { check: ['high', 'medium', 'low'], concern: ['now', 'high', 'medium', 'low', 'more-evidence'] };
   var boardButton = document.getElementById('board-toggle');
+  var requestsClickBound = false;
 
   function setBoard(on) {
     if (on && devButton.getAttribute('aria-pressed') === 'true') setDev(false, false);
@@ -1241,7 +1242,8 @@
     boardButton.setAttribute('aria-expanded', on ? 'true' : 'false');
     clearInterval(board.timer);
     board.timer = null;
-    if (on) { loadBoard(); board.timer = setInterval(loadBoard, 10000); }
+    // Not while the tab is hidden: nobody sees the list then.
+    if (on) { loadBoard(); board.timer = setInterval(function () { if (!document.hidden) loadBoard(); }, 10000); }
     showRequestsOnMap();
     if (map) setTimeout(function () { map.resize(); }, 0);
   }
@@ -1292,14 +1294,24 @@
     if (board.rows === null) { status.textContent = board.failed ? t('reqFailed') : t('reqLoading'); list.replaceChildren(); return; }
     var waiting = board.rows.filter(function (r) { return r.waiting; }).length;
     status.textContent = board.failed ? t('reqFailed') : board.rows.length === 0 ? t('reqEmpty') : t('reqCount', { n: board.rows.length, w: waiting });
+    // Every render replaces the rows: the focused control is found again by its request and role.
+    var a = document.activeElement;
+    var keep = a && list.contains(a) ? { id: a.getAttribute('data-req'), role: a.getAttribute('data-role') } : null;
     list.replaceChildren.apply(list, board.rows.map(requestRow));
+    if (keep && keep.id) {
+      var again = list.querySelector('[data-req="' + keep.id + '"][data-role="' + keep.role + '"]') || list.querySelector('[data-req="' + keep.id + '"][data-role="head"]');
+      if (again) again.focus();
+    }
   }
 
   function requestRow(row) {
     var open = board.openId === row.id;
     var bodyId = 'req-' + row.id.slice(-12);
     var person = (row.concern && row.concern.finalAction) || (!row.concern && row.check && row.check.finalAction);
-    var head = el('button', { type: 'button', class: 'req-head', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': bodyId }, [
+    var attrs = { type: 'button', class: 'req-head', 'aria-expanded': open ? 'true' : 'false', 'data-req': row.id, 'data-role': 'head' };
+    // Only when the details are on the page.
+    if (open) attrs['aria-controls'] = bodyId;
+    var head = el('button', attrs, [
       el('span', { class: 'badge v-' + (row.priority || 'none') }, [priorityLabel(row.priority)]),
       el('span', { class: 'req-what' }, [buildingLine(row)]),
       el('span', { class: 'req-age' }, [ago(row.createdAt)]),
@@ -1326,7 +1338,7 @@
     parts.push(dl);
     if (row.waiting) parts.push(answerForm(row));
     if (board.note[row.id]) parts.push(el('p', { class: 'note', role: 'status' }, [board.note[row.id]]));
-    var show = el('button', { type: 'button', class: 'btn ghost small' }, [t('reqMap')]);
+    var show = el('button', { type: 'button', class: 'btn ghost small', 'data-req': row.id, 'data-role': 'map' }, [t('reqMap')]);
     show.addEventListener('click', function () {
       select(row.building);
       if (map && row.point) map.flyTo({ center: row.point, zoom: 17 });
@@ -1343,10 +1355,20 @@
     var allowed = PEOPLE_ANSWERS[which];
     var items = [el('p', { class: 'small' }, [t('reqAsk')])];
     var buttons = [];
-    if (allowed.indexOf(current) !== -1) buttons.push(button(t('reqConfirm', { a: t(prefix + current) }), function () { sendAnswer(row, current); }, 'btn'));
-    var choose = el('select', { 'aria-label': t('reqChange') }, allowed.filter(function (a) { return a !== current; }).map(function (a) { var o = el('option', { value: a }, [t(prefix + a)]); return o; }));
+    if (allowed.indexOf(current) !== -1) {
+      var confirm = button(t('reqConfirm', { a: t(prefix + current) }), function () { sendAnswer(row, current); }, 'btn');
+      confirm.setAttribute('data-req', row.id);
+      confirm.setAttribute('data-role', 'confirm');
+      buttons.push(confirm);
+    }
+    // Nothing chosen at first: "Change" sends only what the person picked.
+    var choose = el('select', { 'data-req': row.id, 'data-role': 'choose' }, [el('option', { value: '', disabled: '', selected: '' }, [t('reqPick')])].concat(
+      allowed.filter(function (a) { return a !== current; }).map(function (a) { return el('option', { value: a }, [t(prefix + a)]); })));
     buttons.push(el('label', { class: 'req-change' }, [el('span', {}, [t('reqChange')]), choose]));
-    buttons.push(button(t('reqChangeBtn'), function () { sendAnswer(row, choose.value); }));
+    var change = button(t('reqChangeBtn'), function () { if (choose.value) sendAnswer(row, choose.value); else choose.focus(); });
+    change.setAttribute('data-req', row.id);
+    change.setAttribute('data-role', 'change');
+    buttons.push(change);
     items.push(el('div', { class: 'actions' }, buttons));
     return el('div', { class: 'req-answer' }, items);
   }
@@ -1362,7 +1384,7 @@
     }).then(function () {
       renderBoard();
       // The bridge needs a moment; the list's cache a few seconds.
-      setTimeout(loadBoard, 6000);
+      setTimeout(function () { if (board.open) loadBoard(); }, 6000);
     });
   }
 
@@ -1377,6 +1399,9 @@
     m.addSource('requests', { type: 'geojson', data: requestFeatures() });
     m.addLayer({ id: 'requests', type: 'circle', source: 'requests', layout: { visibility: board.open ? 'visible' : 'none' },
       paint: { 'circle-radius': ['case', ['==', ['get', 'waits'], 1], 9, 6], 'circle-color': ['get', 'colour'], 'circle-stroke-color': PALETTE[theme()].outline, 'circle-stroke-width': 2 } });
+    // Once per map: a theme switch adds the layer again, not the handler.
+    if (requestsClickBound) return;
+    requestsClickBound = true;
     m.on('click', 'requests', function (e) {
       var f = e.features && e.features[0];
       if (!f) return;
