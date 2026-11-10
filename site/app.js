@@ -22,7 +22,7 @@
       exAfter: 'After a disaster: {v}', exAdds: 'You add: {v}', exBuilt: 'built {y}', exStoreys: '{n} storeys', exYearUnknown: 'year not known',
       mapTitle: 'Or pick any building on the map', sentTitle: 'What was sent',
       title: 'Every building, the same checks',
-      lead: 'These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, say what worries you about it, and watch Pointsman sort the request: how urgently someone should look at it, and why. The result is a priority list, not a verdict on safety.',
+      lead: 'These are the buildings of one neighbourhood in Kiyota-ku, Sapporo, from the national 3D city model (PLATEAU). They live in GeonicDB, a FIWARE data platform, as Building entities. Pick one, say what worries you about it, and watch Pointsman sort the request: how urgently someone should look at it, and why. The result is a priority, not a decision on whether the building is safe.',
       care: 'Pointsman sorts and explains. It never decides that a building is safe: that is always a person’s decision.',
       legendTitle: 'Year built', eraBefore: '1981 or earlier', eraMiddle: '1982 to 2000', eraAfter: '2001 or later', eraUnknown: 'Not known',
       pick: 'Pick a building on the map.',
@@ -42,7 +42,7 @@
       e_busy: 'The demo is busy, or has had enough requests for today. Try again later.', e_closed: 'Checks are not open yet.', e_building: 'This building could not be sent.', e_other: 'The request could not be sent. Try again later.',
       e_lost: 'The request is no longer there (requests are deleted after a day).', gaveUp: 'No result yet. The demo tries again every hour; you can also look again later.', lookAgain: 'Look again',
       wood: 'Wood', notWood: 'Not wood',
-      a_high: 'High: look at this building first', a_medium: 'Medium', a_low: 'Low', 'a_more-evidence': 'More information needed',
+      a_high: 'High: this building should be looked at first', a_medium: 'Medium', a_low: 'Low', 'a_more-evidence': 'More information needed',
       n_high: 'In a real service, staff would confirm this priority; this demo sends it to no one.',
       n_medium: 'A check is worth planning, but other buildings come first.',
       n_low: 'No reason for an early check was found in the data.',
@@ -78,7 +78,7 @@
       h4k: '4・あなたの説明', h4t: 'Pointsman があなたの言葉を読む', h4d: '説明があると、2つ目の確認が始まります。AI は決まった質問にだけ答えます（被害の種類、深刻さ、今、人に危険があるか）。市の規則が、その答えと最初の結果から急ぎの度合いを1つ決めます。',
       h5k: '5・書き戻し', h5t: '結果が GeonicDB に戻る', h5d: 'つなぎ役が、それぞれの結果を Decision エンティティと一緒に依頼に書き込みます。人が確認すべき結果には Task エンティティもできます。',
       h6k: '6・利用', h6t: 'どのアプリも結果を読める', h6d: '市のダッシュボードやチケットシステムは、結果をサブスクライブできます。このページも結果を読んで表示します。',
-      exTitle: '例を選ぶ', exNote: 'どれもフォームに入力されます。内容を確かめて Pointsman に送ってください。4 つとも結果が違います。',
+      exTitle: '例を選ぶ', exNote: '選ぶとフォームに入力されます。内容を確かめて Pointsman に送ってください。4 つとも結果が違います。',
       exFoot: '説明は作り話で、建物は3D都市モデルにある実在のものです。依頼は1日で削除されます。',
       exAfter: '災害のあと：{v}', exAdds: 'あなたが補う：{v}', exBuilt: '{y}年築', exStoreys: '{n}階建て', exYearUnknown: '建築年不明',
       mapTitle: 'または、地図で好きな建物を選ぶ', sentTitle: '送った内容',
@@ -103,7 +103,7 @@
       e_busy: 'デモが混み合っているか、今日の受付数に達しました。時間をおいてお試しください。', e_closed: '確認はまだ受け付けていません。', e_building: 'この建物は送れませんでした。', e_other: '依頼を送れませんでした。時間をおいてお試しください。',
       e_lost: '依頼はもうありません（依頼は1日で削除されます）。', gaveUp: 'まだ結果がありません。デモは1時間ごとにやり直します。あとでもう一度ご覧ください。', lookAgain: 'もう一度見る',
       wood: '木造', notWood: '非木造',
-      a_high: '高：この建物を先に見る', a_medium: '中', a_low: '低', 'a_more-evidence': '情報が足りません',
+      a_high: '高：優先して見るべき建物', a_medium: '中', a_low: '低', 'a_more-evidence': '情報が足りません',
       n_high: '実際のサービスでは、職員がこの優先度を確認します（このデモではどこにも届きません）。',
       n_medium: '確認を計画する価値はありますが、ほかの建物が先です。',
       n_low: 'データからは、早めの確認が必要な理由は見つかりませんでした。',
@@ -292,7 +292,6 @@
     }));
   }
 
-  /** An example as roads does it: the building picked, every field filled, sent at once. */
   /**
    * An example: the building picked and the whole form filled in (the
    * description, after a disaster, and what the city model does not know),

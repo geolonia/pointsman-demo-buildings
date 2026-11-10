@@ -1,4 +1,4 @@
-// Check requests: a resident (or staff) asks how urgent a seismic check of
+// Check requests: a resident (or staff) asks how urgently someone should look at
 // one building is. The request is a `BuildingCheckRequest` entity in the
 // broker, built from the Building entity (PLATEAU) and the answers the
 // resident gives for what PLATEAU does not know. The bridge then asks

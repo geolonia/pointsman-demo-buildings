@@ -228,8 +228,9 @@ footer { padding: 16px 24px 32px; color: var(--muted); font-size: 13px; max-widt
 .sample { font: 14px var(--sans); text-align: left; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
 .sample:hover { border-color: var(--fg); }
 .photo-examples { list-style: none; padding: 0; margin: 6px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; min-width: 0; }
-/* Eight photos: two rows of four; two per row on phones. */
-@media (max-width: 640px) { .photo-examples { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Eight photos: two rows of four; two per row where the form is narrow (phones, a wide developer panel). */
+#flow { container-type: inline-size; }
+@container (max-width: 560px) { .photo-examples { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .photo-example { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 0 0 8px; text-align: left; font: 13px var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer; }
 .photo-example img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .photo-example span { padding: 0 8px; }
