@@ -35,10 +35,11 @@ const MAX_BODY = 2_200_000;
 /** A request without a result after this long is sent to the bridge again (hourly, at most MAX_RETRIES a run). */
 const RETRY_AFTER_MS = 2 * 60_000;
 /**
- * Only requests younger than this are sent again. A queue message carries the
- * request with its description, and the queues keep messages 10 hours (each,
- * README): 2 h + 10 h + 10 h in the dead-letter queue stays under KEEP_MS, so
- * no copy outlives the request.
+ * Only requests younger than this are sent again. Since engine 0.22.0 a queue
+ * message carries only the request's id and type; messages from older engines
+ * carried the request with its description, and the queues keep messages 10 hours
+ * (each, README): 2 h + 10 h + 10 h in the dead-letter queue stays under KEEP_MS,
+ * so no such copy outlives the request.
  */
 const RETRY_UNTIL_MS = 2 * 3600_000;
 const MAX_RETRIES = 20;
