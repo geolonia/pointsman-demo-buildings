@@ -152,10 +152,11 @@ descriptions and `NOTIFY_SECRET` go to the public demo.
 
 The bridge's queues must exist before the first deploy (create them once):
 `pnpm exec wrangler queues create pointsman-demo-buildings-bridge` and
-`pnpm exec wrangler queues create pointsman-demo-buildings-bridge-dlq`. Messages carry the
-request with its description, so no copy may outlive the request (a day):
-cleanup sends a request again only in its first two hours, and both queues
-keep messages 10 hours
+`pnpm exec wrangler queues create pointsman-demo-buildings-bridge-dlq`. Since engine
+0.22.0, messages carry only the request's id and type, not its description; the
+consumer reads the request from the broker. Messages from older engines carried
+the whole request, so no copy may outlive the request (a day): cleanup sends a
+request again only in its first two hours, and both queues keep messages 10 hours
 (`pnpm exec wrangler queues update <name> --message-retention-period-secs 36000`).
 Nothing reads the dead-letter queue; messages there expire.
 
