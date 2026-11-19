@@ -5,3 +5,6 @@ worker-configuration.d.ts
 __pycache__/
 engine
 engine-tmp-*
+
+# Serena (local code-navigation tool config and memories)
+.serena/
