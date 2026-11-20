@@ -1,6 +1,6 @@
 # Conventions
 
-Authoritative list: CONTRIBUTING.md. Key ones agents trip on:
+CONTRIBUTING.md has the PR steps; the rest comes from README and code, and the `engine.json` and plain-English rules from the Pointsman org practice. Key ones agents trip on:
 - Public repo: no secrets, account ids or resource ids; secrets only via `wrangler secret put` or env vars.
 - `git commit -s` (DCO). Plain, simple English in comments, commits and docs.
 - Never point `engine.json` at an unmerged engine commit (merge and release in geolonia/pointsman first).
