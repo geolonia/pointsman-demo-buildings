@@ -16,10 +16,10 @@
     "load:buildings": "node scripts/load-buildings.mjs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.4.2",
+    "@cloudflare/vitest-plugin": "^1.6.0",
     "typescript": "^7.0.2",
     "vitest": "~4.1.11",
-    "wrangler": "^4.151.0"
+    "wrangler": "^4.158.0"
   },
   "packageManager": "pnpm@12.9.1"
 }
