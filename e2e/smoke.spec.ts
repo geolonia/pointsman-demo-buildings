@@ -223,7 +223,8 @@ test('"The house leans": the page sends the filled-in form and shows a high resu
   await page.goto('/');
   await sendExample(page, 'The house leans');
   // What the page sent: the building, the answers the city model lacks, and the description.
-  expect(sent).toHaveLength(1);
+  // The click returns before the stub has recorded the request: wait for it.
+  await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toMatchObject({
     building: PLATEAU_URN + LEANS,
     answers: { yearOfConstruction: 1976, wood: true, storeysAboveGround: 2 },
@@ -253,6 +254,7 @@ test('"Part of it came down": the page shows an act-today result and says to cal
   });
   await page.goto('/');
   await sendExample(page, 'Part of it came down');
+  await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toMatchObject({ building: PLATEAU_URN + BALCONY, concern: { afterDisaster: 'unsure' } });
   const flow = page.locator('#flow');
   await expect(flow.locator('.answer-title')).toHaveText('Now: act today');
