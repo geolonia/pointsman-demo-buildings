@@ -10,13 +10,15 @@
   "scripts": {
     "engine": "node scripts/fetch-engine.mjs",
     "dev": "wrangler dev",
-    "typecheck": "wrangler types && tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "typecheck": "wrangler types && tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p e2e/tsconfig.json",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "check": "pnpm typecheck && pnpm test && wrangler deploy --dry-run --outdir .wrangler/dry-run",
     "load:buildings": "node scripts/load-buildings.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.6.0",
+    "@playwright/test": "~1.65.1",
     "typescript": "^7.0.2",
     "vitest": "~4.1.11",
     "wrangler": "^4.158.0"

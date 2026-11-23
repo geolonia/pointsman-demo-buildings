@@ -197,6 +197,27 @@ printf 'BROKER_URL=http://localhost:8790\nBROKER_API_KEY=local\n' > .dev.vars
 pnpm dev
 ```
 
+Smoke tests of the page in a browser (`e2e/`, Playwright, desktop and
+mobile size), in CI as their own job and not part of `pnpm check`:
+
+```sh
+pnpm exec playwright install chromium   # once
+pnpm test:e2e
+```
+
+They start the Worker with `wrangler dev` on port 8788, with throwaway
+secrets and the broker and Pointsman addresses pointing at a closed local
+port, so they never reach the real services. These settings win over a
+local `.dev.vars`; its other values still apply. The page's files,
+`site/_headers` and `GET /api/config` are the real ones. The endpoints that
+need the broker or Pointsman are stubbed in the tests, with answers made by
+the Worker's own functions from the buildings in `data/plateau` and by the
+bridge's own functions for what it writes; Pointsman's decisions are set by
+each test, so the tests check what the page sends and shows, not how
+Pointsman decides. One test checks that an unstubbed call fails at the
+closed port. Other hosts (map tiles, MapLibre, fonts) are blocked, so the
+map is not tested.
+
 No build step for the page: plain HTML, CSS and JavaScript in `site/`,
 MapLibre GL JS from unpkg with integrity hashes, GSI's vector tiles. The page
 is served with a Content-Security-Policy ([site/_headers](site/_headers));
