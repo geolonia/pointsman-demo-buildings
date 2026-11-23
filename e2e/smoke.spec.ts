@@ -326,6 +326,11 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
       },
     },
   });
+  // The page's clock, so that the board's reload after an answer (6 s) can be told
+  // apart from its own refresh (every 10 s while it is open).
+  await page.clock.install();
+  let boardLoads = 0;
+  page.on('request', (r) => { if (r.url().endsWith('/api/board')) boardLoads += 1; });
   await page.goto('/');
   await sendExample(page, 'A vague worry');
   await expect.poll(() => sent.length).toBe(1);
@@ -338,6 +343,8 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   await page.locator('#board-toggle').click();
   const board = page.locator('#board');
   await expect(board.locator('#board-status')).toContainText('1 waiting for a person.');
+  // From here, the page's time moves only when the test moves it.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
   const head = board.locator('.req-head');
   await expect(head).toContainText('A person decides');
   await expect(head).toContainText('Waits for a person');
@@ -346,10 +353,12 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   await board.locator('select[data-role="choose"]').selectOption('high');
   await board.getByRole('button', { name: 'Change' }).click();
   await expect(board).toContainText('Sent as a demo visitor.');
-  // The board loads the list again 6 s after the answer (before its own 10 s refresh comes).
-  const reload = page.waitForRequest((r) => r.url().endsWith('/api/board'), { timeout: 8000 });
   expect(sent.answered).toEqual([{ id: `urn:ngsi-ld:BuildingCheckRequest:demo-${uuid(1)}`, action: 'high' }]);
-  await reload;
+  // 6 s after the answer the board loads the list again; its own 10 s refresh is
+  // not due yet, so this load can only be the reload after the answer.
+  const before = boardLoads;
+  await page.clock.runFor(6000);
+  await expect.poll(() => boardLoads).toBe(before + 1);
   // Then the request shows the person's decision, now high.
   await expect(head).toContainText('A person decided');
   await expect(head).toContainText('High');
