@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import { test as base, expect, type Page } from '@playwright/test';
 import { PLATEAU_SOURCE, toEntity, toFeature, type Entity, type PlateauFeature } from '../src/buildings';
 import { parseAnswers, parseConcern, toRequestEntity } from '../src/requests';
-import { sortBoard, toBoardRow } from '../src/board';
+import { checkAnswer, sortBoard, toBoardRow } from '../src/board';
 import { isChecked, toDecisionEntity, toProperty, type Route } from '../engine/packages/fiware/src/bridge';
 
 const PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
@@ -74,7 +74,8 @@ function written(d: Decision, route: Route, requestId: string) {
 /** What Pointsman decides for an example, in this test: the check, then the description. */
 interface Outcome {
   check: { action: string; rule: number | null };
-  concern: { action: string; rule: number | null; answers: Answers };
+  /** `person`: a person checks this result (pending until someone answers on the board). */
+  concern: { action: string; rule: number | null; answers: Answers; person?: true };
 }
 
 /** Uncaught errors, console errors, and failed loads or error answers from the page's own origin. */
@@ -112,10 +113,21 @@ const test = base.extend<{ pageErrors: string[] }>({
  * create from it; `outcome` is what Pointsman then writes on it. Returns the
  * bodies the page sent.
  */
-async function stubServices(page: Page, outcome?: Outcome) {
+async function stubServices(page: Page, outcome?: Outcome, alsoOnBoard: Entity[] = []) {
   const origin = new URL(test.info().project.use.baseURL!).origin;
   const sent: { building: string; answers: unknown; concern?: unknown; lang: string }[] = [];
+  const answered: unknown[] = [];
   let request: Entity | null = null;
+  // A person's answer on the board, once given (as the bridge then writes it).
+  let answer: string | null = null;
+  /** The request as stored after Pointsman's decisions (and a person's answer), with its Decision entities. */
+  const stored = () => {
+    if (!request || !outcome) return null;
+    const review: Decision['review'] = outcome.concern.person && (answer ? { status: 'resolved', final_action: answer, resolved_at: NOW } : { status: 'pending' });
+    const check = written(decision(2, CHECK_ROUTE, outcome.check.action, outcome.check.rule), CHECK_ROUTE, request.id);
+    const concern = written(decision(3, CONCERN_ROUTE, outcome.concern.action, outcome.concern.rule, outcome.concern.answers, review), CONCERN_ROUTE, request.id);
+    return { entity: { ...request, check: check.attribute, concern: concern.attribute }, check, concern };
+  };
   await page.route((url) => url.origin !== origin, (route) => route.abort());
   await page.route('**/api/buildings', (route) => route.fulfill({
     json: { type: 'FeatureCollection', features: [...buildings.values()].map(toFeature), query: '/entities?type=Building', complete: true, skipped: 0, source: PLATEAU_SOURCE },
@@ -134,19 +146,36 @@ async function stubServices(page: Page, outcome?: Outcome) {
     return route.fulfill({ status: 201, json: { id: request.id } });
   });
   await page.route(/\/api\/requests\/[^/]+$/, (route) => {
-    if (!request || !outcome) return route.fulfill({ status: 404, json: { error: 'not found' } });
-    const check = written(decision(2, CHECK_ROUTE, outcome.check.action, outcome.check.rule), CHECK_ROUTE, request.id);
-    const concern = written(decision(3, CONCERN_ROUTE, outcome.concern.action, outcome.concern.rule, outcome.concern.answers), CONCERN_ROUTE, request.id);
-    const entity = { ...request, check: check.attribute, concern: concern.attribute };
+    const now = stored();
+    if (!now) return route.fulfill({ status: 404, json: { error: 'not found' } });
     return route.fulfill({
-      json: { entity, decision: check.entity, concernDecision: concern.entity, concerns: true, query: `/entities/${encodeURIComponent(entity.id)}` },
+      json: { entity: now.entity, decision: now.check.entity, concernDecision: now.concern.entity, concerns: true, query: `/entities/${encodeURIComponent(now.entity.id)}` },
     });
+  });
+  // The staff board: the request sent here (if any) and the others, as /api/board lists them (with sysAttrs).
+  const boardRows = () => {
+    const mine = stored();
+    const entities = [...(mine ? [{ ...mine.entity, createdAt: NOW }] : []), ...alsoOnBoard];
+    return sortBoard(entities.map(toBoardRow).filter((r) => r !== null));
+  };
+  await page.route('**/api/board', (route) => route.fulfill({ json: { requests: boardRows(), query: '/entities?type=BuildingCheckRequest&options=sysAttrs' } }));
+  // A person's answer, checked as resolveRequest does (checkAnswer), on the request sent here.
+  await page.route(/\/api\/requests\/[^/]+\/resolve$/, (route) => {
+    const id = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-2)!);
+    const body = route.request().postDataJSON() as { action: string };
+    answered.push({ id, ...body });
+    const row = boardRows().find((r) => r.id === id);
+    if (!row || id !== stored()?.entity.id) return route.fulfill({ status: 404, json: { error: 'not found' } });
+    const checked = checkAnswer(row, body);
+    if (typeof checked === 'string') return route.fulfill({ status: row.waiting ? 400 : 409, json: { error: checked } });
+    answer = checked.action;
+    return route.fulfill({ status: 202, json: { resolved: checked.attribute, action: checked.action, decision: checked.decision } });
   });
   await page.route('**/api/graph*', (route) => route.fulfill({
     contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><title>chain</title></svg>',
   }));
-  return sent;
+  return Object.assign(sent, { answered });
 }
 
 /** Two requests on the board: one decided, one where the AI was not sure and a person decides. */
@@ -160,6 +189,17 @@ function boardRequests() {
     { ...unsure, createdAt: at, check: result(6, CHECK_ROUTE, 'low', null, unsure.id), concern: result(7, CONCERN_ROUTE, 'person', 6, unsure.id, { status: 'pending' }) },
     { ...decided, createdAt: at, check: result(8, CHECK_ROUTE, 'low', null, decided.id), concern: result(9, CONCERN_ROUTE, 'now', 1, decided.id) },
   ].map(toBoardRow).filter((r) => r !== null));
+}
+
+/** Another visitor's request on the board, sent ten minutes earlier, with its results as the bridge writes them. */
+function otherRequest(n: number, plateauId: string, description: string, concern: { action: string; rule: number | null }, review?: Decision['review']): Entity {
+  const e = toRequestEntity(buildings.get(PLATEAU_URN + plateauId)!, {}, uuid(n), 'en', { description, afterDisaster: 'unsure' });
+  return {
+    ...e,
+    createdAt: new Date(Date.now() - 10 * 60000).toISOString(),
+    check: written(decision(n + 1, CHECK_ROUTE, 'low', null), CHECK_ROUTE, e.id).attribute,
+    concern: written(decision(n + 2, CONCERN_ROUTE, concern.action, concern.rule, {}, review), CONCERN_ROUTE, e.id).attribute,
+  };
 }
 
 /** Picks an example, checks the filled-in form, and sends it. */
@@ -240,7 +280,8 @@ test('"The house leans": the page sends the filled-in form and shows a high resu
   await expect(page.locator('#flow')).toBeHidden();
 });
 
-test('"Part of it came down": the page shows an act-today result and says to call 119', async ({ page }) => {
+test('"Part of it came down": the page shows an act-today result, says to call 119, and the request heads the staff board', async ({ page }) => {
+  const waiting = otherRequest(10, VAGUE, 'Something is wrong with my house.', { action: 'person', rule: 6 }, { status: 'pending' });
   const sent = await stubServices(page, {
     check: { action: 'low', rule: null },
     concern: {
@@ -251,7 +292,7 @@ test('"Part of it came down": the page shows an act-today result and says to cal
         danger_now: { value: true, p: 0.8 },
       },
     },
-  });
+  }, [waiting]);
   await page.goto('/');
   await sendExample(page, 'Part of it came down');
   await expect.poll(() => sent.length).toBe(1);
@@ -259,6 +300,70 @@ test('"Part of it came down": the page shows an act-today result and says to cal
   const flow = page.locator('#flow');
   await expect(flow.locator('.answer-title')).toHaveText('Now: act today');
   await expect(flow.locator('.answer-next')).toContainText('call 119');
+
+  // The staff board: this request first, above an older one that waits for a person; nothing to answer on it.
+  await page.locator('#board-toggle').click();
+  const board = page.locator('#board');
+  await expect(board.locator('#board-status')).toHaveText('2 requests, 1 waiting for a person.');
+  const heads = board.locator('.req-head');
+  await expect(heads.nth(0)).toContainText('Now');
+  await expect(heads.nth(0)).not.toContainText('Waits for a person');
+  await expect(heads.nth(1)).toContainText('Waits for a person');
+  await heads.nth(0).click();
+  await expect(board.locator('.req-words')).toContainText('Part of the balcony on the second floor came down');
+  await expect(board.locator('select[data-role="choose"]')).toHaveCount(0);
+});
+
+test('"A vague worry": the result goes to a person, who changes it on the staff board', async ({ page }) => {
+  const sent = await stubServices(page, {
+    check: { action: 'low', rule: null },
+    concern: {
+      action: 'person', rule: 6, person: true,
+      answers: {
+        about_building: { value: true, p: 0.7 },
+        damage: { value: 'nothing_clear', p: 0.45, probabilities: { nothing_clear: 0.45, structural_cracks: 0.3, cosmetic: 0.25 } },
+        danger_now: { value: false, p: 0.6 },
+      },
+    },
+  });
+  // The page's clock, so that the board's reload after an answer (6 s) can be told
+  // apart from its own refresh (every 10 s while it is open).
+  await page.clock.install();
+  let boardLoads = 0;
+  page.on('request', (r) => { if (r.url().endsWith('/api/board')) boardLoads += 1; });
+  await page.goto('/');
+  await sendExample(page, 'A vague worry');
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({ building: PLATEAU_URN + VAGUE, concern: { description: 'Something is wrong with my house.', afterDisaster: 'unsure' } });
+  const flow = page.locator('#flow');
+  await expect(flow.locator('.answer-title')).toHaveText('A person reads it first');
+  await expect(flow.locator('.answer-next')).toContainText('The AI was not sure.');
+
+  // The staff board: the request waits for a person, who changes the result to high.
+  // From here, before the board opens and starts its refresh, the page's time
+  // moves only when the test moves it: however long anything takes in real time.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
+  await page.locator('#board-toggle').click();
+  const board = page.locator('#board');
+  await expect(board.locator('#board-status')).toContainText('1 waiting for a person.');
+  const head = board.locator('.req-head');
+  await expect(head).toContainText('A person decides');
+  await expect(head).toContainText('Waits for a person');
+  await head.click();
+  await expect(board.locator('.req-words')).toHaveText('Something is wrong with my house.');
+  await board.locator('select[data-role="choose"]').selectOption('high');
+  await board.getByRole('button', { name: 'Change' }).click();
+  await expect(board).toContainText('Sent as a demo visitor.');
+  expect(sent.answered).toEqual([{ id: `urn:ngsi-ld:BuildingCheckRequest:demo-${uuid(1)}`, action: 'high' }]);
+  // 6 s after the answer the board loads the list again; its own 10 s refresh is
+  // not due yet, so this load can only be the reload after the answer.
+  const before = boardLoads;
+  await page.clock.runFor(6000);
+  await expect.poll(() => boardLoads).toBe(before + 1);
+  // Then the request shows the person's decision, now high.
+  await expect(head).toContainText('A person decided');
+  await expect(head).toContainText('High');
+  await expect(board).toContainText('→ High: check soon (A person decided)');
 });
 
 test('the staff board lists the most serious first and sends a person\'s change', async ({ page }) => {
