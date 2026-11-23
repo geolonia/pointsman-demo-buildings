@@ -340,11 +340,12 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   await expect(flow.locator('.answer-next')).toContainText('The AI was not sure.');
 
   // The staff board: the request waits for a person, who changes the result to high.
+  // From here, before the board opens and starts its refresh, the page's time
+  // moves only when the test moves it: however long anything takes in real time.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
   await page.locator('#board-toggle').click();
   const board = page.locator('#board');
   await expect(board.locator('#board-status')).toContainText('1 waiting for a person.');
-  // From here, the page's time moves only when the test moves it.
-  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
   const head = board.locator('.req-head');
   await expect(head).toContainText('A person decides');
   await expect(head).toContainText('Waits for a person');
