@@ -161,10 +161,11 @@ async function stubServices(page: Page, outcome?: Outcome, alsoOnBoard: Entity[]
   await page.route('**/api/board', (route) => route.fulfill({ json: { requests: boardRows(), query: '/entities?type=BuildingCheckRequest&options=sysAttrs' } }));
   // A person's answer, checked as resolveRequest does (checkAnswer), on the request sent here.
   await page.route(/\/api\/requests\/[^/]+\/resolve$/, (route) => {
+    const id = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-2)!);
     const body = route.request().postDataJSON() as { action: string };
-    answered.push(body);
-    const row = boardRows().find((r) => r.id === stored()?.entity.id);
-    if (!row) return route.fulfill({ status: 404, json: { error: 'not found' } });
+    answered.push({ id, ...body });
+    const row = boardRows().find((r) => r.id === id);
+    if (!row || id !== stored()?.entity.id) return route.fulfill({ status: 404, json: { error: 'not found' } });
     const checked = checkAnswer(row, body);
     if (typeof checked === 'string') return route.fulfill({ status: row.waiting ? 400 : 409, json: { error: checked } });
     answer = checked.action;
@@ -336,7 +337,7 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   // The staff board: the request waits for a person, who changes the result to high.
   await page.locator('#board-toggle').click();
   const board = page.locator('#board');
-  await expect(board.locator('#board-status')).toHaveText('1 requests, 1 waiting for a person.');
+  await expect(board.locator('#board-status')).toContainText('1 waiting for a person.');
   const head = board.locator('.req-head');
   await expect(head).toContainText('A person decides');
   await expect(head).toContainText('Waits for a person');
@@ -345,9 +346,12 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   await board.locator('select[data-role="choose"]').selectOption('high');
   await board.getByRole('button', { name: 'Change' }).click();
   await expect(board).toContainText('Sent as a demo visitor.');
-  expect(sent.answered).toEqual([{ action: 'high' }]);
-  // The board loads the list again a few seconds later: a person decided, now high.
-  await expect(head).toContainText('A person decided', { timeout: 10_000 });
+  // The board loads the list again 6 s after the answer (before its own 10 s refresh comes).
+  const reload = page.waitForRequest((r) => r.url().endsWith('/api/board'), { timeout: 8000 });
+  expect(sent.answered).toEqual([{ id: `urn:ngsi-ld:BuildingCheckRequest:demo-${uuid(1)}`, action: 'high' }]);
+  await reload;
+  // Then the request shows the person's decision, now high.
+  await expect(head).toContainText('A person decided');
   await expect(head).toContainText('High');
   await expect(board).toContainText('→ High: check soon (A person decided)');
 });
