@@ -3,15 +3,20 @@
 // request on the staff board. Endpoints that need the broker or Pointsman are
 // stubbed here (playwright.config.ts says why); GET /api/config and the
 // page's files come from the Worker itself. The stubs are made with the
-// Worker's own functions from the real PLATEAU buildings in data/, so they
-// have the shapes the Worker sends. Other hosts (map tiles, MapLibre, fonts)
-// are blocked: the examples and the board work without the map.
+// Worker's own functions from the real PLATEAU buildings in data/, and with
+// the bridge's own functions for what it writes (the results on a request and
+// the Decision entities), so they have the shapes the Worker sends. Only
+// Pointsman's decisions are written here. They are set by each test: the
+// tests check what the page sends and shows, not how Pointsman decides.
+// Other hosts (map tiles, MapLibre, fonts) are blocked: the examples and the
+// board work without the map.
 
 import { readFileSync } from 'node:fs';
 import { test as base, expect, type Page } from '@playwright/test';
 import { PLATEAU_SOURCE, toEntity, toFeature, type Entity, type PlateauFeature } from '../src/buildings';
 import { parseAnswers, parseConcern, toRequestEntity } from '../src/requests';
 import { sortBoard, toBoardRow } from '../src/board';
+import { isChecked, toDecisionEntity, toProperty, type Route } from '../engine/packages/fiware/src/bridge';
 
 const PLATEAU_URN = 'urn:ngsi-ld:Building:plateau:';
 // The page's examples (site/app.js EXAMPLES), by PLATEAU building id.
@@ -26,36 +31,50 @@ const buildings = new Map<string, Entity>(plateau.features
   .filter((f) => [LEANS, BALCONY, CRACKS, VAGUE].includes(f.properties.buildingID))
   .map((f) => { const e = toEntity(f); return [e.id, e]; }));
 
-const P = (value: unknown) => ({ type: 'Property', value });
-
-/** A result attribute on the request entity (check or concern), as the bridge writes it. */
-function result(action: string, rule: string | undefined, decision: string, review?: 'pending') {
-  return {
-    type: 'Property',
-    value: action,
-    ...(rule !== undefined && { policyRule: P(rule) }),
-    decision: { type: 'Relationship', object: decision },
-    ...(review && { reviewStatus: P(review) }),
-  };
-}
-
-/** A Decision entity as the broker returns it without a context: its answers under the full IRI. */
-function decisionEntity(id: string, answers: { name: string; value: unknown; probability: number; probabilities?: Record<string, number> }[]) {
-  return {
-    id,
-    type: 'https://datamodels.jp/ns/decision/Decision',
-    'https://datamodels.jp/ns/decision/answers': { type: 'JsonProperty', json: answers },
-    'https://datamodels.jp/ns/decision/facts': { type: 'JsonProperty', json: [{ name: 'ground', missing: false, values: { rank: 2 } }, { name: 'shaking', missing: false, values: { rank: 3 } }] },
-  };
-}
-
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-const decisionId = (n: number) => `urn:ngsi-ld:Decision:${uuid(n)}`;
+const NOW = new Date().toISOString();
+
+/** A decision as Pointsman returns it to the bridge. */
+type Decision = Parameters<typeof toProperty>[0];
+type Answers = Decision['answers'];
+
+// The demo's two routes (src/index.ts ROUTE and CONCERN_ROUTE), as far as the bridge's writing needs them.
+const CHECK_ROUTE: Route = { type: 'BuildingCheckRequest', profile: 'building-check-priority', inputs: [], attribute: 'check' };
+const CONCERN_ROUTE: Route = { type: 'BuildingCheckRequest', profile: 'building-concern', inputs: [], attribute: 'concern' };
+// The hazard layers the check reads (J-SHIS).
+const CHECK_FACTS: NonNullable<Decision['facts']> = {
+  ground: { missing: false, values: { rank: 2 }, source: 'j-shis' },
+  shaking: { missing: false, values: { rank: 3 }, source: 'j-shis' },
+};
+
+/** Pointsman's decision for one route. `rule`: the index of the rule that matched, null for the default action. */
+function decision(n: number, route: Route, action: string, rule: number | null, answers: Answers = {}, review?: Decision['review']): Decision {
+  return {
+    decision_id: uuid(n), action, profile: route.profile, profile_version: 1, model: 'test-model', answers, created_at: NOW, rule,
+    ...(route === CHECK_ROUTE && { facts: CHECK_FACTS }),
+    ...(review && { review }),
+  };
+}
+
+/**
+ * What the bridge writes for a decision: the result attribute on the request
+ * entity, and the Decision entity as the Worker reads it back from the broker
+ * (without a context, so the Decision model's terms answers and facts come
+ * back as full IRIs; the page finds them by that ending).
+ */
+function written(d: Decision, route: Route, requestId: string) {
+  const entity = toDecisionEntity(d, requestId, route, new Date(NOW));
+  const stored: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(entity)) {
+    if (k !== '@context') stored[k === 'answers' || k === 'facts' ? `https://datamodels.jp/ns/decision/${k}` : k] = v;
+  }
+  return { attribute: toProperty(d, 'test-input-hash', new Date(NOW), String(entity.id), isChecked(d, route)), entity: stored };
+}
 
 /** What Pointsman decides for an example, in this test: the check, then the description. */
 interface Outcome {
-  check: { action: string; rule?: string };
-  concern: { action: string; rule?: string; answers: Parameters<typeof decisionEntity>[1] };
+  check: { action: string; rule: number | null };
+  concern: { action: string; rule: number | null; answers: Answers };
 }
 
 /** Uncaught errors, console errors, and failed loads or error answers from the page's own origin. */
@@ -116,13 +135,11 @@ async function stubServices(page: Page, outcome?: Outcome) {
   });
   await page.route(/\/api\/requests\/[^/]+$/, (route) => {
     if (!request || !outcome) return route.fulfill({ status: 404, json: { error: 'not found' } });
-    const entity = {
-      ...request,
-      check: result(outcome.check.action, outcome.check.rule, decisionId(2)),
-      concern: result(outcome.concern.action, outcome.concern.rule, decisionId(3)),
-    };
+    const check = written(decision(2, CHECK_ROUTE, outcome.check.action, outcome.check.rule), CHECK_ROUTE, request.id);
+    const concern = written(decision(3, CONCERN_ROUTE, outcome.concern.action, outcome.concern.rule, outcome.concern.answers), CONCERN_ROUTE, request.id);
+    const entity = { ...request, check: check.attribute, concern: concern.attribute };
     return route.fulfill({
-      json: { entity, decision: decisionEntity(decisionId(2), []), concernDecision: decisionEntity(decisionId(3), outcome.concern.answers), concerns: true, query: `/entities/${encodeURIComponent(entity.id)}` },
+      json: { entity, decision: check.entity, concernDecision: concern.entity, concerns: true, query: `/entities/${encodeURIComponent(entity.id)}` },
     });
   });
   await page.route('**/api/graph*', (route) => route.fulfill({
@@ -137,9 +154,11 @@ function boardRequests() {
   const unsure = toRequestEntity(buildings.get(PLATEAU_URN + VAGUE)!, {}, uuid(4), 'en', { description: 'Something is wrong with my house.', afterDisaster: 'unsure' });
   const decided = toRequestEntity(buildings.get(PLATEAU_URN + BALCONY)!, {}, uuid(5), 'en', { description: 'Part of the balcony came down.', afterDisaster: 'unsure' });
   const at = new Date(Date.now() - 10 * 60000).toISOString();
+  const result = (n: number, route: Route, action: string, rule: number | null, id: string, review?: Decision['review']) =>
+    written(decision(n, route, action, rule, {}, review), route, id).attribute;
   return sortBoard([
-    { ...unsure, createdAt: at, check: result('low', undefined, decisionId(6)), concern: result('person', '6', decisionId(7), 'pending') },
-    { ...decided, createdAt: at, check: result('low', undefined, decisionId(8)), concern: result('now', '1', decisionId(9)) },
+    { ...unsure, createdAt: at, check: result(6, CHECK_ROUTE, 'low', null, unsure.id), concern: result(7, CONCERN_ROUTE, 'person', 6, unsure.id, { status: 'pending' }) },
+    { ...decided, createdAt: at, check: result(8, CHECK_ROUTE, 'low', null, decided.id), concern: result(9, CONCERN_ROUTE, 'now', 1, decided.id) },
   ].map(toBoardRow).filter((r) => r !== null));
 }
 
@@ -160,7 +179,8 @@ test('the page loads with the example buildings', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Every building, the same checks');
   // The examples show only with checks and descriptions open (the real /api/config) and their buildings loaded.
   await expect(page.locator('#cards .ex-card')).toHaveCount(4);
-  await expect(page.locator('#status')).toContainText('4');
+  const unknownYear = [...buildings.values()].filter((e) => toFeature(e)!.properties.yearOfConstruction === null).length;
+  await expect(page.locator('#status')).toContainText(`4 buildings. ${unknownYear} of them without a year built.`);
 });
 
 test('the language switch shows the page in Japanese', async ({ page }) => {
@@ -187,16 +207,17 @@ test('"How it works" opens as a dialog and closes', async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
-test('"The house leans": the description makes it high priority', async ({ page }) => {
+test('"The house leans": the page sends the filled-in form and shows a high result with its reasons', async ({ page }) => {
   const sent = await stubServices(page, {
-    check: { action: 'high', rule: '1' },
+    check: { action: 'high', rule: 1 },
     concern: {
-      action: 'high', rule: '2',
-      answers: [
-        { name: 'about_building', value: true, probability: 0.98 },
-        { name: 'damage', value: 'tilt_or_sinking', probability: 0.8, probabilities: { tilt_or_sinking: 0.8, foundation_or_ground: 0.15, structural_cracks: 0.05 } },
-        { name: 'danger_now', value: false, probability: 0.85 },
-      ],
+      action: 'high', rule: 2,
+      answers: {
+        about_building: { value: true, p: 0.98 },
+        damage: { value: 'tilt_or_sinking', p: 0.8, probabilities: { tilt_or_sinking: 0.8, foundation_or_ground: 0.15, structural_cracks: 0.05 } },
+        danger_now: { value: false, p: 0.85 },
+        severity: { value: 3, p: 0.6, probabilities: { 2: 0.3, 3: 0.6, 4: 0.1 } },
+      },
     },
   });
   await page.goto('/');
@@ -218,16 +239,16 @@ test('"The house leans": the description makes it high priority', async ({ page 
   await expect(page.locator('#flow')).toBeHidden();
 });
 
-test('"Part of it came down": act today, and the page says to call 119', async ({ page }) => {
+test('"Part of it came down": the page shows an act-today result and says to call 119', async ({ page }) => {
   const sent = await stubServices(page, {
-    check: { action: 'low' },
+    check: { action: 'low', rule: null },
     concern: {
-      action: 'now', rule: '1',
-      answers: [
-        { name: 'about_building', value: true, probability: 0.97 },
-        { name: 'damage', value: 'partial_collapse', probability: 0.7, probabilities: { partial_collapse: 0.7, falling_parts: 0.3 } },
-        { name: 'danger_now', value: true, probability: 0.8 },
-      ],
+      action: 'now', rule: 1,
+      answers: {
+        about_building: { value: true, p: 0.97 },
+        damage: { value: 'partial_collapse', p: 0.7, probabilities: { partial_collapse: 0.7, falling_parts: 0.3 } },
+        danger_now: { value: true, p: 0.8 },
+      },
     },
   });
   await page.goto('/');
@@ -238,14 +259,14 @@ test('"Part of it came down": act today, and the page says to call 119', async (
   await expect(flow.locator('.answer-next')).toContainText('call 119');
 });
 
-test('the staff board: a person changes the result the AI was not sure about', async ({ page }) => {
+test('the staff board lists the most serious first and sends a person\'s change', async ({ page }) => {
   await stubServices(page);
   const rows = boardRequests();
   await page.route('**/api/board', (route) => route.fulfill({ json: { requests: rows, query: '/entities?type=BuildingCheckRequest' } }));
   const answers: unknown[] = [];
   await page.route(/\/api\/requests\/[^/]+\/resolve$/, (route) => {
     answers.push({ id: decodeURIComponent(route.request().url().split('/').at(-2)!), body: route.request().postDataJSON() });
-    return route.fulfill({ status: 202, json: { resolved: 'concern', action: 'high', decision: decisionId(7) } });
+    return route.fulfill({ status: 202, json: { resolved: 'concern', action: 'high', decision: `urn:ngsi-ld:Decision:${uuid(7)}` } });
   });
   await page.goto('/');
   await page.locator('#board-toggle').click();
@@ -265,4 +286,12 @@ test('the staff board: a person changes the result the AI was not sure about', a
   expect(answers).toEqual([{ id: rows[1]!.id, body: { action: 'high' } }]);
   await page.locator('#board-close').click();
   await expect(board).toBeHidden();
+});
+
+// The tests' safety rests on the --var settings in playwright.config.ts
+// winning over a local .dev.vars: then the Worker's broker is a closed port.
+test('the Worker cannot reach a real broker: an unstubbed call fails at once', async ({ request }) => {
+  const res = await request.get('/api/board');
+  expect(res.status()).toBe(502);
+  expect(await res.json()).toEqual({ error: 'something went wrong' });
 });
