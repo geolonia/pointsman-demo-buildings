@@ -5,3 +5,5 @@ worker-configuration.d.ts
 __pycache__/
 engine
 engine-tmp-*
+test-results/
+playwright-report/
