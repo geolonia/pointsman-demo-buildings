@@ -392,10 +392,10 @@ describe('scene B, more', () => {
   const open = () => ({ ...unlimited, CONCERNS: 'on', BRIDGE_QUEUE: { send: async () => {}, sendBatch: async () => {} } }) as unknown as Env;
   const notify = (path: string, data: unknown[], e: Env) => demo.fetch(new Request(`${PAGE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-bridge-secret': env.NOTIFY_SECRET! }, body: JSON.stringify({ type: 'Notification', data }) }), e, ctx);
 
-  it('with scene B off, /notify?route=concern runs nothing', async () => {
+  it('with scene B off, /notify?route=concern runs nothing: the bridge answers 404 for a route it does not have (engine 0.23.0)', async () => {
     const req = toRequestEntity(building(), {}, UUID, 'en', { description: 'x' });
     const res = await notify('/notify?route=concern', [req], env);
-    expect([200, 202]).toContain(res.status);
+    expect(res.status).toBe(404);
     expect(calls.some((c) => c.url.includes('/v1/decide/'))).toBe(false);
   });
 

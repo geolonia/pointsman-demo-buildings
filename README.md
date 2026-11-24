@@ -88,7 +88,7 @@ PLATEAU's values come first; the resident's answers fill only what PLATEAU
 does not know, and each value says where it came from (`origin`: `plateau`
 or `resident`).
 
-A broker subscription sends new and changed requests to `/notify`; a second one sends requests with a description, once their check is written, to `/notify?route=concern` (profile `building-concern`, read by an AI model). The
+A broker subscription sends new and changed requests to `/notify`; a second one sends requests with a description, once their check is written, to `/notify?route=concern` (profile `building-concern`, read by an AI model; while scene B is off, the bridge answers that subscription 404, as for any route it does not have). The
 [FIWARE bridge](https://github.com/geolonia/pointsman/tree/main/packages/fiware)
 (from the engine commit pinned in `engine.json`) asks Pointsman, profile
 `building-check-priority` (rules only, no AI model), and writes the result to
