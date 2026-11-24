@@ -126,10 +126,10 @@ out of the bridge, so the check from the building's data still runs; the
 bridge then answers the description subscription 404, as for any route it
 does not have, and GeonicDB pauses a subscription after an hour of failed
 notifications. So to switch scene B off for longer than a short time, delete
-or deactivate the description subscription
+the description subscription
 (`urn:ngsi-ld:Subscription:pointsman-demo-buildings-concerns`), and after
-switching it on again, run `scripts/setup.mjs` and check that the
-subscription's status is active).
+switching it on again, run `scripts/setup.mjs`, which creates it again (it
+only updates a subscription that exists, so it does not wake a paused one)).
 Before `"on"`, the `building-concern` profile must be published on
 `POINTSMAN_URL`. `PHOTOS` (`"on"` takes up to 3 photos with a description)
 needs `CONCERNS` on, the photos bucket, and a `building-concern` version
