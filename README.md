@@ -122,7 +122,16 @@ Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
 `BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL`, `DAILY_LIMIT` and
 `CONCERNS` (`"on"` lets people describe their concern for the AI to read;
 `"off"` refuses new descriptions with 503 and leaves the description route
-out of the bridge, so the check from the building's data still runs).
+out of the bridge, so the check from the building's data still runs; the
+bridge then answers the description subscription 404, as for any route it
+does not have, and GeonicDB pauses a subscription after an hour of failed
+notifications. So to switch scene B off for longer than a short time, delete
+the description subscription
+(`urn:ngsi-ld:Subscription:pointsman-demo-buildings-concerns`), and after
+switching it on again, run `scripts/setup.mjs`, which creates it again. The
+script only updates a subscription that exists and does not wake a paused
+one: if the broker shows that subscription paused (for example because the
+script ran while scene B was off), delete it and run the script again).
 Before `"on"`, the `building-concern` profile must be published on
 `POINTSMAN_URL`. `PHOTOS` (`"on"` takes up to 3 photos with a description)
 needs `CONCERNS` on, the photos bucket, and a `building-concern` version
