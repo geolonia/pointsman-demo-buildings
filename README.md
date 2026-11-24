@@ -88,7 +88,7 @@ PLATEAU's values come first; the resident's answers fill only what PLATEAU
 does not know, and each value says where it came from (`origin`: `plateau`
 or `resident`).
 
-A broker subscription sends new and changed requests to `/notify`; a second one sends requests with a description, once their check is written, to `/notify?route=concern` (profile `building-concern`, read by an AI model; while scene B is off, the bridge answers that subscription 404, as for any route it does not have). The
+A broker subscription sends new and changed requests to `/notify`; a second one sends requests with a description, once their check is written, to `/notify?route=concern` (profile `building-concern`, read by an AI model). The
 [FIWARE bridge](https://github.com/geolonia/pointsman/tree/main/packages/fiware)
 (from the engine commit pinned in `engine.json`) asks Pointsman, profile
 `building-check-priority` (rules only, no AI model), and writes the result to
@@ -122,7 +122,14 @@ Settings are in [wrangler.jsonc](wrangler.jsonc): `BROKER_URL`,
 `BROKER_TENANT` (`pointsman_buildings`), `POINTSMAN_URL`, `DAILY_LIMIT` and
 `CONCERNS` (`"on"` lets people describe their concern for the AI to read;
 `"off"` refuses new descriptions with 503 and leaves the description route
-out of the bridge, so the check from the building's data still runs).
+out of the bridge, so the check from the building's data still runs; the
+bridge then answers the description subscription 404, as for any route it
+does not have, and GeonicDB pauses a subscription after an hour of failed
+notifications. So to switch scene B off for longer than a short time, delete
+or deactivate the description subscription
+(`urn:ngsi-ld:Subscription:pointsman-demo-buildings-concerns`), and after
+switching it on again, run `scripts/setup.mjs` and check that the
+subscription's status is active).
 Before `"on"`, the `building-concern` profile must be published on
 `POINTSMAN_URL`. `PHOTOS` (`"on"` takes up to 3 photos with a description)
 needs `CONCERNS` on, the photos bucket, and a `building-concern` version
