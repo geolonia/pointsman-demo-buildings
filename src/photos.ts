@@ -5,7 +5,7 @@
 // themselves (inlinePhotos, the fetch the bridge uses). Deleted with the
 // request; the bucket's lifecycle rule deletes anything left after a day.
 
-import type { Env } from './env';
+import { type Env, trimUrl } from './env';
 
 const KEY = /^photos\/[0-9a-f-]{36}\/[1-3]\.(jpg|png|webp)$/;
 const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
@@ -52,7 +52,7 @@ async function dataUrl(bucket: R2Bucket, key: string): Promise<string | null> {
  * calling Pointsman (the bridge retries).
  */
 export function inlinePhotos(fetcher: typeof fetch, env: Pick<Env, 'PHOTOS_BUCKET' | 'POINTSMAN_URL'>, profile: string): typeof fetch {
-  const target = `${env.POINTSMAN_URL.replace(/\/+$/, '')}/v1/decide/${profile}`;
+  const target = `${trimUrl(env.POINTSMAN_URL)}/v1/decide/${profile}`;
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input);
     if (!env.PHOTOS_BUCKET || !url.startsWith(target) || typeof init?.body !== 'string') return fetcher(input, init);
