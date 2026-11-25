@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { entityId, eraOf, PLATEAU_SOURCE, toEntity, toFeature, type PlateauFeature } from '../src/buildings';
 import { buildingsQuery } from '../src/broker';
+import { trimUrl } from '../src/env';
 import raw from '../data/plateau/satozuka.geojson?raw';
 
 const sample = JSON.parse(raw) as { features: PlateauFeature[] };
@@ -100,5 +101,13 @@ describe('the broker query', () => {
     expect(q.get('georel')).toBe('intersects');
     expect(q.get('geoproperty')).toBe('location');
     expect(JSON.parse(q.get('coordinates')!)).toEqual([[[141.4, 42.9], [141.5, 42.9], [141.5, 43.0], [141.4, 43.0], [141.4, 42.9]]]);
+  });
+});
+
+describe('trimUrl', () => {
+  it('removes trailing slashes only', () => {
+    expect(trimUrl('https://example.test///')).toBe('https://example.test');
+    expect(trimUrl('https://example.test/a/b')).toBe('https://example.test/a/b');
+    expect(trimUrl('///')).toBe('');
   });
 });
