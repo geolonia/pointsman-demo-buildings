@@ -345,7 +345,7 @@ test('"A vague worry": the result goes to a person, who changes it on the staff 
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
   await page.locator('#board-toggle').click();
   const board = page.locator('#board');
-  await expect(board.locator('#board-status')).toContainText('1 waiting for a person.');
+  await expect(board.locator('#board-status')).toHaveText('1 request, 1 waiting for a person.');
   const head = board.locator('.req-head');
   await expect(head).toContainText('A person decides');
   await expect(head).toContainText('Waits for a person');

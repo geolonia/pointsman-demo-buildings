@@ -39,7 +39,7 @@
       allKnown: 'The city model knows everything the check needs.', next: 'Next', back: 'Back', send: 'Send', again: 'Check another building',
       fromModel: 'city model', fromYou: 'you', afterShort: 'After a disaster', sendNote: 'This is a demo: nothing goes to the city, and the request is deleted after a day. Pointsman sorts and explains; whether a building is safe is always a person\u2019s decision.',
       reqLoading: 'Loading the requests…', reqTitle: 'Requests', reqLead: 'What city staff see: every request of the last day, the most serious first. Where Pointsman asks a person, anyone in the demo can confirm or change the result.',
-      reqEmpty: 'No requests in the last day. Send one, and it appears here.', reqFailed: 'The list could not be loaded. It tries again in a few seconds.', reqCount: '{n} requests, {w} waiting for a person.',
+      reqEmpty: 'No requests in the last day. Send one, and it appears here.', reqFailed: 'The list could not be loaded. It tries again in a few seconds.', reqCount: '{n} requests, {w} waiting for a person.', reqCount1: '1 request, {w} waiting for a person.',
       p_now: 'Now', p_high: 'High', p_person: 'A person decides', 'p_more-evidence': 'More information', p_medium: 'Medium', p_low: 'Low', p_none: 'Being checked',
       reqWaits: 'Waits for a person', reqDecided: 'A person decided', reqNoWords: 'No description: the check uses the building data only.', reqPhotos: '{n} photo(s)', reqAfter: 'After a disaster: {a}',
       reqCheck: 'Building data', reqWords: 'Description', reqMinutes: '{n} min ago', reqHours: '{n} h ago', reqMap: 'Show on the map',
@@ -108,7 +108,7 @@
       allKnown: '確認に必要な情報は、3D都市モデルにすべてあります。', next: '次へ', back: '戻る', send: '送信', again: 'ほかの建物を確認する',
       fromModel: '3D都市モデル', fromYou: 'あなた', afterShort: '災害のあと', sendNote: 'これはデモです。市には何も届かず、依頼は1日で削除されます。Pointsman は仕分けて理由を示します。建物が安全かどうかは常に人が決めます。',
       reqLoading: '依頼を読み込んでいます…', reqTitle: '依頼の一覧', reqLead: '市の職員が見る画面です。最近 1 日の依頼を、急ぐものから並べています。Pointsman が人の確認を求めたものは、デモの利用者なら誰でも確定や変更ができます。',
-      reqEmpty: '最近 1 日の依頼はありません。送ると、ここに表示されます。', reqFailed: '一覧を読み込めませんでした。数秒後にもう一度試します。', reqCount: '依頼 {n} 件、うち人の確認待ち {w} 件。',
+      reqEmpty: '最近 1 日の依頼はありません。送ると、ここに表示されます。', reqFailed: '一覧を読み込めませんでした。数秒後にもう一度試します。', reqCount: '依頼 {n} 件、うち人の確認待ち {w} 件。', reqCount1: '依頼 1 件、うち人の確認待ち {w} 件。',
       p_now: '今すぐ', p_high: '高', p_person: '人が判断', 'p_more-evidence': '情報不足', p_medium: '中', p_low: '低', p_none: '確認中',
       reqWaits: '人の確認待ち', reqDecided: '人が決めました', reqNoWords: '説明なし：建物のデータだけで確認しています。', reqPhotos: '写真 {n} 枚', reqAfter: '災害の後：{a}',
       reqCheck: '建物のデータ', reqWords: '説明', reqMinutes: '{n} 分前', reqHours: '{n} 時間前', reqMap: '地図で見る',
@@ -1293,7 +1293,7 @@
     var status = document.getElementById('board-status');
     if (board.rows === null) { status.textContent = board.failed ? t('reqFailed') : t('reqLoading'); list.replaceChildren(); return; }
     var waiting = board.rows.filter(function (r) { return r.waiting; }).length;
-    status.textContent = board.failed ? t('reqFailed') : board.rows.length === 0 ? t('reqEmpty') : t('reqCount', { n: board.rows.length, w: waiting });
+    status.textContent = board.failed ? t('reqFailed') : board.rows.length === 0 ? t('reqEmpty') : t(board.rows.length === 1 ? 'reqCount1' : 'reqCount', { n: board.rows.length, w: waiting });
     // Every render replaces the rows: the focused control is found again by its request and role.
     var a = document.activeElement;
     var keep = a && list.contains(a) ? { id: a.getAttribute('data-req'), role: a.getAttribute('data-role') } : null;
