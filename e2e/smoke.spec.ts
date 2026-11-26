@@ -2,8 +2,10 @@
 // the four examples go from the form to their result (with an example photo,
 // and without a description), the waits that are slow, fail, or never get the
 // description's result end as the page says, and a person confirms, changes or
-// comes too late to answer a request on the staff board. The map is not
-// tested: its tiles and MapLibre are blocked (below). Endpoints that need the broker or Pointsman are
+// comes too late to answer a request on the staff board. The map runs with
+// MapLibre from the pinned devDependency and empty tiles (serveMap): it draws
+// the buildings, a click on one picks it, and the board's requests are dots on
+// it. The other tests run without it, as the page does when MapLibre does not load. Endpoints that need the broker or Pointsman are
 // stubbed here (playwright.config.ts says why); GET /api/config and the
 // page's files come from the Worker itself. The stubs are made with the
 // Worker's own functions from the real PLATEAU buildings in data/, and with
@@ -598,6 +600,138 @@ test('the staff board: an answer someone else gave first is not sent twice, and 
   await expect(board.locator('select[data-role="choose"]')).toHaveCount(0);
   // The 409 is this test's own answer: not a page error.
   pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !/^409 POST .*\/resolve$/.test(e)));
+});
+
+// The MapLibre version the tests serve: the pinned devDependency. The page's
+// unpkg links must name the same version (a test below checks it), so update both together.
+const MAPLIBRE = (JSON.parse(readFileSync(new URL('../node_modules/maplibre-gl/package.json', import.meta.url), 'utf8')) as { version: string }).version;
+
+/**
+ * The map without the network: MapLibre from the pinned devDependency (the
+ * same files as the page's unpkg links, so their integrity hashes match) and
+ * an empty vector tile for every GSI tile. pmtiles stays blocked, so the page
+ * uses its plain tile URLs (its fallback without pmtiles). An init script keeps
+ * the page's map in window.__map, so a test can find a building's pixel.
+ * Added after stubServices, so these routes come before its "block other hosts".
+ */
+async function serveMap(page: Page) {
+  const dist = new URL('../node_modules/maplibre-gl/dist/', import.meta.url);
+  const files: [string, string][] = [['maplibre-gl.js', 'application/javascript'], ['maplibre-gl.css', 'text/css']];
+  for (const [file, type] of files) {
+    await page.route(`https://unpkg.com/maplibre-gl@${MAPLIBRE}/dist/${file}`, (route) => route.fulfill({
+      body: readFileSync(new URL(file, dist)), contentType: type, headers: { 'access-control-allow-origin': '*' },
+    }));
+  }
+  // An empty body is a vector tile without layers.
+  await page.route('https://cyberjapandata.gsi.go.jp/xyz/**', (route) => route.fulfill({ body: '', contentType: 'application/x-protobuf', headers: { 'access-control-allow-origin': '*' } }));
+  await page.addInitScript(() => {
+    type Lib = { Map: new (o: unknown) => object };
+    let lib: Lib | undefined;
+    Object.defineProperty(window, 'maplibregl', {
+      configurable: true,
+      get: () => lib,
+      set(v: Lib) {
+        const Base = v.Map;
+        v.Map = class extends Base { constructor(o: unknown) { super(o); (window as unknown as { __map: unknown }).__map = this; } };
+        lib = v;
+      },
+    });
+  });
+}
+
+/**
+ * Shows a point on the page's map (window.__map, see serveMap) at `zoom`, at
+ * a spot of the map that nothing covers (a panel may lie over part of it),
+ * waits until the map has drawn it, and returns its pixel on the page.
+ */
+async function showOnMap(page: Page, at: [number, number], zoom: number) {
+  // The map may be below the visible part of the page (mobile, or with the staff board open).
+  await page.locator('#map').scrollIntoViewIfNeeded();
+  return page.evaluate(([lngLat, z]) => new Promise<{ x: number; y: number }>((done, fail) => {
+    type M = { jumpTo(o: unknown): void; easeTo(o: unknown): void; project(l: [number, number]): { x: number; y: number }; getCanvas(): HTMLCanvasElement; once(e: string, f: () => void): void };
+    const m = (window as unknown as { __map: M }).__map;
+    const canvas = m.getCanvas();
+    const box = canvas.getBoundingClientRect();
+    // A free spot: the first on a grid over the visible map where the canvas is on top.
+    let spot: { x: number; y: number } | null = null;
+    for (let gy = 1; gy < 8 && !spot; gy++) {
+      for (let gx = 1; gx < 8 && !spot; gx++) {
+        const x = box.left + (box.width * gx) / 8;
+        const y = box.top + (box.height * gy) / 8;
+        if (x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && document.elementFromPoint(x, y) === canvas) spot = { x, y };
+      }
+    }
+    if (!spot) { fail(new Error('no free spot on the map')); return; }
+    // Centre the map so the point lands on that spot.
+    m.jumpTo({ center: lngLat, zoom: z });
+    const middle = m.project(lngLat);
+    const target = { x: spot.x - box.left, y: spot.y - box.top };
+    // jumpTo ignores offset; easeTo with no duration applies it at once.
+    m.easeTo({ center: lngLat, zoom: z, offset: [target.x - middle.x, target.y - middle.y], duration: 0 });
+    m.once('idle', () => {
+      const p = m.project(lngLat);
+      const at = { x: box.left + p.x, y: box.top + p.y };
+      // The point must now be on the free spot, not under a panel.
+      if (document.elementFromPoint(at.x, at.y) !== canvas) fail(new Error(`the point is covered at ${Math.round(at.x)},${Math.round(at.y)}`));
+      else done(at);
+    });
+  }), [at, zoom] as const);
+}
+
+/** The middle of a building's outline (the mean of its first ring's corners): inside these small buildings. */
+function middleOf(plateauId: string): [number, number] {
+  const ring = (toFeature(buildings.get(PLATEAU_URN + plateauId)!)!.geometry as { coordinates: [number, number][][] }).coordinates[0]!;
+  const corners = ring.slice(0, -1);
+  return [corners.reduce((s, c) => s + c[0], 0) / corners.length, corners.reduce((s, c) => s + c[1], 0) / corners.length];
+}
+
+test('the page loads the MapLibre version the tests serve', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  for (const file of ['maplibre-gl.js', 'maplibre-gl.css']) {
+    expect(html, `site/index.html must load maplibre-gl@${MAPLIBRE} (the devDependency): update both together, with the integrity hash`)
+      .toContain(`https://unpkg.com/maplibre-gl@${MAPLIBRE}/dist/${file}`);
+  }
+});
+
+test('the map: it draws the buildings, with the legend, and the status line says so', async ({ page }) => {
+  await stubServices(page);
+  await serveMap(page);
+  await page.goto('/');
+  await expect(page.locator('#map canvas.maplibregl-canvas')).toBeVisible();
+  await expect(page.locator('#legend')).toBeVisible();
+  const unknownYear = [...buildings.values()].filter((e) => toFeature(e)!.properties.yearOfConstruction === null).length;
+  // Once the map has drawn them: no "drawing" and no "could not be loaded".
+  await expect(page.locator('#status')).toHaveText(`4 buildings. ${unknownYear} of them without a year built.`);
+});
+
+test('the map: a click on a building picks it, and the address links to it', async ({ page }) => {
+  await stubServices(page);
+  await serveMap(page);
+  await page.goto('/');
+  await expect(page.locator('#status')).toHaveText(/^4 buildings\. \d of them without a year built\.$/);
+  // Up close, so the building is large enough to hit.
+  const { x, y } = await showOnMap(page, middleOf(VAGUE), 19);
+  await page.mouse.click(x, y);
+  await expect(page).toHaveURL(new RegExp(`#${VAGUE}$`));
+  await expect(page.locator('#building')).toContainText(VAGUE);
+  // The map outlines the building picked.
+  expect(await page.evaluate(() => (window as unknown as { __map: { getFilter(id: string): unknown } }).__map.getFilter('selected'))).toEqual(['==', ['get', 'id'], PLATEAU_URN + VAGUE]);
+});
+
+test('the map: with the staff board open, requests are dots on it, and a click opens that request', async ({ page }) => {
+  const waiting = otherRequest(10, VAGUE, 'Something is wrong with my house.', { action: 'person', rule: 6 }, { status: 'pending' });
+  await stubServices(page, undefined, [waiting]);
+  await serveMap(page);
+  await page.goto('/');
+  await expect(page.locator('#status')).toHaveText(/^4 buildings\. \d of them without a year built\.$/);
+  await page.locator('#board-toggle').click();
+  const board = page.locator('#board');
+  await expect(board.locator('#board-status')).toHaveText('1 request, 1 waiting for a person.');
+  const point = toBoardRow(waiting)!.point as [number, number];
+  const { x, y } = await showOnMap(page, point, 18);
+  expect(await page.evaluate(() => (window as unknown as { __map: { getLayoutProperty(l: string, p: string): unknown } }).__map.getLayoutProperty('requests', 'visibility'))).toBe('visible');
+  await page.mouse.click(x, y);
+  await expect(board.locator('.req.is-open')).toContainText('Something is wrong with my house.');
 });
 
 // The tests' safety rests on the --var settings in playwright.config.ts
