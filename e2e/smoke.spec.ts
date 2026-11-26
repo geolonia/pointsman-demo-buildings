@@ -445,10 +445,14 @@ async function runUntil(page: Page, from: number, done: () => Promise<boolean>) 
   return await page.evaluate(() => Date.now()) - from;
 }
 
-/** Asserts that a wait the page ends after `limit` ms ended then, not much earlier or later (steps of 2 s, polls every 10 s). */
-function endedAfter(elapsed: number, limit: number) {
+/**
+ * Asserts that a wait the page ends after `limit` ms ended then, not much
+ * earlier or later: within the test's 2 s steps plus the page's poll interval
+ * at that point (`every`: 2 s before the 30 s limit, 10 s after it).
+ */
+function endedAfter(elapsed: number, limit: number, every: number) {
   expect(elapsed).toBeGreaterThanOrEqual(limit - 3_000);
-  expect(elapsed).toBeLessThanOrEqual(limit + 14_000);
+  expect(elapsed).toBeLessThanOrEqual(limit + every + 2_000);
 }
 
 test('"Old, thin cracks": the page sends the description as not after a disaster, and shows a low result', async ({ page }) => {
@@ -490,7 +494,7 @@ test('a description that is not read in time: after 2 minutes the page shows the
   const from = await page.evaluate(() => Date.now());
   // After 2 minutes without the concern, the page shows the check: not before.
   const note = flow.locator('.note').first();
-  endedAfter(await runUntil(page, from, () => note.isVisible()), 2 * 60_000);
+  endedAfter(await runUntil(page, from, () => note.isVisible()), 2 * 60_000, 10_000);
   await expect(note).toHaveText('Your description could not be read this time, so this is the check from the building’s data only.');
   await expect(flow.locator('.answer-title')).toHaveText('Low');
 });
@@ -505,8 +509,8 @@ test('a slow result: the page says it takes longer, gives up after 15 minutes, a
   await expect(flow).toContainText('Pointsman is sorting the request…');
   const from = await page.evaluate(() => Date.now());
   // After 30 s the page says it takes longer; after 15 minutes it gives up: not before.
-  endedAfter(await runUntil(page, from, async () => (await flow.textContent())!.includes('This takes longer than usual.')), 30_000);
-  endedAfter(await runUntil(page, from, () => flow.getByRole('button', { name: 'Look again' }).isVisible()), 15 * 60_000);
+  endedAfter(await runUntil(page, from, async () => (await flow.textContent())!.includes('This takes longer than usual.')), 30_000, 2_000);
+  endedAfter(await runUntil(page, from, () => flow.getByRole('button', { name: 'Look again' }).isVisible()), 15 * 60_000, 10_000);
   await expect(flow.locator('.note')).toHaveText('No result yet. The demo tries again every hour; you can also look again later.');
   const stopped = sent.polls.count;
   await page.clock.runFor(60_000);
