@@ -424,25 +424,31 @@ async function openExample(page: Page, label: string) {
  * long runFor() would pass the timers that come later.
  */
 async function pollUntil(page: Page, polls: { count: number }, count: number) {
-  while (polls.count < count) {
-    const before = polls.count;
-    await page.clock.runFor(10_000);
-    await expect.poll(() => polls.count).toBeGreaterThan(before);
+  for (let step = 0; polls.count < count; step++) {
+    expect(step, 'steps of 1 s').toBeLessThan(1_000);
+    await page.clock.runFor(1_000);
+    await page.waitForTimeout(20);
   }
 }
 
 /**
- * Moves the page's clock in 10 s steps until `done` holds, waiting after each
- * step for the poll it started (or for `done`): the page may stop polling
- * once it shows what `done` looks for.
+ * Moves the page's clock in 2 s steps, with a moment after each for a poll's
+ * answer to arrive, until `done` holds. Returns how far the page's clock went
+ * from `from` (its Date.now() at the start of the wait).
  */
-async function runUntil(page: Page, polls: { count: number }, done: () => Promise<boolean>) {
+async function runUntil(page: Page, from: number, done: () => Promise<boolean>) {
   for (let step = 0; !(await done()); step++) {
-    expect(step, 'steps of 10 s').toBeLessThan(200);
-    const before = polls.count;
-    await page.clock.runFor(10_000);
-    await expect.poll(async () => polls.count > before || await done()).toBe(true);
+    expect(step, 'steps of 2 s').toBeLessThan(1_000);
+    await page.clock.runFor(2_000);
+    await page.waitForTimeout(20);
   }
+  return await page.evaluate(() => Date.now()) - from;
+}
+
+/** Asserts that a wait the page ends after `limit` ms ended then, not much earlier or later (steps of 2 s, polls every 10 s). */
+function endedAfter(elapsed: number, limit: number) {
+  expect(elapsed).toBeGreaterThanOrEqual(limit - 3_000);
+  expect(elapsed).toBeLessThanOrEqual(limit + 14_000);
 }
 
 test('"Old, thin cracks": the page sends the description as not after a disaster, and shows a low result', async ({ page }) => {
@@ -476,34 +482,38 @@ test('without a description: the page sends only the building\'s answers, and sh
 test('a description that is not read in time: after 2 minutes the page shows the check, and says so', async ({ page }) => {
   await page.clock.install();
   // The check comes; the concern never does.
-  const sent = await stubServices(page, { check: { action: 'low', rule: null } });
+  await stubServices(page, { check: { action: 'low', rule: null } });
   await page.goto('/');
   await sendExample(page, 'A vague worry');
   const flow = page.locator('#flow');
   await expect(flow).toContainText('Pointsman is sorting the request…');
-  // After 2 minutes without the concern, the page shows the check.
+  const from = await page.evaluate(() => Date.now());
+  // After 2 minutes without the concern, the page shows the check: not before.
   const note = flow.locator('.note').first();
-  await runUntil(page, sent.polls, () => note.isVisible());
+  endedAfter(await runUntil(page, from, () => note.isVisible()), 2 * 60_000);
   await expect(note).toHaveText('Your description could not be read this time, so this is the check from the building’s data only.');
   await expect(flow.locator('.answer-title')).toHaveText('Low');
 });
 
 test('a slow result: the page says it takes longer, gives up after 15 minutes, and looks again on request', async ({ page }) => {
   await page.clock.install();
-  const sent = await stubServices(page, { check: { action: 'low', rule: null }, concern: { action: 'medium', rule: 5, answers: {} }, wait: { pending: 1_000 } });
+  const outcome = { check: { action: 'low', rule: null }, concern: { action: 'medium', rule: 5, answers: {} }, wait: { pending: Infinity } };
+  const sent = await stubServices(page, outcome);
   await page.goto('/');
   await sendExample(page, 'Old, thin cracks');
   const flow = page.locator('#flow');
   await expect(flow).toContainText('Pointsman is sorting the request…');
-  // After 30 s the page says it takes longer; after 15 minutes it gives up.
-  await runUntil(page, sent.polls, async () => (await flow.textContent())!.includes('This takes longer than usual.'));
-  await runUntil(page, sent.polls, () => flow.getByRole('button', { name: 'Look again' }).isVisible());
+  const from = await page.evaluate(() => Date.now());
+  // After 30 s the page says it takes longer; after 15 minutes it gives up: not before.
+  endedAfter(await runUntil(page, from, async () => (await flow.textContent())!.includes('This takes longer than usual.')), 30_000);
+  endedAfter(await runUntil(page, from, () => flow.getByRole('button', { name: 'Look again' }).isVisible()), 15 * 60_000);
   await expect(flow.locator('.note')).toHaveText('No result yet. The demo tries again every hour; you can also look again later.');
   const stopped = sent.polls.count;
   await page.clock.runFor(60_000);
+  await page.waitForTimeout(500);
   expect(sent.polls.count).toBe(stopped);
   // The results are in by now.
-  sent.polls.count = 1_000;
+  outcome.wait.pending = 0;
   await flow.getByRole('button', { name: 'Look again' }).click();
   await expect(flow.locator('.answer-title')).toHaveText('Medium');
 });
@@ -515,8 +525,10 @@ test('failed polls: the page keeps asking, and shows the result once the Worker 
   await sendExample(page, 'Old, thin cracks');
   await pollUntil(page, sent.polls, 4);
   await expect(page.locator('#flow .answer-title')).toHaveText('Medium');
-  // The three 503 answers are this test's own: not page errors.
-  pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !/^503 GET .*\/api\/requests\//.test(e)));
+  // The three 503 answers are this test's own, and the only ones: not page errors.
+  const own = (e: string) => /^503 GET .*\/api\/requests\//.test(e);
+  expect(pageErrors.filter(own)).toHaveLength(3);
+  pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !own(e)));
 });
 
 test('photos: an example photo goes with the description; without words the page asks for them first', async ({ page }) => {
