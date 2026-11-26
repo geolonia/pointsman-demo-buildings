@@ -1,6 +1,9 @@
 // Smoke tests: the page loads on the real Worker, its main controls work,
-// two examples go from the form to their result, and a person answers a
-// request on the staff board. Endpoints that need the broker or Pointsman are
+// the four examples go from the form to their result (with an example photo,
+// and without a description), the waits that are slow, fail, or never get the
+// description's result end as the page says, and a person confirms, changes or
+// comes too late to answer a request on the staff board. The map is not
+// tested: its tiles and MapLibre are blocked (below). Endpoints that need the broker or Pointsman are
 // stubbed here (playwright.config.ts says why); GET /api/config and the
 // page's files come from the Worker itself. The stubs are made with the
 // Worker's own functions from the real PLATEAU buildings in data/, and with
@@ -74,8 +77,13 @@ function written(d: Decision, route: Route, requestId: string) {
 /** What Pointsman decides for an example, in this test: the check, then the description. */
 interface Outcome {
   check: { action: string; rule: number | null };
-  /** `person`: a person checks this result (pending until someone answers on the board). */
-  concern: { action: string; rule: number | null; answers: Answers; person?: true };
+  /**
+   * `person`: a person checks this result (pending until someone answers on the board).
+   * Left out: no concern result comes (a request without a description, or one whose description is not read).
+   */
+  concern?: { action: string; rule: number | null; answers: Answers; person?: true };
+  /** The page's polls first get `errors` failed answers (503), then `pending` answers without a result, then the results. */
+  wait?: { errors?: number; pending?: number };
 }
 
 /** Uncaught errors, console errors, and failed loads or error answers from the page's own origin. */
@@ -115,16 +123,18 @@ const test = base.extend<{ pageErrors: string[] }>({
  */
 async function stubServices(page: Page, outcome?: Outcome, alsoOnBoard: Entity[] = []) {
   const origin = new URL(test.info().project.use.baseURL!).origin;
-  const sent: { building: string; answers: unknown; concern?: unknown; lang: string }[] = [];
+  const sent: { building: string; answers: unknown; concern?: { description?: string; afterDisaster?: string; photos?: string[] }; lang: string }[] = [];
   const answered: unknown[] = [];
+  const polls = { count: 0 };
   let request: Entity | null = null;
   // A person's answer on the board, once given (as the bridge then writes it).
   let answer: string | null = null;
   /** The request as stored after Pointsman's decisions (and a person's answer), with its Decision entities. */
   const stored = () => {
     if (!request || !outcome) return null;
-    const review: Decision['review'] = outcome.concern.person && (answer ? { status: 'resolved', final_action: answer, resolved_at: NOW } : { status: 'pending' });
     const check = written(decision(2, CHECK_ROUTE, outcome.check.action, outcome.check.rule), CHECK_ROUTE, request.id);
+    if (!outcome.concern) return { entity: { ...request, check: check.attribute }, check, concern: null };
+    const review: Decision['review'] = outcome.concern.person && (answer ? { status: 'resolved', final_action: answer, resolved_at: NOW } : { status: 'pending' });
     const concern = written(decision(3, CONCERN_ROUTE, outcome.concern.action, outcome.concern.rule, outcome.concern.answers, review), CONCERN_ROUTE, request.id);
     return { entity: { ...request, check: check.attribute, concern: concern.attribute }, check, concern };
   };
@@ -148,8 +158,15 @@ async function stubServices(page: Page, outcome?: Outcome, alsoOnBoard: Entity[]
   await page.route(/\/api\/requests\/[^/]+$/, (route) => {
     const now = stored();
     if (!now) return route.fulfill({ status: 404, json: { error: 'not found' } });
+    polls.count += 1;
+    const errors = outcome!.wait?.errors ?? 0;
+    if (polls.count <= errors) return route.fulfill({ status: 503, json: { error: 'the data platform did not answer' } });
+    const query = `/entities/${encodeURIComponent(now.entity.id)}`;
+    if (polls.count <= errors + (outcome!.wait?.pending ?? 0)) {
+      return route.fulfill({ json: { entity: request, decision: null, concernDecision: null, concerns: true, query } });
+    }
     return route.fulfill({
-      json: { entity: now.entity, decision: now.check.entity, concernDecision: now.concern.entity, concerns: true, query: `/entities/${encodeURIComponent(now.entity.id)}` },
+      json: { entity: now.entity, decision: now.check.entity, concernDecision: now.concern?.entity ?? null, concerns: true, query },
     });
   });
   // The staff board: the request sent here (if any) and the others, as /api/board lists them (with sysAttrs).
@@ -175,7 +192,7 @@ async function stubServices(page: Page, outcome?: Outcome, alsoOnBoard: Entity[]
     contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><title>chain</title></svg>',
   }));
-  return Object.assign(sent, { answered });
+  return Object.assign(sent, { answered, polls });
 }
 
 /** Two requests on the board: one decided, one where the AI was not sure and a person decides. */
@@ -393,6 +410,178 @@ test('the staff board lists the most serious first and sends a person\'s change'
   expect(answers).toEqual([{ id: rows[1]!.id, body: { action: 'high' } }]);
   await page.locator('#board-close').click();
   await expect(board).toBeHidden();
+});
+
+/** Picks an example and goes to step 2 (the form), without sending. */
+async function openExample(page: Page, label: string) {
+  await page.getByRole('button', { name: new RegExp(label) }).click();
+  await expect(page.locator('#flow').getByRole('heading', { name: 'What the city model does not know' })).toBeVisible();
+}
+
+/**
+ * Moves the page's clock one poll at a time until the stub has had `count`
+ * polls: each poll sets its next timer only once its answer is in, so one
+ * long runFor() would pass the timers that come later.
+ */
+async function pollUntil(page: Page, polls: { count: number }, count: number) {
+  while (polls.count < count) {
+    const before = polls.count;
+    await page.clock.runFor(10_000);
+    await expect.poll(() => polls.count).toBeGreaterThan(before);
+  }
+}
+
+/**
+ * Moves the page's clock in 10 s steps until `done` holds, waiting after each
+ * step for the poll it started (or for `done`): the page may stop polling
+ * once it shows what `done` looks for.
+ */
+async function runUntil(page: Page, polls: { count: number }, done: () => Promise<boolean>) {
+  for (let step = 0; !(await done()); step++) {
+    expect(step, 'steps of 10 s').toBeLessThan(200);
+    const before = polls.count;
+    await page.clock.runFor(10_000);
+    await expect.poll(async () => polls.count > before || await done()).toBe(true);
+  }
+}
+
+test('"Old, thin cracks": the page sends the description as not after a disaster, and shows a low result', async ({ page }) => {
+  const sent = await stubServices(page, {
+    check: { action: 'low', rule: null },
+    concern: { action: 'low', rule: null, answers: { about_building: { value: true, p: 0.95 }, damage: { value: 'cosmetic', p: 0.8 }, danger_now: { value: false, p: 0.9 } } },
+  });
+  await page.goto('/');
+  await sendExample(page, 'Old, thin cracks');
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({ building: PLATEAU_URN + CRACKS, concern: { afterDisaster: 'no' } });
+  await expect(page.locator('#flow .answer-title')).toContainText('Low');
+});
+
+test('without a description: the page sends only the building\'s answers, and shows the check from its data', async ({ page }) => {
+  const sent = await stubServices(page, { check: { action: 'medium', rule: 2 } });
+  await page.goto('/');
+  await openExample(page, 'The house leans');
+  await page.locator('#q-worry').fill('');
+  const flow = page.locator('#flow');
+  await flow.getByRole('button', { name: 'Next' }).click();
+  await flow.getByRole('button', { name: 'Send' }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({ building: PLATEAU_URN + LEANS, answers: { yearOfConstruction: 1976 } });
+  expect(sent[0]!.concern).toBeUndefined();
+  await expect(flow.getByRole('heading', { name: 'How urgently should someone look at it?' })).toBeVisible();
+  await expect(flow.locator('.answer-title')).toHaveText('Medium');
+  await expect(flow).not.toContainText('could not be read this time');
+});
+
+test('a description that is not read in time: after 2 minutes the page shows the check, and says so', async ({ page }) => {
+  await page.clock.install();
+  // The check comes; the concern never does.
+  const sent = await stubServices(page, { check: { action: 'low', rule: null } });
+  await page.goto('/');
+  await sendExample(page, 'A vague worry');
+  const flow = page.locator('#flow');
+  await expect(flow).toContainText('Pointsman is sorting the request…');
+  // After 2 minutes without the concern, the page shows the check.
+  const note = flow.locator('.note').first();
+  await runUntil(page, sent.polls, () => note.isVisible());
+  await expect(note).toHaveText('Your description could not be read this time, so this is the check from the building’s data only.');
+  await expect(flow.locator('.answer-title')).toHaveText('Low');
+});
+
+test('a slow result: the page says it takes longer, gives up after 15 minutes, and looks again on request', async ({ page }) => {
+  await page.clock.install();
+  const sent = await stubServices(page, { check: { action: 'low', rule: null }, concern: { action: 'medium', rule: 5, answers: {} }, wait: { pending: 1_000 } });
+  await page.goto('/');
+  await sendExample(page, 'Old, thin cracks');
+  const flow = page.locator('#flow');
+  await expect(flow).toContainText('Pointsman is sorting the request…');
+  // After 30 s the page says it takes longer; after 15 minutes it gives up.
+  await runUntil(page, sent.polls, async () => (await flow.textContent())!.includes('This takes longer than usual.'));
+  await runUntil(page, sent.polls, () => flow.getByRole('button', { name: 'Look again' }).isVisible());
+  await expect(flow.locator('.note')).toHaveText('No result yet. The demo tries again every hour; you can also look again later.');
+  const stopped = sent.polls.count;
+  await page.clock.runFor(60_000);
+  expect(sent.polls.count).toBe(stopped);
+  // The results are in by now.
+  sent.polls.count = 1_000;
+  await flow.getByRole('button', { name: 'Look again' }).click();
+  await expect(flow.locator('.answer-title')).toHaveText('Medium');
+});
+
+test('failed polls: the page keeps asking, and shows the result once the Worker answers', async ({ page, pageErrors }) => {
+  await page.clock.install();
+  const sent = await stubServices(page, { check: { action: 'low', rule: null }, concern: { action: 'medium', rule: 5, answers: {} }, wait: { errors: 3 } });
+  await page.goto('/');
+  await sendExample(page, 'Old, thin cracks');
+  await pollUntil(page, sent.polls, 4);
+  await expect(page.locator('#flow .answer-title')).toHaveText('Medium');
+  // The three 503 answers are this test's own: not page errors.
+  pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !/^503 GET .*\/api\/requests\//.test(e)));
+});
+
+test('photos: an example photo goes with the description; without words the page asks for them first', async ({ page }) => {
+  const sent = await stubServices(page, { check: { action: 'low', rule: null }, concern: { action: 'high', rule: 2, answers: {} } });
+  await page.goto('/');
+  await openExample(page, 'The house leans');
+  const flow = page.locator('#flow');
+  await expect(flow.locator('#q-photos-examples')).toBeVisible();
+  await flow.locator('.photo-example').first().click();
+  await expect(flow.locator('.photos figure')).toHaveCount(1);
+  // Photos go only with a description.
+  const words = await page.locator('#q-worry').inputValue();
+  await page.locator('#q-worry').fill('');
+  await flow.getByRole('button', { name: 'Next' }).click();
+  await expect(flow.getByRole('alert')).toHaveText('Photos are sent only with a description: say in a few words what they show.');
+  await page.locator('#q-worry').fill(words);
+  await flow.getByRole('button', { name: 'Next' }).click();
+  await flow.getByRole('button', { name: 'Send' }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]!.concern!.photos).toHaveLength(1);
+  expect(sent[0]!.concern!.photos![0]).toMatch(/^data:image\/jpeg;base64,/);
+  await expect(flow.locator('.answer-title')).toHaveText('High: check soon');
+});
+
+test('the staff board: a check that waits for a person, confirmed as it is', async ({ page }) => {
+  await stubServices(page);
+  const e = toRequestEntity(buildings.get(PLATEAU_URN + LEANS)!, {}, uuid(20), 'en');
+  const waiting = { ...e, createdAt: new Date(Date.now() - 10 * 60000).toISOString(), check: written(decision(21, CHECK_ROUTE, 'medium', 3, {}, { status: 'pending' }), CHECK_ROUTE, e.id).attribute };
+  const rows = sortBoard([toBoardRow(waiting)].filter((r) => r !== null));
+  await page.route('**/api/board', (route) => route.fulfill({ json: { requests: rows, query: '/entities?type=BuildingCheckRequest' } }));
+  const answers: unknown[] = [];
+  await page.route(/\/api\/requests\/[^/]+\/resolve$/, (route) => {
+    answers.push({ id: decodeURIComponent(route.request().url().split('/').at(-2)!), body: route.request().postDataJSON() });
+    return route.fulfill({ status: 202, json: { resolved: 'check', action: 'medium', decision: `urn:ngsi-ld:Decision:${uuid(21)}` } });
+  });
+  await page.goto('/');
+  await page.locator('#board-toggle').click();
+  const board = page.locator('#board');
+  await expect(board.locator('#board-status')).toHaveText('1 request, 1 waiting for a person.');
+  await board.locator('.req-head').click();
+  await expect(board).toContainText('Pointsman asks a person: confirm this result, or change it.');
+  // The check's own answers: high, medium and low; medium is the one to confirm.
+  await expect(board.locator('select[data-role="choose"] option:not([disabled])')).toHaveText(['High: this building should be looked at first', 'Low']);
+  await board.getByRole('button', { name: 'Confirm: Medium' }).click();
+  await expect(board).toContainText('Sent as a demo visitor.');
+  expect(answers).toEqual([{ id: e.id, body: { action: 'medium' } }]);
+});
+
+test('the staff board: an answer someone else gave first is not sent twice, and the page says so', async ({ page, pageErrors }) => {
+  await stubServices(page);
+  const rows = boardRequests();
+  await page.route('**/api/board', (route) => route.fulfill({ json: { requests: rows, query: '/entities?type=BuildingCheckRequest' } }));
+  await page.route(/\/api\/requests\/[^/]+\/resolve$/, (route) => route.fulfill({ status: 409, json: { error: 'already answered' } }));
+  await page.goto('/');
+  await page.locator('#board-toggle').click();
+  const board = page.locator('#board');
+  const heads = board.locator('.req-head');
+  await heads.nth(1).click();
+  await board.locator('select[data-role="choose"]').selectOption('high');
+  await board.getByRole('button', { name: 'Change' }).click();
+  await expect(board).toContainText('Someone answered this already.');
+  // No form to answer it again.
+  await expect(board.locator('select[data-role="choose"]')).toHaveCount(0);
+  // The 409 is this test's own answer: not a page error.
+  pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !/^409 POST .*\/resolve$/.test(e)));
 });
 
 // The tests' safety rests on the --var settings in playwright.config.ts
