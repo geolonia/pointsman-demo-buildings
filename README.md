@@ -207,8 +207,11 @@ Settings of the `pointsman-demo-buildings` Worker (Settings → Build):
 Secrets are not part of the build; they stay on the Worker (`wrangler secret put`).
 The resources in **Setup** (the queues and the other steps there) must exist
 before a deploy; the build does not create them.
-If a merged change does not show on the site, look for that check first: a
-commit without it was not deployed.
+If a merged change does not show on the site: find the newest commit on `main`
+with a successful "Workers Builds" check. The change is live if that commit
+contains it (a deploy includes everything before it, also commits that have no
+check of their own). If no recent commit has the check, the Worker is not
+connected to this repository: check Settings → Build.
 
 ## Development
 
