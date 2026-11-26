@@ -188,6 +188,31 @@ Upsert replaces each building and never deletes: a building that left the
 data stays until it is deleted by hand. The page may show the old list for
 up to ten minutes after a load.
 
+## Deployment
+
+Cloudflare Workers Builds watches this repository and deploys `main`; no
+credential lives in GitHub, and CI only runs a dry-run deploy. Each deploy
+shows as the check "Workers Builds: pointsman-demo-buildings" on the commit.
+Settings of the `pointsman-demo-buildings` Worker (Settings → Build):
+
+| Setting | Value |
+|---|---|
+| Git repository | `geolonia/pointsman-demo-buildings`, production branch `main` |
+| Build command | `node scripts/fetch-engine.mjs && pnpm install --frozen-lockfile` |
+| Deploy command | `pnpm exec wrangler deploy` |
+| API token | A Cloudflare build token for the Pointsman Workers (the website and the demos) |
+| Build variables | None |
+| Preview builds | Off: previews would run pull request code against the real broker |
+
+Secrets are not part of the build; they stay on the Worker (`wrangler secret put`).
+The resources in **Setup** (the queues and the other steps there) must exist
+before a deploy; the build does not create them.
+If a merged change does not show on the site: find the newest commit on `main`
+with a successful "Workers Builds" check. The change is live if that commit
+contains it (a deploy includes everything before it, also commits that have no
+check of their own). If no recent commit has the check, the Worker is not
+connected to this repository: check Settings → Build.
+
 ## Development
 
 Node 24 and pnpm.
