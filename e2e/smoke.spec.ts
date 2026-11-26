@@ -648,7 +648,7 @@ async function showOnMap(page: Page, at: [number, number], zoom: number) {
   // The map may be below the visible part of the page (mobile, or with the staff board open).
   await page.locator('#map').scrollIntoViewIfNeeded();
   return page.evaluate(([lngLat, z]) => new Promise<{ x: number; y: number }>((done, fail) => {
-    type M = { jumpTo(o: unknown): void; project(l: [number, number]): { x: number; y: number }; getCanvas(): HTMLCanvasElement; once(e: string, f: () => void): void };
+    type M = { jumpTo(o: unknown): void; easeTo(o: unknown): void; project(l: [number, number]): { x: number; y: number }; getCanvas(): HTMLCanvasElement; once(e: string, f: () => void): void };
     const m = (window as unknown as { __map: M }).__map;
     const canvas = m.getCanvas();
     const box = canvas.getBoundingClientRect();
@@ -666,10 +666,14 @@ async function showOnMap(page: Page, at: [number, number], zoom: number) {
     m.jumpTo({ center: lngLat, zoom: z });
     const middle = m.project(lngLat);
     const target = { x: spot.x - box.left, y: spot.y - box.top };
-    m.jumpTo({ center: lngLat, zoom: z, offset: [target.x - middle.x, target.y - middle.y] });
+    // jumpTo ignores offset; easeTo with no duration applies it at once.
+    m.easeTo({ center: lngLat, zoom: z, offset: [target.x - middle.x, target.y - middle.y], duration: 0 });
     m.once('idle', () => {
       const p = m.project(lngLat);
-      done({ x: box.left + p.x, y: box.top + p.y });
+      const at = { x: box.left + p.x, y: box.top + p.y };
+      // The point must now be on the free spot, not under a panel.
+      if (document.elementFromPoint(at.x, at.y) !== canvas) fail(new Error(`the point is covered at ${Math.round(at.x)},${Math.round(at.y)}`));
+      else done(at);
     });
   }), [at, zoom] as const);
 }
