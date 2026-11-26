@@ -602,6 +602,10 @@ test('the staff board: an answer someone else gave first is not sent twice, and 
   pageErrors.splice(0, pageErrors.length, ...pageErrors.filter((e) => !/^409 POST .*\/resolve$/.test(e)));
 });
 
+// The MapLibre version the tests serve: the pinned devDependency. The page's
+// unpkg links must name the same version (a test below checks it), so update both together.
+const MAPLIBRE = (JSON.parse(readFileSync(new URL('../node_modules/maplibre-gl/package.json', import.meta.url), 'utf8')) as { version: string }).version;
+
 /**
  * The map without the network: MapLibre from the pinned devDependency (the
  * same files as the page's unpkg links, so their integrity hashes match) and
@@ -614,7 +618,7 @@ async function serveMap(page: Page) {
   const dist = new URL('../node_modules/maplibre-gl/dist/', import.meta.url);
   const files: [string, string][] = [['maplibre-gl.js', 'application/javascript'], ['maplibre-gl.css', 'text/css']];
   for (const [file, type] of files) {
-    await page.route(`https://unpkg.com/maplibre-gl@5.24.0/dist/${file}`, (route) => route.fulfill({
+    await page.route(`https://unpkg.com/maplibre-gl@${MAPLIBRE}/dist/${file}`, (route) => route.fulfill({
       body: readFileSync(new URL(file, dist)), contentType: type, headers: { 'access-control-allow-origin': '*' },
     }));
   }
@@ -677,6 +681,14 @@ function middleOf(plateauId: string): [number, number] {
   return [corners.reduce((s, c) => s + c[0], 0) / corners.length, corners.reduce((s, c) => s + c[1], 0) / corners.length];
 }
 
+test('the page loads the MapLibre version the tests serve', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  for (const file of ['maplibre-gl.js', 'maplibre-gl.css']) {
+    expect(html, `site/index.html must load maplibre-gl@${MAPLIBRE} (the devDependency): update both together, with the integrity hash`)
+      .toContain(`https://unpkg.com/maplibre-gl@${MAPLIBRE}/dist/${file}`);
+  }
+});
+
 test('the map: it draws the buildings, with the legend, and the status line says so', async ({ page }) => {
   await stubServices(page);
   await serveMap(page);
@@ -717,8 +729,6 @@ test('the map: with the staff board open, requests are dots on it, and a click o
   await page.mouse.click(x, y);
   await expect(board.locator('.req.is-open')).toContainText('Something is wrong with my house.');
 });
-
-
 
 // The tests' safety rests on the --var settings in playwright.config.ts
 // winning over a local .dev.vars: then the Worker's broker is a closed port.
